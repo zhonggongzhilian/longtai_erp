@@ -1,0 +1,238 @@
+<!-- product_list.html -->
+{% extends 'layouts/base.html' %}
+
+{% block title %}产品列表{% endblock title %}
+
+{% block content %}
+<div class="header bg-primary pb-6">
+    <div class="container-fluid">
+        <div class="header-body">
+            <div class="row align-items-center py-4">
+                <div class="col-lg-6 col-7">
+                    <h6 class="h2 text-white d-inline-block mb-0">产品列表</h6>
+                </div>
+                <div class="col-lg-6 col-5 text-right">
+                    <a href="#" class="btn btn-sm btn-neutral">新建</a>
+                    <a href="#" class="btn btn-sm btn-neutral">筛选</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="container-fluid mt--6">
+    <div class="row">
+        <div class="col">
+            <div class="card">
+                <div class="card-header border-0">
+                    <h3 class="mb-0">产品表</h3>
+                </div>
+                <div class="table-responsive">
+                    <table class="table align-items-center table-flush">
+                        <thead class="thead-light">
+                            <tr>
+                                <th scope="col">产品编码</th>
+                                <th scope="col">产品类别</th>
+                                <th scope="col">原料</th>
+                                <th scope="col"></th>
+                            </tr>
+                        </thead>
+                        <tbody class="list">
+                            {% for product in products %}
+                            <tr>
+                                <td>
+                                    <a href="#" class="edit-product" data-product-id="{{ product.id }}">
+                                        {{ product.product_code }}
+                                    </a>
+                                </td>
+                                <td>{{ product.product_category }}</td>
+                                <td>{{ product.raw.raw_code if product.raw else '' }}</td>
+                                <td class="text-right">
+                                    <div class="dropdown">
+                                        <a class="btn btn-sm btn-icon-only text-light" href="#" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                                            <i class="fas fa-ellipsis-v"></i>
+                                        </a>
+                                        <div class="dropdown-menu dropdown-menu-right dropdown-menu-arrow">
+                                            <a class="dropdown-item edit-product" href="#" data-product-id="{{ product.id }}">编辑</a>
+                                            <a class="dropdown-item delete-product" href="#" data-product-id="{{ product.id }}">删除</a>
+                                        </div>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Edit Product Modal -->
+<div class="modal fade" id="editProductModal" tabindex="-1" role="dialog" aria-labelledby="editProductModalLabel" aria-hidden="true">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="editProductModalLabel">编辑产品</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="关闭">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <form id="editProductForm">
+                    {% csrf_token %}
+                    <input type="hidden" id="editProductId" name="product_id">
+                    <div class="form-group">
+                        <label for="editProductCode">产品编码</label>
+                        <input type="text" class="form-control" id="editProductCode" name="product_code">
+                    </div>
+                    <div class="form-group">
+                        <label for="editProductCategory">产品类别</label>
+                        <input type="text" class="form-control" id="editProductCategory" name="product_category">
+                    </div>
+                    <div class="form-group">
+                        <label for="editRaw">原料</label>
+                        <input type="text" class="form-control" id="editRaw" name="raw">
+                    </div>
+                    <button type="submit" class="btn btn-primary">保存更改</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Loading and Status Modal -->
+<div class="modal fade" id="statusModal" tabindex="-1" role="dialog" aria-labelledby="statusModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered" role="document">
+        <div class="modal-content">
+            <div class="modal-body text-center">
+                <div id="loadingSpinner" class="spinner-border text-primary" role="status">
+                    <span class="sr-only">Loading...</span>
+                </div>
+                <div id="statusMessage" class="mt-3"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock content %}
+
+{% block javascripts %}
+<script>
+    $(document).ready(function () {
+        function getCookie(name) {
+            var cookieValue = null;
+            if (document.cookie && document.cookie !== '') {
+                var cookies = document.cookie.split(';');
+                for (var i = 0; i < cookies.length; i++) {
+                    var cookie = cookies[i].trim();
+                    if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                        break;
+                    }
+                }
+            }
+            return cookieValue;
+        }
+        var csrftoken = getCookie('csrftoken');
+
+        function csrfSafeMethod(method) {
+            return (/^(GET|HEAD|OPTIONS|TRACE)$/.test(method));
+        }
+
+        $.ajaxSetup({
+            beforeSend: function(xhr, settings) {
+                if (!csrfSafeMethod(settings.type) && !this.crossDomain) {
+                    xhr.setRequestHeader("X-CSRFToken", csrftoken);
+                }
+            }
+        });
+
+        function showStatusModal(message, isLoading = false) {
+            if (isLoading) {
+                $('#loadingSpinner').show();
+                $('#statusMessage').hide();
+            } else {
+                $('#loadingSpinner').hide();
+                $('#statusMessage').text(message).show();
+            }
+            $('#statusModal').modal('show');
+        }
+
+        function hideStatusModal() {
+            $('#statusModal').modal('hide');
+        }
+
+        // Handle edit product
+        $('.edit-product').on('click', function () {
+            var productId = $(this).data('product-id');
+            showStatusModal('加载中...', true);
+
+            $.ajax({
+                url: '/products/' + productId + '/get/',
+                type: 'GET',
+                success: function (data) {
+                    $('#editProductId').val(productId);
+                    $('#editProductCode').val(data.product_code);
+                    $('#editProductCategory').val(data.product_category);
+                    $('#editRaw').val(data.raw);
+                    hideStatusModal();
+                    $('#editProductModal').modal('show');
+                },
+                error: function () {
+                    showStatusModal('加载失败，请重试');
+                    setTimeout(hideStatusModal, 2000);
+                }
+            });
+        });
+
+        $('#editProductForm').on('submit', function (e) {
+            e.preventDefault();
+            var productId = $('#editProductId').val();
+            var formData = $(this).serialize();
+            showStatusModal('保存中...', true);
+
+            $.ajax({
+                url: '/products/' + productId + '/update/',
+                type: 'POST',
+                data: formData,
+                success: function () {
+                    hideStatusModal();
+                    showStatusModal('保存成功');
+                    setTimeout(function () {
+                        hideStatusModal();
+                        location.reload();
+                    }, 2000);
+                },
+                error: function () {
+                    showStatusModal('保存失败，请重试');
+                    setTimeout(hideStatusModal, 2000);
+                }
+            });
+        });
+
+        // Handle delete product
+        $('.delete-product').on('click', function () {
+            var productId = $(this).data('product-id');
+            showStatusModal('删除中...', true);
+
+            $.ajax({
+                url: '/products/' + productId + '/delete/',
+                type: 'POST',
+                success: function () {
+                    hideStatusModal();
+                    showStatusModal('删除成功');
+                    setTimeout(function () {
+                        hideStatusModal();
+                        location.reload();
+                    }, 2000);
+                },
+                error: function () {
+                    showStatusModal('删除失败，请重试');
+                    setTimeout(hideStatusModal, 2000);
+                }
+            });
+        });
+    });
+</script>
+{% endblock javascripts %}

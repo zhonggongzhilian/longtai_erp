@@ -210,3 +210,41 @@ def delete_exchange(request, exchange_id):
         exchange.delete()
         return HttpResponse(status=200)
     return HttpResponse(status=400)
+
+
+def product_list(request):
+    products = Product.objects.all()
+    return render(request, 'home/product_list.html', {'products': products})
+
+
+def get_product(request, product_id):
+    product = get_object_or_404(Product, id=product_id)
+    data = {
+        'product_code': product.product_code,
+        'product_category': product.product_category,
+        'raw': product.raw.raw_code if product.raw else None,
+    }
+    return JsonResponse(data)
+
+
+def update_product(request, product_id):
+    if request.method == 'POST':
+        product = get_object_or_404(Product, id=product_id)
+        product.product_code = request.POST.get('product_code')
+        product.product_category = request.POST.get('product_category')
+        raw_code = request.POST.get('raw')
+        if raw_code:
+            product.raw = get_object_or_404(Raw, raw_code=raw_code)
+        else:
+            product.raw = None
+        product.save()
+        return HttpResponse(status=200)
+    return HttpResponse(status=400)
+
+
+def delete_product(request, product_id):
+    if request.method == 'POST':
+        product = get_object_or_404(Product, id=product_id)
+        product.delete()
+        return HttpResponse(status=200)
+    return HttpResponse(status=400)

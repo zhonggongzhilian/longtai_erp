@@ -11,8 +11,7 @@
                 <div class="col-lg-6 col-7">
                 </div>
                 <div class="col-lg-6 col-5 text-right">
-                    <a href="#" class="btn btn-sm btn-neutral">New</a>
-                    <a href="#" class="btn btn-sm btn-neutral">Filters</a>
+                    <a href="#" class="btn btn-sm btn-neutral">新增</a>
                 </div>
             </div>
         </div>
@@ -30,9 +29,9 @@
                     <table class="table align-items-center table-flush">
                         <thead class="thead-light">
                         <tr>
-                            <th scope="col">Device Name</th>
-                            <th scope="col">Exchange Time</th>
-                            <th scope="col">Current Raw</th>
+                            <th scope="col">设备名称</th>
+                            <th scope="col">换型时间</th>
+                            <th scope="col">当前毛坯</th>
                             <th scope="col"></th>
                         </tr>
                         </thead>
@@ -54,9 +53,9 @@
                                     </a>
                                     <div class="dropdown-menu dropdown-menu-right dropdown-menu-arrow">
                                         <a class="dropdown-item edit-exchange" href="#"
-                                           data-exchange-id="{{ exchange.id }}">Edit</a>
+                                           data-exchange-id="{{ exchange.id }}">修改</a>
                                         <a class="dropdown-item delete-exchange" href="#"
-                                           data-exchange-id="{{ exchange.id }}">Delete</a>
+                                           data-exchange-id="{{ exchange.id }}">删除</a>
                                     </div>
                                 </div>
                             </td>
@@ -86,18 +85,18 @@
                     {% csrf_token %}
                     <input type="hidden" id="editExchangeId" name="exchange_id">
                     <div class="form-group">
-                        <label for="editDeviceName">Device Name</label>
+                        <label for="editDeviceName">设备名称</label>
                         <input type="text" class="form-control" id="editDeviceName" name="device_name">
                     </div>
                     <div class="form-group">
-                        <label for="editExchangeTime">Exchange Time</label>
+                        <label for="editExchangeTime">换型时间</label>
                         <input type="text" class="form-control" id="editExchangeTime" name="exchange_time">
                     </div>
                     <div class="form-group">
-                        <label for="editCurrentRaw">Current Raw</label>
+                        <label for="editCurrentRaw">当前毛坯</label>
                         <input type="text" class="form-control" id="editCurrentRaw" name="current_raw">
                     </div>
-                    <button type="submit" class="btn btn-primary">Save changes</button>
+                    <button type="submit" class="btn btn-primary">保存</button>
                 </form>
             </div>
         </div>

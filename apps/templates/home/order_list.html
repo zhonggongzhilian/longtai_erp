@@ -27,11 +27,11 @@
                     <table class="table align-items-center table-flush">
                         <thead class="thead-light">
                         <tr>
-                            <th scope="col" class="sort" data-sort="order_id">Order ID</th>
-                            <th scope="col" class="sort" data-sort="order_date">Order Date</th>
-                            <th scope="col" class="sort" data-sort="customer">Customer</th>
-                            <th scope="col" class="sort" data-sort="sale_amount">Sale Amount</th>
-                            <th scope="col" class="sort" data-sort="status">Status</th>
+                            <th scope="col" class="sort" data-sort="order_id">订单编号</th>
+                            <th scope="col" class="sort" data-sort="order_date">订单日期</th>
+                            <th scope="col" class="sort" data-sort="customer">客户</th>
+                            <th scope="col" class="sort" data-sort="sale_amount">销售金额</th>
+                            <th scope="col" class="sort" data-sort="status">订单状态</th>
                             <th scope="col"></th>
                         </tr>
                         </thead>
@@ -87,7 +87,7 @@
                             <div class="modal-dialog" role="document">
                                 <div class="modal-content">
                                     <div class="modal-header">
-                                        <h5 class="modal-title" id="editOrderModalLabel">Edit Order</h5>
+                                        <h5 class="modal-title" id="editOrderModalLabel">修改订单信息</h5>
                                         <button type="button" class="close" data-dismiss="modal" aria-label="Close">
                                             <span aria-hidden="true">&times;</span>
                                         </button>
@@ -97,26 +97,26 @@
                                             {% csrf_token %}
                                             <input type="hidden" id="editOrderId" name="order_id">
                                             <div class="form-group">
-                                                <label for="editOrderDate">Order Date</label>
+                                                <label for="editOrderDate">订单日期</label>
                                                 <input type="text" class="form-control" id="editOrderDate"
                                                        name="order_date">
                                             </div>
                                             <div class="form-group">
-                                                <label for="editCustomer">Customer</label>
+                                                <label for="editCustomer">客户</label>
                                                 <input type="text" class="form-control" id="editCustomer"
                                                        name="customer">
                                             </div>
                                             <div class="form-group">
-                                                <label for="editSaleAmount">Sale Amount</label>
+                                                <label for="editSaleAmount">客户</label>
                                                 <input type="text" class="form-control" id="editSaleAmount"
                                                        name="sale_amount">
                                             </div>
                                             <div class="form-group">
-                                                <label for="editOrderState">Order State</label>
+                                                <label for="editOrderState">订单状态</label>
                                                 <input type="text" class="form-control" id="editOrderState"
                                                        name="order_state">
                                             </div>
-                                            <button type="submit" class="btn btn-primary">Save changes</button>
+                                            <button type="submit" class="btn btn-primary">保存</button>
                                         </form>
                                     </div>
                                 </div>

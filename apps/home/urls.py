@@ -26,4 +26,9 @@ urlpatterns = [
     path('exchanges/<int:exchange_id>/get/', views.get_exchange, name='get_exchange'),
     path('exchanges/<int:exchange_id>/update/', views.update_exchange, name='update_exchange'),
     path('exchanges/<int:exchange_id>/delete/', views.delete_exchange, name='delete_exchange'),
+
+    path('products/', views.product_list, name='product_list'),
+    path('products/<int:product_id>/get/', views.get_product, name='get_product'),
+    path('products/<int:product_id>/update/', views.update_product, name='update_product'),
+    path('products/<int:product_id>/delete/', views.delete_product, name='delete_product'),
 ]
