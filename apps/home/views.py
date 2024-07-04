@@ -176,3 +176,37 @@ def delete_order(request, order_id):
         order.delete()
         return HttpResponse(status=200)
     return HttpResponse(status=400)
+
+
+def exchange_list(request):
+    exchanges = ExchangeTypeTime.objects.all()
+    return render(request, 'home/exchange_list.html', {'exchanges': exchanges})
+
+
+def get_exchange(request, exchange_id):
+    exchange = get_object_or_404(ExchangeTypeTime, id=exchange_id)
+    data = {
+        'device_name': exchange.device_name,
+        'exchange_time': exchange.exchange_time,
+        'current_raw': exchange.current_raw,
+    }
+    return JsonResponse(data)
+
+
+def update_exchange(request, exchange_id):
+    if request.method == 'POST':
+        exchange = get_object_or_404(ExchangeTypeTime, id=exchange_id)
+        exchange.device_name = request.POST.get('device_name')
+        exchange.exchange_time = request.POST.get('exchange_time')
+        exchange.current_raw = request.POST.get('current_raw')
+        exchange.save()
+        return HttpResponse(status=200)
+    return HttpResponse(status=400)
+
+
+def delete_exchange(request, exchange_id):
+    if request.method == 'POST':
+        exchange = get_object_or_404(ExchangeTypeTime, id=exchange_id)
+        exchange.delete()
+        return HttpResponse(status=200)
+    return HttpResponse(status=400)

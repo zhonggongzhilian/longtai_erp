@@ -21,4 +21,9 @@ urlpatterns = [
     path('orders/<str:order_id>/get/', views.get_order, name='get_order'),
     path('orders/<str:order_id>/update/', views.update_order, name='update_order'),
     path('orders/<str:order_id>/delete/', views.delete_order, name='delete_order'),
+
+    path('exchanges/', views.exchange_list, name='exchange_list'),
+    path('exchanges/<int:exchange_id>/get/', views.get_exchange, name='get_exchange'),
+    path('exchanges/<int:exchange_id>/update/', views.update_exchange, name='update_exchange'),
+    path('exchanges/<int:exchange_id>/delete/', views.delete_exchange, name='delete_exchange'),
 ]

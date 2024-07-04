@@ -39,8 +39,15 @@
                     <li class="nav-item">
                         <a class="nav-link {% if request.resolver_match.url_name == 'order_list' %} active {% endif %}"
                            href="{% url 'order_list' %}">
-                            <i class="ni ni-bullet-list-67 text-default"></i>
+                            <i class="ni ni-bullet-list-67 text-blue"></i>
                             <span class="nav-link-text">订单表</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link {% if request.resolver_match.url_name == 'exchange_list' %} active {% endif %}"
+                           href="{% url 'exchange_list' %}">
+                            <i class="ni ni-time-alarm text-red"></i>
+                            <span class="nav-link-text">换型表</span>
                         </a>
                     </li>
 
