@@ -1,8 +1,12 @@
 import logging
-import sqlite3
 from collections import defaultdict
+
 import pandas as pd
+from django.core.exceptions import ValidationError
+from django.db import IntegrityError
+
 from ..common.utils import log_execution
+from ..models import Product, ProcessFlow, Process
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
@@ -29,8 +33,6 @@ def load_data(file_path):
         # 填充整个 DataFrame 的缺失值，用前一行数据进行填充
         df = df.ffill()
         data[sheet_name] = df
-        import os
-        df.to_csv(os.path.join('./data/' + sheet_name + '.csv'))
     return data
 
 
@@ -59,79 +61,46 @@ def process_data(df):
     return product_processes
 
 
-def create_tables(conn):
-    cursor = conn.cursor()
-    # 创建表
-    cursor.execute('''
-    CREATE TABLE IF NOT EXISTS products (
-        product_id INTEGER PRIMARY KEY AUTOINCREMENT,
-        product_code TEXT NOT NULL
-    )
-    ''')
-
-    cursor.execute('''
-    CREATE TABLE IF NOT EXISTS process_flows (
-        flow_id INTEGER PRIMARY KEY AUTOINCREMENT,
-        product_code TEXT,
-        FOREIGN KEY (product_code) REFERENCES products (product_code)
-    )
-    ''')
-
-    cursor.execute('''
-    CREATE TABLE IF NOT EXISTS processes (
-        process_id INTEGER PRIMARY KEY AUTOINCREMENT,
-        flow_id INTEGER,
-        process_name TEXT,
-        quantity INTEGER,
-        duration REAL,
-        equipment TEXT,
-        completion_date TEXT,
-        flow_range INTEGER,
-        FOREIGN KEY (flow_id) REFERENCES process_flows (flow_id)
-    )
-    ''')
-    conn.commit()
-
-
-def insert_data(conn, product_processes):
-    cursor = conn.cursor()
-
-    for product, flows in product_processes.items():
-        cursor.execute('INSERT OR IGNORE INTO products (product_code) VALUES (?)', (product,))
-        product_id = cursor.lastrowid
+def insert_data(product_processes):
+    for product_code, flows in product_processes.items():
+        try:
+            product, created = Product.objects.get_or_create(product_code=product_code)
+        except IntegrityError as e:
+            logger.error(f"Error creating product {product_code}: {e}")
+            continue
 
         for flow in flows:
-            cursor.execute('INSERT INTO process_flows (product_code) VALUES (?)', (product,))
-            flow_id = cursor.lastrowid
+            try:
+                process_flow = ProcessFlow.objects.create(product=product)
+            except IntegrityError as e:
+                logger.error(f"Error creating process flow for product {product_code}: {e}")
+                continue
 
             for process in flow:
-                cursor.execute('''
-                INSERT INTO processes (flow_id, process_name, quantity, duration, equipment, completion_date, flow_range)
-                VALUES (?, ?, ?, ?, ?, ?, ?)
-                ''', (
-                    flow_id,
-                    process['工序名称'],
-                    process['加工数量'],
-                    process['加工时间'],
-                    process['设备名称'],
-                    process['统计完成时间'],
-                    process['flow_range']
-                ))
-    conn.commit()
+                try:
+                    Process.objects.create(
+                        flow=process_flow,
+                        process_name=process['工序名称'],
+                        quantity=int(process['加工数量']) if pd.notna(process['加工数量']) else None,
+                        duration=float(process['加工时间']) if pd.notna(process['加工时间']) else None,
+                        equipment=process['设备名称'],
+                        completion_date=process['统计完成时间'],
+                        flow_range=process['flow_range']
+                    )
+                except (ValueError, IntegrityError, ValidationError) as e:
+                    logger.error(f"Error creating process for product {product_code}: {e}")
+                    continue
 
 
 @log_execution
-def preprocess_process(file_path='./data/产品加工用时统计进度表.xlsx', db_path='./database/longtai.db'):
+def preprocess_process(file_path='./data/产品加工用时统计进度表.xlsx'):
     data = load_data(file_path)
-    conn = sqlite3.connect(db_path)
-    create_tables(conn)
 
     for sheet_name, df in data.items():
         logger.info(f"Processing sheet: {sheet_name}")
         product_processes = process_data(df)
-        insert_data(conn, product_processes.to_dict())
+        insert_data(product_processes.to_dict())
 
-    conn.close()
     logger.info("Done insert process table")
 
 
