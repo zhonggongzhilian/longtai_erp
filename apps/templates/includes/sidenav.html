@@ -3,7 +3,7 @@
     <!-- Brand -->
     <div class="sidenav-header  align-items-center">
       <a class="navbar-brand" href="/">
-        <img src="/static/assets/img/brand/blue.png" class="navbar-brand-img" alt="Argon Design - Jinja Template Logo.">
+        <img src="/static/assets/img/brand/zgzl.png" class="navbar-brand-img" alt="Argon Design - Jinja Template Logo."> 中工智联
       </a>
     </div>
     <div class="navbar-inner">
@@ -14,7 +14,7 @@
           <li class="nav-item">
             <a class="nav-link {% if 'index' in segment %} active {% endif %}" href="/">
               <i class="ni ni-tv-2 text-primary"></i>
-              <span class="nav-link-text">Dashboard</span>
+              <span class="nav-link-text">数据看板</span>
             </a>
           </li>
           <li class="nav-item">
@@ -41,59 +41,34 @@
               <span class="nav-link-text">Tables</span>
             </a>
           </li>
+
+        </ul>
+        <!-- Divider -->
+        <hr class="my-3">
+        <!-- Heading -->
+        <h6 class="navbar-heading p-0 text-muted">
+          <span class="docs-normal">用户</span>
+        </h6>
+        <!-- Navigation -->
+        <ul class="navbar-nav mb-md-3">
+
           <li class="nav-item">
             <a class="nav-link" href="/login.html">
               <i class="ni ni-key-25 text-info"></i>
-              <span class="nav-link-text">Login (template)</span>
+              <span class="nav-link-text">登录</span>
             </a>
           </li>
           <li class="nav-item">
             <a class="nav-link" href="/register.html">
               <i class="ni ni-circle-08 text-pink"></i>
-              <span class="nav-link-text">Register (template)</span>
+              <span class="nav-link-text">注册</span>
             </a>
           </li>
 
           <li class="nav-item">
             <a class="nav-link" href="{% url 'logout' %}">
               <i class="ni ni-user-run text-red"></i>
-              <span class="nav-link-text">Logout</span>
-            </a>
-          </li>            
-        </ul>
-        <!-- Divider -->
-        <hr class="my-3">
-        <!-- Heading -->
-        <h6 class="navbar-heading p-0 text-muted">
-          <span class="docs-normal">Resources</span>
-        </h6>
-        <!-- Navigation -->
-        <ul class="navbar-nav mb-md-3">
-
-          <li class="nav-item">
-            <a class="nav-link" 
-               target="_blank" 
-               href="https://appseed.us/admin-dashboards/django-dashboard-argon">
-              <i class="ni ni-archive-2"></i>
-              <span class="nav-link-text">Product Page</span>
-            </a>
-          </li>
-
-          <li class="nav-item">
-            <a class="nav-link" 
-               target="_blank" 
-               href="https://appseed.us/admin-dashboards/django-dashboard-argon-pro">
-              <i class="ni ni-spaceship text-red"></i>
-              <span class="nav-link-text text-red">PRO Version</span>
-            </a>
-          </li>
-
-          <li class="nav-item">
-            <a class="nav-link active active-pro" 
-               target="_blank" 
-               href="http://appseed.us">
-              <i class="ni ni-send text-dark"></i>
-              <span class="nav-link-text">AppSeed</span>
+              <span class="nav-link-text">登出</span>
             </a>
           </li>
         </ul>
