@@ -1,0 +1,254 @@
+{% extends 'layouts/base.html' %}
+
+{% block title %} 毛坯列表 {% endblock title %}
+
+{% block content %}
+
+<div class="header bg-primary pb-6">
+    <div class="container-fluid">
+        <div class="header-body">
+            <div class="row align-items-center py-4">
+                <div class="col-lg-6 col-7">
+                    <h6 class="h2 text-white d-inline-block mb-0">毛坯列表</h6>
+                    <nav aria-label="breadcrumb" class="d-none d-md-inline-block ml-md-4">
+                        <ol class="breadcrumb breadcrumb-links breadcrumb-dark">
+                            <li class="breadcrumb-item"><a href="#"><i class="fas fa-home"></i></a></li>
+                            <li class="breadcrumb-item active" aria-current="page">毛坯列表</li>
+                        </ol>
+                    </nav>
+                </div>
+                <div class="col-lg-6 col-5 text-right">
+                    <a href="#" class="btn btn-sm btn-neutral">新建</a>
+                    <a href="#" class="btn btn-sm btn-neutral">筛选</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Page content -->
+<div class="container-fluid mt--6">
+    <div class="row">
+        <div class="col">
+            <div class="card">
+                <!-- Card header -->
+                <div class="card-header border-0">
+                    <h3 class="mb-0">毛坯列表</h3>
+                </div>
+                <!-- Light table -->
+                <div class="table-responsive">
+                    <table class="table align-items-center table-flush">
+                        <thead class="thead-light">
+                            <tr>
+                                <th scope="col">毛坯料号</th>
+                                <th scope="col">中文名称</th>
+                                <th scope="col" class="text-right">操作</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for raw in raws %}
+                            <tr>
+                                <td>{{ raw.raw_code }}</td>
+                                <td>{{ raw.raw_name }}</td>
+                                <td class="text-right">
+                                    <div class="dropdown">
+                                        <a class="btn btn-sm btn-icon-only text-light" href="#" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                                            <i class="fas fa-ellipsis-v"></i>
+                                        </a>
+                                        <div class="dropdown-menu dropdown-menu-right dropdown-menu-arrow">
+                                            <a class="dropdown-item edit-raw" data-raw-id="{{ raw.id }}" href="#">编辑</a>
+                                            <a class="dropdown-item delete-raw" data-raw-id="{{ raw.id }}" href="#">删除</a>
+                                        </div>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                <!-- Card footer -->
+                <div class="card-footer py-4">
+                    <nav aria-label="...">
+                        <ul class="pagination justify-content-end mb-0">
+                            {% if page_obj.has_previous %}
+                            <li class="page-item">
+                                <a class="page-link" href="?page=1&per_page={{ per_page }}" tabindex="-1">
+                                    <i class="fas fa-angle-double-left"></i>
+                                    <span class="sr-only">第一页</span>
+                                </a>
+                            </li>
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ page_obj.previous_page_number }}&per_page={{ per_page }}" tabindex="-1">
+                                    <i class="fas fa-angle-left"></i>
+                                    <span class="sr-only">上一页</span>
+                                </a>
+                            </li>
+                            {% endif %}
+
+                            {% for num in paginator.page_range %}
+                                {% if page_obj.number|add:'-2' <= num <= page_obj.number|add:'2' %}
+                                    {% if num == page_obj.number %}
+                                        <li class="page-item active"><span class="page-link">{{ num }}</span></li>
+                                    {% else %}
+                                        <li class="page-item"><a class="page-link" href="?page={{ num }}&per_page={{ per_page }}">{{ num }}</a></li>
+                                    {% endif %}
+                                {% endif %}
+                            {% endfor %}
+
+                            {% if page_obj.has_next %}
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ page_obj.next_page_number }}&per_page={{ per_page }}">
+                                    <i class="fas fa-angle-right"></i>
+                                    <span class="sr-only">下一页</span>
+                                </a>
+                            </li>
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ paginator.num_pages }}&per_page={{ per_page }}">
+                                    <i class="fas fa-angle-double-right"></i>
+                                    <span class="sr-only">最后一页</span>
+                                </a>
+                            </li>
+                            {% endif %}
+                        </ul>
+                    </nav>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Edit Modal -->
+    <div class="modal fade" id="editRawModal" tabindex="-1" role="dialog" aria-labelledby="editRawModalLabel" aria-hidden="true">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="editRawModalLabel">编辑毛坯</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <form id="editRawForm">
+                        {% csrf_token %}
+                        <input type="hidden" id="editRawId" name="raw_id">
+                        <div class="form-group">
+                            <label for="editRawCode">毛坯料号</label>
+                            <input type="text" class="form-control" id="editRawCode" name="raw_code">
+                        </div>
+                        <div class="form-group">
+                            <label for="editRawName">中文名称</label>
+                            <input type="text" class="form-control" id="editRawName" name="raw_name">
+                        </div>
+                        <button type="submit" class="btn btn-primary">保存</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Status Modal -->
+    <div class="modal fade" id="statusModal" tabindex="-1" role="dialog" aria-labelledby="statusModalLabel" aria-hidden="true">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <div class="modal-body text-center">
+                    <div id="loadingSpinner" class="spinner-border text-primary" role="status" style="display: none;">
+                        <span class="sr-only">加载中...</span>
+                    </div>
+                    <div id="statusMessage" style="display: none;"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {% include "includes/footer.html" %}
+
+</div>
+
+{% endblock content %}
+
+
+{% block javascript %}
+<script>
+    $(document).ready(function () {
+    function showModal(status, message) {
+        $('#loadingModalLabel').text(status);
+        $('#loadingModalBody').text(message);
+        $('#loadingModal').modal('show');
+    }
+
+    function hideModal() {
+        $('#loadingModal').modal('hide');
+    }
+
+    function setupUploadButton(buttonId, inputId, formId, fileType) {
+        $(`#${buttonId}`).on('click', function () {
+            $(`#fileTypeInput`).val(fileType);
+            $(`#${inputId}`).click();
+        });
+
+        $(`#${inputId}`).on('change', function () {
+            var formData = new FormData($(`#${formId}`)[0]);
+            showModal('上传中', '文件正在上传和处理，请稍候...');
+
+            $.ajax({
+                url: $(`#${formId}`).attr('action'),
+                type: 'POST',
+                data: formData,
+                contentType: false,
+                processData: false,
+                success: function (response) {
+                    $('#loadingModalLabel').text('成功');
+                    $('#loadingModalBody').text('文件上传并处理成功。');
+                    setTimeout(hideModal, 2000);  // 2秒后自动关闭
+                    $(`#${formId}`)[0].reset();
+                },
+                error: function (response) {
+                    $('#loadingModalLabel').text('失败');
+                    $('#loadingModalBody').text('文件上传出错。');
+                    setTimeout(hideModal, 2000);  // 2秒后自动关闭
+                }
+            });
+        });
+    }
+
+    setupUploadButton('uploadButton_Orders', 'orderFileInput', 'uploadForm_Orders', 'orders');
+    setupUploadButton('uploadButton_Raw', 'rawFileInput', 'uploadForm_Raw', 'raw');
+    setupUploadButton('uploadButton_Process', 'processFileInput', 'uploadForm_Process', 'process');
+    setupUploadButton('uploadButton_Product', 'productFileInput', 'uploadForm_Product', 'product');
+    setupUploadButton('uploadButton_Exchange', 'exchangeFileInput', 'uploadForm_Exchange', 'exchange');
+});
+
+// For dynamic dropdowns in order list
+$(document).on('click', '.dropdown-item-update', function () {
+    var orderId = $(this).data('order-id');
+    $.get(`/orders/${orderId}/update/`, function (data) {
+        $('#updateModalBody').html(data);
+        $('#updateModal').modal('show');
+    });
+});
+
+$(document).on('submit', '#updateOrderForm', function (e) {
+    e.preventDefault();
+    var formData = $(this).serialize();
+
+    $.post($(this).attr('action'), formData, function (response) {
+        $('#updateModal').modal('hide');
+        location.reload();
+    }).fail(function (response) {
+        alert('更新订单信息出错。');
+    });
+});
+
+$(document).on('click', '.dropdown-item-delete', function () {
+    var orderId = $(this).data('order-id');
+    if (confirm('确定要删除这个订单和相关的订单商品信息吗？')) {
+        $.post(`/orders/${orderId}/delete/`, {
+            csrfmiddlewaretoken: '{{ csrf_token }}'
+        }, function (response) {
+            location.reload();
+        }).fail(function (response) {
+            alert('删除订单出错。');
+        });
+    }
+});
+</script>
+{% endblock javascript %}

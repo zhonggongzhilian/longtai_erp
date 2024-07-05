@@ -1,4 +1,3 @@
-<!-- product_list.html -->
 {% extends 'layouts/base.html' %}
 
 {% block title %}产品列表{% endblock title %}
@@ -46,7 +45,7 @@
                                     </a>
                                 </td>
                                 <td>{{ product.product_category }}</td>
-                                <td>{{ product.raw.raw_code if product.raw else '' }}</td>
+                                <td>{{ product.raw_code }}</td>
                                 <td class="text-right">
                                     <div class="dropdown">
                                         <a class="btn btn-sm btn-icon-only text-light" href="#" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
@@ -62,6 +61,89 @@
                             {% endfor %}
                         </tbody>
                     </table>
+                </div>
+                <div class="card-footer py-4">
+                    <nav aria-label="...">
+                        <ul class="pagination justify-content-end mb-0">
+                            {% if page_obj.has_previous %}
+                            <li class="page-item">
+                                <a class="page-link" href="?page=1&per_page={{ per_page }}" tabindex="-1">
+                                    <i class="fas fa-angle-double-left"></i>
+                                    <span class="sr-only">First</span>
+                                </a>
+                            </li>
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ page_obj.previous_page_number }}&per_page={{ per_page }}" tabindex="-1">
+                                    <i class="fas fa-angle-left"></i>
+                                    <span class="sr-only">Previous</span>
+                                </a>
+                            </li>
+                            {% else %}
+                            <li class="page-item disabled">
+                                <a class="page-link" href="#" tabindex="-1">
+                                    <i class="fas fa-angle-double-left"></i>
+                                    <span class="sr-only">First</span>
+                                </a>
+                            </li>
+                            <li class="page-item disabled">
+                                <a class="page-link" href="#" tabindex="-1">
+                                    <i class="fas fa-angle-left"></i>
+                                    <span class="sr-only">Previous</span>
+                                </a>
+                            </li>
+                            {% endif %}
+
+                            {% for num in page_obj.paginator.page_range %}
+                            {% if num > page_obj.number|add:-3 and num < page_obj.number|add:3 %}
+                            {% ifequal page_obj.number num %}
+                            <li class="page-item active">
+                                <a class="page-link" href="?page={{ num }}&per_page={{ per_page }}">{{ num }}</a>
+                            </li>
+                            {% else %}
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ num }}&per_page={{ per_page }}">{{ num }}</a>
+                            </li>
+                            {% endifequal %}
+                            {% endif %}
+                            {% endfor %}
+
+                            {% if page_obj.has_next %}
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ page_obj.next_page_number }}&per_page={{ per_page }}">
+                                    <i class="fas fa-angle-right"></i>
+                                    <span class="sr-only">Next</span>
+                                </a>
+                            </li>
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}&per_page={{ per_page }}">
+                                    <i class="fas fa-angle-double-right"></i>
+                                    <span class="sr-only">Last</span>
+                                </a>
+                            </li>
+                            {% else %}
+                            <li class="page-item disabled">
+                                <a class="page-link" href="#">
+                                    <i class="fas fa-angle-right"></i>
+                                    <span class="sr-only">Next</span>
+                                </a>
+                            </li>
+                            <li class="page-item disabled">
+                                <a class="page-link" href="#">
+                                    <i class="fas fa-angle-double-right"></i>
+                                    <span class="sr-only">Last</span>
+                                </a>
+                            </li>
+                            {% endif %}
+                        </ul>
+                    </nav>
+                    <div class="form-group">
+                        <label for="perPageSelect">每页显示数量</label>
+                        <select class="form-control" id="perPageSelect" onchange="location = this.value;">
+                            <option value="?page=1&per_page=20" {% ifequal per_page 20 %}selected{% endifequal %}>20</option>
+                            <option value="?page=1&per_page=50" {% ifequal per_page 50 %}selected{% endifequal %}>50</option>
+                            <option value="?page=1&per_page=100" {% ifequal per_page 100 %}selected{% endifequal %}>100</option>
+                        </select>
+                    </div>
                 </div>
             </div>
         </div>
@@ -101,7 +183,6 @@
     </div>
 </div>
 
-<!-- Loading and Status Modal -->
 <div class="modal fade" id="statusModal" tabindex="-1" role="dialog" aria-labelledby="statusModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered" role="document">
         <div class="modal-content">
@@ -120,119 +201,118 @@
 {% block javascripts %}
 <script>
     $(document).ready(function () {
-        function getCookie(name) {
-            var cookieValue = null;
-            if (document.cookie && document.cookie !== '') {
-                var cookies = document.cookie.split(';');
-                for (var i = 0; i < cookies.length; i++) {
-                    var cookie = cookies[i].trim();
-                    if (cookie.substring(0, name.length + 1) === (name + '=')) {
-                        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
-                        break;
-                    }
+    function getCookie(name) {
+        var cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+            var cookies = document.cookie.split(';');
+            for (var i = 0; i < cookies.length; i++) {
+                var cookie = cookies[i].trim();
+                if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
                 }
             }
-            return cookieValue;
         }
-        var csrftoken = getCookie('csrftoken');
+        return cookieValue;
+    }
+    var csrftoken = getCookie('csrftoken');
 
-        function csrfSafeMethod(method) {
-            return (/^(GET|HEAD|OPTIONS|TRACE)$/.test(method));
-        }
+    function csrfSafeMethod(method) {
+        return (/^(GET|HEAD|OPTIONS|TRACE)$/.test(method));
+    }
 
-        $.ajaxSetup({
-            beforeSend: function(xhr, settings) {
-                if (!csrfSafeMethod(settings.type) && !this.crossDomain) {
-                    xhr.setRequestHeader("X-CSRFToken", csrftoken);
-                }
+    $.ajaxSetup({
+        beforeSend: function(xhr, settings) {
+            if (!csrfSafeMethod(settings.type) && !this.crossDomain) {
+                xhr.setRequestHeader("X-CSRFToken", csrftoken);
             }
-        });
+        }
+    });
 
-        function showStatusModal(message, isLoading = false) {
-            if (isLoading) {
-                $('#loadingSpinner').show();
-                $('#statusMessage').hide();
-            } else {
-                $('#loadingSpinner').hide();
-                $('#statusMessage').text(message).show();
+    function showStatusModal(message, isLoading = false) {
+        if (isLoading) {
+            $('#loadingSpinner').show();
+            $('#statusMessage').hide();
+        } else {
+            $('#loadingSpinner').hide();
+            $('#statusMessage').text(message).show();
+        }
+        $('#statusModal').modal('show');
+    }
+
+    function hideStatusModal() {
+        $('#statusModal').modal('hide');
+    }
+
+    $('.edit-product').on('click', function () {
+        var productId = $(this).data('product-id');
+        showStatusModal('加载中...', true);
+
+        $.ajax({
+            url: '/products/' + productId + '/get/',
+            type: 'GET',
+            success: function (data) {
+                $('#editProductId').val(productId);
+                $('#editProductCode').val(data.product_code);
+                $('#editProductCategory').val(data.product_category);
+                $('#editRaw').val(data.raw);
+                hideStatusModal();
+                $('#editProductModal').modal('show');
+            },
+            error: function () {
+                showStatusModal('加载失败，请重试');
+                setTimeout(hideStatusModal, 2000);
             }
-            $('#statusModal').modal('show');
-        }
-
-        function hideStatusModal() {
-            $('#statusModal').modal('hide');
-        }
-
-        // Handle edit product
-        $('.edit-product').on('click', function () {
-            var productId = $(this).data('product-id');
-            showStatusModal('加载中...', true);
-
-            $.ajax({
-                url: '/products/' + productId + '/get/',
-                type: 'GET',
-                success: function (data) {
-                    $('#editProductId').val(productId);
-                    $('#editProductCode').val(data.product_code);
-                    $('#editProductCategory').val(data.product_category);
-                    $('#editRaw').val(data.raw);
-                    hideStatusModal();
-                    $('#editProductModal').modal('show');
-                },
-                error: function () {
-                    showStatusModal('加载失败，请重试');
-                    setTimeout(hideStatusModal, 2000);
-                }
-            });
-        });
-
-        $('#editProductForm').on('submit', function (e) {
-            e.preventDefault();
-            var productId = $('#editProductId').val();
-            var formData = $(this).serialize();
-            showStatusModal('保存中...', true);
-
-            $.ajax({
-                url: '/products/' + productId + '/update/',
-                type: 'POST',
-                data: formData,
-                success: function () {
-                    hideStatusModal();
-                    showStatusModal('保存成功');
-                    setTimeout(function () {
-                        hideStatusModal();
-                        location.reload();
-                    }, 2000);
-                },
-                error: function () {
-                    showStatusModal('保存失败，请重试');
-                    setTimeout(hideStatusModal, 2000);
-                }
-            });
-        });
-
-        // Handle delete product
-        $('.delete-product').on('click', function () {
-            var productId = $(this).data('product-id');
-            showStatusModal('删除中...', true);
-
-            $.ajax({
-                url: '/products/' + productId + '/delete/',
-                type: 'POST',
-                success: function () {
-                    hideStatusModal();
-                    showStatusModal('删除成功');
-                    setTimeout(function () {
-                        hideStatusModal();
-                        location.reload();
-                    }, 2000);
-                },
-                error: function () {
-                    showStatusModal('删除失败，请重试');
-                    setTimeout(hideStatusModal, 2000);
-                }
-            });
         });
     });
+
+    $('#editProductForm').on('submit', function (e) {
+        e.preventDefault();
+        var productId = $('#editProductId').val();
+        var formData = $(this).serialize();
+        showStatusModal('保存中...', true);
+
+        $.ajax({
+            url: '/products/' + productId + '/update/',
+            type: 'POST',
+            data: formData,
+            success: function () {
+                hideStatusModal();
+                showStatusModal('保存成功');
+                setTimeout(function () {
+                    hideStatusModal();
+                    location.reload();
+                }, 2000);
+            },
+            error: function () {
+                showStatusModal('保存失败，请重试');
+                setTimeout(hideStatusModal, 2000);
+            }
+        });
+    });
+
+    $('.delete-product').on('click', function () {
+        var productId = $(this).data('product-id');
+        showStatusModal('删除中...', true);
+
+        $.ajax({
+            url: '/products/' + productId + '/delete/',
+            type: 'POST',
+            success: function () {
+                hideStatusModal();
+                showStatusModal('删除成功');
+                setTimeout(function () {
+                    hideStatusModal();
+                    location.reload();
+                }, 2000);
+            },
+            error: function () {
+                showStatusModal('删除失败，请重试');
+                setTimeout(hideStatusModal, 2000);
+            }
+        });
+    });
+});
 </script>
+
 {% endblock javascripts %}

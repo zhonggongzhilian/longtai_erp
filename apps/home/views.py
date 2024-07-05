@@ -9,6 +9,7 @@ import os
 from django import template
 from django.contrib.auth.decorators import login_required
 from django.core.files.storage import FileSystemStorage
+from django.core.paginator import Paginator
 from django.http import HttpResponse, HttpResponseRedirect, JsonResponse
 from django.shortcuts import render, get_object_or_404
 from django.template import loader
@@ -214,7 +215,29 @@ def delete_exchange(request, exchange_id):
 
 def product_list(request):
     products = Product.objects.all()
-    return render(request, 'home/product_list.html', {'products': products})
+    per_page = request.GET.get('per_page', 20)  # 获取用户自定义的每页数量，默认为20
+    paginator = Paginator(products, per_page)
+
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+
+    # 处理产品列表，添加原料代码
+    product_list = []
+    for product in page_obj:
+        raw_code = product.raw.raw_code if product.raw else ''
+        product_list.append({
+            'id': product.id,
+            'product_code': product.product_code,
+            'product_category': product.product_category,
+            'raw_code': raw_code
+        })
+
+    context = {
+        'products': product_list,
+        'page_obj': page_obj,
+        'per_page': per_page
+    }
+    return render(request, 'home/product_list.html', context)
 
 
 def get_product(request, product_id):
@@ -248,3 +271,42 @@ def delete_product(request, product_id):
         product.delete()
         return HttpResponse(status=200)
     return HttpResponse(status=400)
+
+
+def raw_list(request):
+    raws = Raw.objects.all()
+    paginator = Paginator(raws, request.GET.get('per_page', 20))
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+    context = {
+        'raws': page_obj,
+        'paginator': paginator,
+        'page_obj': page_obj,
+        'per_page': request.GET.get('per_page', 20)
+    }
+    return render(request, 'home/raw_list.html', context)
+
+
+def raw_get(request, pk):
+    raw = get_object_or_404(Raw, pk=pk)
+    data = {
+        'raw_code': raw.raw_code,
+        'raw_name': raw.raw_name,
+    }
+    return JsonResponse(data)
+
+
+def raw_update(request, pk):
+    raw = get_object_or_404(Raw, pk=pk)
+    if request.method == 'POST':
+        raw.raw_code = request.POST.get('raw_code')
+        raw.raw_name = request.POST.get('raw_name')
+        raw.save()
+        return JsonResponse({'success': True})
+
+
+def raw_delete(request, pk):
+    raw = get_object_or_404(Raw, pk=pk)
+    if request.method == 'POST':
+        raw.delete()
+        return JsonResponse({'success': True})

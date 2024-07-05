@@ -19,28 +19,24 @@
                         </a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link {% if 'icons' in segment %} active {% endif %}" href="/icons.html">
-                            <i class="ni ni-planet text-orange"></i>
-                            <span class="nav-link-text">Icons</span>
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link {% if 'map' in segment %} active {% endif %}" href="/map.html">
-                            <i class="ni ni-pin-3 text-primary"></i>
-                            <span class="nav-link-text">Google</span>
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link {% if 'profile' in segment %} active {% endif %}" href="/profile.html">
-                            <i class="ni ni-single-02 text-yellow"></i>
-                            <span class="nav-link-text">Profile</span>
-                        </a>
-                    </li>
-                    <li class="nav-item">
                         <a class="nav-link {% if request.resolver_match.url_name == 'order_list' %} active {% endif %}"
                            href="{% url 'order_list' %}">
-                            <i class="ni ni-bullet-list-67 text-blue"></i>
+                            <i class="ni ni-bullet-list-67 text-orange"></i>
                             <span class="nav-link-text">订单表</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link {% if request.resolver_match.url_name == 'product_list' %} active {% endif %}"
+                           href="{% url 'product_list' %}">
+                            <i class="ni ni-world-2 text-yellow"></i>
+                            <span class="nav-link-text">产品表</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link {% if request.resolver_match.url_name == 'raw_list' %} active {% endif %}"
+                           href="{% url 'raw_list' %}">
+                            <i class="ni ni-basket text-green"></i>
+                            <span class="nav-link-text">毛坯表</span>
                         </a>
                     </li>
                     <li class="nav-item">
