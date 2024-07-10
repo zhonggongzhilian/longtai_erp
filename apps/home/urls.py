@@ -37,4 +37,7 @@ urlpatterns = [
     path('raws/<int:pk>/get/', views.raw_get, name='raw_get'),
     path('raws/<int:pk>/update/', views.raw_update, name='raw_update'),
     path('raws/<int:pk>/delete/', views.raw_delete, name='raw_delete'),
+
+    path('results/', views.result_list, name='result_list'),
+    path('process_orders/', views.process_orders_view, name='process_orders'),
 ]

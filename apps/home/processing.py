@@ -2,7 +2,7 @@ import logging
 from datetime import datetime, timedelta, time
 import pandas as pd
 from django.db import transaction
-from ..models import Order, OrderProduct, ProcessFlow, Process, ExchangeTypeTime
+from .models import Order, OrderProduct, ProcessFlow, Process, ExchangeTypeTime
 
 # 配置日志
 logger = logging.getLogger(__name__)

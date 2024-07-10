@@ -166,6 +166,7 @@ class Product(models.Model):
     product_code = models.CharField(max_length=255, unique=True)
     product_category = models.CharField(max_length=255, blank=True, null=True)
     raw = models.ForeignKey(Raw, on_delete=models.CASCADE, blank=True, null=True)
+    weight = models.FloatField(default=0.0)
 
     def __str__(self):
         return self.product_code
@@ -189,3 +190,15 @@ class Process(models.Model):
 
     def __str__(self):
         return f"{self.flow} - {self.process_name}"
+
+class OrderProcessingResult(models.Model):
+    time = models.DateTimeField()
+    operation = models.CharField(max_length=255)
+    order = models.ForeignKey(Order, on_delete=models.CASCADE)
+    delivery_date = models.DateField()
+    product = models.CharField(max_length=255)
+    equipment = models.CharField(max_length=255)
+    produced_weight = models.FloatField()
+
+    def __str__(self):
+        return f"{self.time} - {self.operation} - {self.order.order_id} - {self.product}"

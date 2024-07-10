@@ -496,11 +496,17 @@
                     $('#statusModalLabel').text('成功！');
                     $('#statusModalText').text('文件上传成功！');
                     $('.modal-footer').show();
+                    setTimeout(function() {
+                        window.location.reload(); // 成功后刷新页面
+                    }, 2000); // 延迟2秒后刷新
                 },
                 error: function (response) {
                     $('#statusModalLabel').text('错误！');
                     $('#statusModalText').text('文件上传失败！');
                     $('.modal-footer').show();
+                    setTimeout(function() {
+                        window.location.reload(); // 成功后刷新页面
+                    }, 2000); // 延迟2秒后刷新
                 }
             });
         });

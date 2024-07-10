@@ -19,6 +19,13 @@
                         </a>
                     </li>
                     <li class="nav-item">
+                        <a class="nav-link {% if request.resolver_match.url_name == 'result_list' %} active {% endif %}"
+                           href="{% url 'result_list' %}">
+                            <i class="ni ni-calendar-grid-58 text-orange"></i>
+                            <span class="nav-link-text">排产计划</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
                         <a class="nav-link {% if request.resolver_match.url_name == 'order_list' %} active {% endif %}"
                            href="{% url 'order_list' %}">
                             <i class="ni ni-bullet-list-67 text-orange"></i>

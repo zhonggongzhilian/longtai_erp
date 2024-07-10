@@ -10,15 +10,19 @@ from django import template
 from django.contrib.auth.decorators import login_required
 from django.core.files.storage import FileSystemStorage
 from django.core.paginator import Paginator
-from django.http import HttpResponse, HttpResponseRedirect, JsonResponse
-from django.shortcuts import render, get_object_or_404
+from django.http import HttpResponse, HttpResponseRedirect
+from django.http import JsonResponse
+from django.shortcuts import get_object_or_404
+from django.shortcuts import render
 from django.template import loader
 from django.urls import reverse
 from django.views.decorators.csrf import csrf_exempt
 
 from .models import Order, OrderProduct
+from .models import OrderProcessingResult
 from .models import Process, Raw, ExchangeTypeTime, Product
 from .preprocess import preprocess_order, preprocess_product, preprocess_process, preprocess_exchange, preprocess_raw
+from .processing import process_orders
 
 logger = logging.getLogger(__name__)
 
@@ -310,3 +314,19 @@ def raw_delete(request, pk):
     if request.method == 'POST':
         raw.delete()
         return JsonResponse({'success': True})
+
+
+def result_list(request):
+    results = OrderProcessingResult.objects.all()
+    return render(request, 'home/result_list.html', {'results': results})
+
+
+def process_orders_view(request):
+    if request.method == 'POST':
+        try:
+            OrderProcessingResult.objects.all().delete()  # 清空 OrderProcessingResult 中的数据
+            process_orders()
+            return JsonResponse({'message': '排产成功'}, status=200)
+        except Exception as e:
+            return JsonResponse({'error': str(e)}, status=500)
+    return JsonResponse({'error': 'Invalid request method'}, status=400)
