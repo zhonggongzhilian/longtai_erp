@@ -1,5 +1,3 @@
-<!-- result_list.html -->
-
 {% extends 'layouts/base.html' %}
 
 {% block title %} 排产计划 {% endblock title %}
@@ -59,11 +57,12 @@
                             <th scope="col">产品</th>
                             <th scope="col">当前设备</th>
                             <th scope="col">目前已生产的产品重量</th>
+                            <th scope="col">操作</th>
                         </tr>
                         </thead>
                         <tbody>
                         {% for result in results %}
-                        <tr>
+                        <tr id="result-{{ result.id }}">
                             <td>{{ result.time }}</td>
                             <td>{{ result.operation }}</td>
                             <td>{{ result.order.order_id }}</td>
@@ -71,6 +70,9 @@
                             <td>{{ result.product }}</td>
                             <td>{{ result.equipment }}</td>
                             <td>{{ result.produced_weight }}</td>
+                            <td>
+                                <button class="btn btn-sm btn-danger delete-result" data-id="{{ result.id }}">已完成</button>
+                            </td>
                         </tr>
                         {% endfor %}
                         </tbody>
@@ -82,7 +84,6 @@
 
     {% include "includes/footer.html" %}
 </div>
-
 
 <!-- Include jQuery and Bootstrap JS if not already included -->
 <script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
@@ -96,7 +97,7 @@
             $('#processingModal').modal('show');
 
             $.ajax({
-                url: "{% url 'result_list' %}",
+                url: "{% url 'process_orders' %}",
                 method: 'POST',
                 data: {
                     csrfmiddlewaretoken: '{{ csrf_token }}'
@@ -110,6 +111,29 @@
                 },
                 error: function (xhr, status, error) {
                     $('#processingModalBody').text('排产失败: ' + xhr.responseText);
+                }
+            });
+        });
+
+        $('.delete-result').on('click', function () {
+            const resultId = $(this).data('id');
+            const row = $('#result-' + resultId);
+
+            $.ajax({
+                url: `/results/${resultId}/delete/`,
+                method: 'POST',
+                data: {
+                    csrfmiddlewaretoken: '{{ csrf_token }}'
+                },
+                success: function (response) {
+                    if (response.success) {
+                        row.remove();
+                    } else {
+                        alert('删除失败');
+                    }
+                },
+                error: function (xhr, status, error) {
+                    alert('删除失败: ' + xhr.responseText);
                 }
             });
         });

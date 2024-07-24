@@ -29,28 +29,28 @@
                         <a class="nav-link {% if request.resolver_match.url_name == 'order_list' %} active {% endif %}"
                            href="{% url 'order_list' %}">
                             <i class="ni ni-bullet-list-67 text-orange"></i>
-                            <span class="nav-link-text">订单表</span>
+                            <span class="nav-link-text">订单信息</span>
                         </a>
                     </li>
                     <li class="nav-item">
                         <a class="nav-link {% if request.resolver_match.url_name == 'product_list' %} active {% endif %}"
                            href="{% url 'product_list' %}">
                             <i class="ni ni-world-2 text-yellow"></i>
-                            <span class="nav-link-text">产品表</span>
+                            <span class="nav-link-text">产品信息</span>
                         </a>
                     </li>
                     <li class="nav-item">
                         <a class="nav-link {% if request.resolver_match.url_name == 'raw_list' %} active {% endif %}"
                            href="{% url 'raw_list' %}">
                             <i class="ni ni-basket text-green"></i>
-                            <span class="nav-link-text">毛坯表</span>
+                            <span class="nav-link-text">毛坯信息</span>
                         </a>
                     </li>
                     <li class="nav-item">
                         <a class="nav-link {% if request.resolver_match.url_name == 'exchange_list' %} active {% endif %}"
                            href="{% url 'exchange_list' %}">
                             <i class="ni ni-time-alarm text-red"></i>
-                            <span class="nav-link-text">换型表</span>
+                            <span class="nav-link-text">设备信息</span>
                         </a>
                     </li>
 

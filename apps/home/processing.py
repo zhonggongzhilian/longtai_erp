@@ -1,8 +1,9 @@
+# processing.py
+
 import logging
 from datetime import datetime, timedelta, time
-import pandas as pd
 from django.db import transaction
-from .models import Order, OrderProduct, ProcessFlow, Process, ExchangeTypeTime
+from .models import Order, OrderProduct, Process, ExchangeTypeTime, Product, OrderProcessingResult
 
 # 配置日志
 logger = logging.getLogger(__name__)
@@ -28,7 +29,7 @@ def get_order_products(order_id):
 
 
 def get_process_flow(product_code):
-    process_flow = ProcessFlow.objects.filter(product__product_code=product_code.strip()).first()
+    process_flow = Process.objects.filter(product__product_code=product_code.strip()).first()
     if not process_flow:
         raise ValueError(f"No process flow found for product code: {product_code}")
     return process_flow
@@ -106,6 +107,7 @@ def process_orders(start_date=None):
 
         order_schedule = []
         order_start_time = current_time
+        total_weight = 0  # 累加每个订单的已生产产品重量
 
         for product_code in product_codes:
             try:
@@ -148,6 +150,10 @@ def process_orders(start_date=None):
             product_end_time = current_time
             all_orders_schedule.append((order_id, product_code, product_start_time, product_end_time))
 
+            # 累加产品重量
+            product = Product.objects.get(product_code=product_code)
+            total_weight += product.weight
+
         if not order_schedule:
             continue
         order_end_time = max(end_time for _, _, _, _, end_time in order_schedule)
@@ -159,6 +165,18 @@ def process_orders(start_date=None):
             return
         else:
             logger.info(f"Order {order_id} can be delivered on time.")
+
+        # 保存结果到 OrderProcessingResult 表
+        for detail in order_details:
+            OrderProcessingResult.objects.create(
+                time=detail[4],
+                operation=detail[6],
+                order=Order.objects.get(order_id=detail[0]),
+                delivery_date=order.delivery_date,
+                product=Product.objects.get(product_code=detail[1]),
+                equipment=detail[3],
+                produced_weight=total_weight
+            )
 
     # 按订单输出生产时间顺序表
     for order_id, start_time, end_time in order_start_end_times:

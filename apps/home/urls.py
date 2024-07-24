@@ -39,5 +39,6 @@ urlpatterns = [
     path('raws/<int:pk>/delete/', views.raw_delete, name='raw_delete'),
 
     path('results/', views.result_list, name='result_list'),
-    path('process_orders/', views.process_orders_view, name='process_orders'),
+    path('results/<int:result_id>/delete/', views.delete_result, name='delete_result'),
+    path('results/process_schedule/', views.process_schedule, name='process_orders'),
 ]

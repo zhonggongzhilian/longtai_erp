@@ -6,10 +6,9 @@ Copyright (c) 2019 - present AppSeed.us
 from django.contrib import admin
 
 # Register your models here.
-from .models import Product, ProcessFlow, Process, Order, OrderProduct, ExchangeTypeTime, Raw
+from .models import Product, Process, Order, OrderProduct, ExchangeTypeTime, Raw
 
 admin.site.register(Product)
-admin.site.register(ProcessFlow)
 admin.site.register(Process)
 admin.site.register(Order)
 admin.site.register(OrderProduct)

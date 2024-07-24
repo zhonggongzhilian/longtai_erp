@@ -164,32 +164,20 @@ class Raw(models.Model):
 
 class Product(models.Model):
     product_code = models.CharField(max_length=255, unique=True)
-    product_category = models.CharField(max_length=255, blank=True, null=True)
-    raw = models.ForeignKey(Raw, on_delete=models.CASCADE, blank=True, null=True)
-    weight = models.FloatField(default=0.0)
-
-    def __str__(self):
-        return self.product_code
-
-
-class ProcessFlow(models.Model):
-    product = models.ForeignKey(Product, on_delete=models.CASCADE)
-
-    def __str__(self):
-        return f"{self.product.product_code} - Flow {self.id}"
+    product_category = models.CharField(max_length=255, null=True, blank=True)
+    raw = models.ForeignKey('Raw', on_delete=models.SET_NULL, null=True, blank=True)
+    weight = models.FloatField(null=True, blank=True, default=0.0)
 
 
 class Process(models.Model):
-    flow = models.ForeignKey(ProcessFlow, on_delete=models.CASCADE)
+    product_code = models.ForeignKey("Product", on_delete=models.CASCADE, null=True, blank=True)
+    process_sequence = models.IntegerField(default=1)
     process_name = models.CharField(max_length=255)
-    quantity = models.IntegerField()
-    duration = models.FloatField()
-    equipment = models.CharField(max_length=255)
-    completion_date = models.CharField(max_length=255)
-    flow_range = models.IntegerField()
+    quantity = models.IntegerField(null=True, blank=True, default=0)
+    duration = models.FloatField(null=True, blank=True, default=0.0)
+    equipment = models.CharField(max_length=255, null=True, blank=True, default='')
+    completion_date = models.CharField(max_length=255, null=True, blank=True, default='')
 
-    def __str__(self):
-        return f"{self.flow} - {self.process_name}"
 
 class OrderProcessingResult(models.Model):
     time = models.DateTimeField()

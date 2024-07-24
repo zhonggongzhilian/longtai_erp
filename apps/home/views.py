@@ -233,7 +233,8 @@ def product_list(request):
             'id': product.id,
             'product_code': product.product_code,
             'product_category': product.product_category,
-            'raw_code': raw_code
+            'raw_code': raw_code,
+            'weight': product.weight
         })
 
     context = {
@@ -321,12 +322,17 @@ def result_list(request):
     return render(request, 'home/result_list.html', {'results': results})
 
 
-def process_orders_view(request):
+def delete_result(request, result_id):
     if request.method == 'POST':
-        try:
-            OrderProcessingResult.objects.all().delete()  # 清空 OrderProcessingResult 中的数据
-            process_orders()
-            return JsonResponse({'message': '排产成功'}, status=200)
-        except Exception as e:
-            return JsonResponse({'error': str(e)}, status=500)
-    return JsonResponse({'error': 'Invalid request method'}, status=400)
+        result = OrderProcessingResult.objects.get(id=result_id)
+        result.delete()
+        return JsonResponse({'success': True})
+    return JsonResponse({'success': False})
+
+
+def process_schedule(request):
+    if request.method == 'POST':
+        OrderProcessingResult.objects.all().delete()  # 清空 OrderProcessingResult 表
+        process_orders()  # 重新计算排产结果
+        return JsonResponse({'success': True})
+    return JsonResponse({'success': False})
