@@ -1,22 +1,22 @@
 {% extends 'layouts/base-fullscreen.html' %}
 
-{% block title %} Register {% endblock title %}
+{% block title %} 注册 {% endblock title %}
 
 <!-- Specific CSS goes HERE -->
 {% block stylesheets %}{% endblock stylesheets %}
 
 {% block content %}
 
-    <!-- Page content -->
+    <!-- 页面内容 -->
     <div class="container mt--8 pb-5">
-      <!-- Table -->
+      <!-- 表单 -->
       <div class="row justify-content-center">
         <div class="col-lg-6 col-md-8">
-        
+
           <div class="card bg-secondary shadow border-0">
             <div class="card-header bg-transparent pb-5">
               <div class="text-muted text-center mt-2 mb-4">
-                Sign UP
+                注册
               </div>
             </div>
             <div class="card-body px-lg-5 py-lg-5">
@@ -25,9 +25,9 @@
                 {% if msg %}
                   <small>{{ msg | safe }}</small>
                 {% else %}
-                  Add your credentials
-                {% endif %}  
-              
+                  请填写您的信息
+                {% endif %}
+
               </div>
 
               {% if not success %}
@@ -35,7 +35,7 @@
                 <form method="POST">
 
                   {% csrf_token %}
-            
+
                   <div class="form-group">
                     <div class="input-group input-group-alternative mb-3">
                       <div class="input-group-prepend">
@@ -46,18 +46,20 @@
                   </div>
                   <span class="text-error">{{ form.username.errors }}</span>
 
+                  <!-- 移除邮箱字段 -->
+
                   <div class="form-group">
                     <div class="input-group input-group-alternative mb-3">
                       <div class="input-group-prepend">
-                        <span class="input-group-text"><i class="ni ni-email-83"></i></span>
+                        <span class="input-group-text"><i class="ni ni-mobile-button"></i></span>
                       </div>
-                      {{ form.email }}
+                      {{ form.phone_number }}
                     </div>
                   </div>
-                  <span class="text-error">{{ form.email.errors }}</span>
+                  <span class="text-error">{{ form.phone_number.errors }}</span>
 
                   <div class="form-group">
-                    <div class="input-group input-group-alternative">
+                    <div class="input-group input-group-alternative mb-3">
                       <div class="input-group-prepend">
                         <span class="input-group-text"><i class="ni ni-lock-circle-open"></i></span>
                       </div>
@@ -67,7 +69,7 @@
                   <span class="text-error">{{ form.password1.errors }}</span>
 
                   <div class="form-group">
-                    <div class="input-group input-group-alternative">
+                    <div class="input-group input-group-alternative mb-3">
                       <div class="input-group-prepend">
                         <span class="input-group-text"><i class="ni ni-lock-circle-open"></i></span>
                       </div>
@@ -76,23 +78,30 @@
                   </div>
                   <span class="text-error">{{ form.password2.errors }}</span>
 
-                  <div class="row my-4">
-                    <div class="col-12">
-                      <div class="custom-control custom-control-alternative custom-checkbox">
-                        <input class="custom-control-input" id="customCheckRegister" type="checkbox">
-                        <label class="custom-control-label" for="customCheckRegister">
-                          <span class="text-muted">I agree with the <a href="#!">Privacy Policy</a></span>
-                        </label>
-                      </div>
+                  <div class="form-group">
+                    <div class="form-check form-check-inline">
+                      <input class="form-check-input" type="radio" id="operatorRole" name="role" value="operator" {% if form.role.value == 'operator' %}checked{% endif %}>
+                      <label class="form-check-label" for="operatorRole">操作员</label>
+                    </div>
+                    <div class="form-check form-check-inline">
+                      <input class="form-check-input" type="radio" id="inspectorRole" name="role" value="inspector" {% if form.role.value == 'inspector' %}checked{% endif %}>
+                      <label class="form-check-label" for="inspectorRole">质检员</label>
+                    </div>
+                    <div class="form-check form-check-inline">
+                      <input class="form-check-input" type="radio" id="adminRole" name="role" value="admin" {% if form.role.value == 'admin' %}checked{% endif %}>
+                      <label class="form-check-label" for="adminRole">管理员</label>
                     </div>
                   </div>
+                  <span class="text-error">{{ form.role.errors }}</span>
+
+
                   <div class="text-center">
-                    <button type="submit" class="btn btn-primary mt-4">Create account</button>
+                    <button type="submit" class="btn btn-primary mt-4">创建账户</button>
                   </div>
                 </form>
 
-              {% endif %}  
-  
+              {% endif %}
+
             </div>
           </div>
 
@@ -102,10 +111,10 @@
       <div class="row mt-3">
         <div class="col-3"></div>
         <div class="col-3">
-          <a href="{% url 'login' %}" class="text-light"><small>Login</small></a>
+          <a href="{% url 'login' %}" class="text-light"><small>登录</small></a>
         </div>
         <div class="col-3 text-right">
-          <a href="https://appseed.us/support" class="text-light"><small>Get Support</small></a>
+          <a href="https://appseed.us/support" class="text-light"><small>获取支持</small></a>
         </div>
       </div>
 
@@ -114,5 +123,5 @@
 
 {% endblock content %}
 
-<!-- Specific JS goes HERE --> 
+<!-- Specific JS goes HERE -->
 {% block javascripts %}{% endblock javascripts %}

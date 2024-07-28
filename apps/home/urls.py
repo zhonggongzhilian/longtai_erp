@@ -3,16 +3,18 @@
 Copyright (c) 2019 - present AppSeed.us
 """
 
-from django.urls import path, re_path
+from django.contrib.auth.views import LogoutView
+from django.urls import path
+
 from apps.home import views
 
 urlpatterns = [
 
-    # The home page
-    path('', views.index, name='home'),
+    path('login/', views.login_view, name="login"),
+    path('register/', views.register_user, name="register"),
+    path("logout/", LogoutView.as_view(), name="logout"),
 
-    # Matches any html file
-    # re_path(r'^.*\.*', views.pages, name='pages'),
+    path('', views.index, name='home'),
 
     path('upload', views.upload, name='upload'),
 
@@ -22,16 +24,15 @@ urlpatterns = [
     path('orders/<str:order_id>/update/', views.update_order, name='update_order'),
     path('orders/<str:order_id>/delete/', views.delete_order, name='delete_order'),
 
-    path('exchanges/', views.exchange_list, name='exchange_list'),
-    path('exchanges/<int:exchange_id>/get/', views.get_exchange, name='get_exchange'),
-    path('exchanges/<int:exchange_id>/update/', views.update_exchange, name='update_exchange'),
-    path('exchanges/<int:exchange_id>/delete/', views.delete_exchange, name='delete_exchange'),
+    path('device/', views.device_list, name='device_list'),
+    path('device/<int:device_id>/get/', views.get_device, name='get_device'),
+    path('device/<int:device_id>/update/', views.upate_device, name='update_device'),
+    path('device/<int:device_id>/delete/', views.delete_device, name='delete_device'),
 
     path('products/', views.product_list, name='product_list'),
     path('products/<int:product_id>/get/', views.get_product, name='get_product'),
     path('products/<int:product_id>/update/', views.update_product, name='update_product'),
     path('products/<int:product_id>/delete/', views.delete_product, name='delete_product'),
-
 
     path('raws/', views.raw_list, name='raw_list'),
     path('raws/<int:pk>/get/', views.raw_get, name='raw_get'),
@@ -41,4 +42,10 @@ urlpatterns = [
     path('results/', views.result_list, name='result_list'),
     path('results/<int:result_id>/delete/', views.delete_result, name='delete_result'),
     path('results/process_schedule/', views.process_schedule, name='process_orders'),
+
+    path('users/', views.user_list_list, name='user_list_list'),
+    path('users/<int:user_id>/get/', views.user_list_get, name='user_list_get'),
+    path('users/<int:user_id>/update/', views.user_list_update, name='user_list_update'),
+    path('users/<int:user_id>/delete/', views.user_list_delete, name='user_list_delete'),
+    path('users/create/', views.user_list_create, name='user_list_create'),
 ]

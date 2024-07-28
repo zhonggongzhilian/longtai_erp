@@ -4,7 +4,7 @@ import pandas as pd
 from django.db import transaction
 
 from ..common.utils import log_execution
-from ..models import ExchangeTypeTime
+from ..models import Device
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
@@ -19,21 +19,22 @@ def process_file(file_path):
                 device_names = row['设备名称'].split('/')
                 for device_name in device_names:
                     exchange_time = row['每次平均换型时间（分钟)']
-                    if not ExchangeTypeTime.objects.filter(device_name=device_name).exists():
-                        ExchangeTypeTime.objects.create(
+                    print(f"{device_name=}, {exchange_time=}")
+                    if not Device.objects.filter(device_name=device_name).exists():
+                        Device.objects.create(
                             device_name=device_name.strip(),
-                            exchange_time=str(exchange_time)
+                            exchange_time=str(exchange_time),
+                            # 省略 user 字段，因为它可以为空
                         )
                     else:
-                        exchange_type_time = ExchangeTypeTime.objects.get(device_name=device_name.strip())
-                        exchange_type_time.exchange_time = str(exchange_time)
-                        exchange_type_time.save()
-
+                        device = Device.objects.get(device_name=device_name.strip())
+                        device.exchange_time = str(exchange_time)
+                        device.save()
 
 @log_execution
-def preprocess_exchange(file_path='../data/换型时间_MES.xlsx'):
+def preprocess_device(file_path='../data/换型时间_MES.xlsx'):
     process_file(file_path)
 
 
 if __name__ == '__main__':
-    preprocess_exchange()
+    preprocess_device()

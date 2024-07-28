@@ -21,6 +21,8 @@ DEBUG = True
 # load production server from .env
 ALLOWED_HOSTS = ['localhost', '127.0.0.1', config('SERVER', default='127.0.0.1')]
 
+AUTH_USER_MODEL = 'home.CustomUser'
+
 # Application definition
 
 INSTALLED_APPS = [
@@ -73,7 +75,7 @@ WSGI_APPLICATION = 'core.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': 'longtai_03.db',
+        'NAME': 'longtai.db',
     }
 }
 

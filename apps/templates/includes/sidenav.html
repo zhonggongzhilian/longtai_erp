@@ -48,9 +48,16 @@
                     </li>
                     <li class="nav-item">
                         <a class="nav-link {% if request.resolver_match.url_name == 'exchange_list' %} active {% endif %}"
-                           href="{% url 'exchange_list' %}">
+                           href="{% url 'device_list' %}">
                             <i class="ni ni-time-alarm text-red"></i>
                             <span class="nav-link-text">设备信息</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link {% if request.resolver_match.url_name == 'user_list' %} active {% endif %}"
+                           href="{% url 'user_list_list' %}">
+                            <i class="ni ni-time-alarm text-red"></i>
+                            <span class="nav-link-text">用户信息</span>
                         </a>
                     </li>
 
@@ -65,13 +72,13 @@
                 <ul class="navbar-nav mb-md-3">
 
                     <li class="nav-item">
-                        <a class="nav-link" href="/login.html">
+                        <a class="nav-link" href="{% url 'login' %}">
                             <i class="ni ni-key-25 text-info"></i>
                             <span class="nav-link-text">登录</span>
                         </a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" href="/register.html">
+                        <a class="nav-link" href="{% url 'register' %}">
                             <i class="ni ni-circle-08 text-pink"></i>
                             <span class="nav-link-text">注册</span>
                         </a>

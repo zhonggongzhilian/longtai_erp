@@ -3,7 +3,7 @@
 import logging
 from datetime import datetime, timedelta, time
 from django.db import transaction
-from .models import Order, OrderProduct, Process, ExchangeTypeTime, Product, OrderProcessingResult
+from .models import Order, OrderProduct, Process, Device, Product, OrderProcessingResult
 
 # 配置日志
 logger = logging.getLogger(__name__)
@@ -43,7 +43,7 @@ def get_processes(flow_id):
 
 
 def get_exchange_time(equipment):
-    exchange_time = ExchangeTypeTime.objects.filter(device_name=equipment).first()
+    exchange_time = Device.objects.filter(device_name=equipment).first()
     return int(exchange_time.exchange_time) if exchange_time else 0
 
 

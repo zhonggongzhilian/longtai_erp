@@ -7,24 +7,121 @@ import logging
 import os
 
 from django import template
+from django.contrib.auth import authenticate, login
 from django.contrib.auth.decorators import login_required
 from django.core.files.storage import FileSystemStorage
 from django.core.paginator import Paginator
 from django.http import HttpResponse, HttpResponseRedirect
-from django.http import JsonResponse
-from django.shortcuts import get_object_or_404
-from django.shortcuts import render
 from django.template import loader
 from django.urls import reverse
-from django.views.decorators.csrf import csrf_exempt
 
+from .forms import LoginForm
 from .models import Order, OrderProduct
 from .models import OrderProcessingResult
-from .models import Process, Raw, ExchangeTypeTime, Product
-from .preprocess import preprocess_order, preprocess_product, preprocess_process, preprocess_exchange, preprocess_raw
+from .models import Process, Raw, Device, Product
+from .preprocess import preprocess_order, preprocess_product, preprocess_process, preprocess_device, preprocess_raw
 from .processing import process_orders
 
 logger = logging.getLogger(__name__)
+
+from django.shortcuts import render, get_object_or_404, redirect
+from django.http import JsonResponse
+from django.views.decorators.csrf import csrf_exempt
+from .models import CustomUser
+from .forms import SignUpForm, CustomUserChangeForm
+
+
+def user_list_list(request):
+    users = CustomUser.objects.all()
+    return render(request, 'home/user_list.html', {'users': users})
+
+
+def user_list_get(request, user_id):
+    user = get_object_or_404(CustomUser, id=user_id)
+    data = {
+        'username': user.username,
+        'phone_number': user.phone_number,
+        'role': user.role,
+    }
+    return JsonResponse(data)
+
+
+@csrf_exempt
+def user_list_update(request, user_id):
+    if request.method == 'POST':
+        user = get_object_or_404(CustomUser, id=user_id)
+        form = CustomUserChangeForm(request.POST, instance=user)
+        if form.is_valid():
+            form.save()
+            return JsonResponse({'status': 'success'})
+        else:
+            return JsonResponse({'status': 'error', 'errors': form.errors})
+
+
+@csrf_exempt
+def user_list_delete(request, user_id):
+    if request.method == 'POST':
+        user = get_object_or_404(CustomUser, id=user_id)
+        user.delete()
+        return JsonResponse({'status': 'success'})
+
+
+def user_list_create(request):
+    if request.method == 'POST':
+        form = SignUpForm(request.POST)
+        if form.is_valid():
+            form.save()
+            return redirect('user_list_list')
+    else:
+        form = SignUpForm()
+    return render(request, 'create_user.html', {'form': form})
+
+
+def login_view(request):
+    form = LoginForm(request.POST or None)
+
+    msg = None
+
+    if request.method == "POST":
+
+        if form.is_valid():
+            username = form.cleaned_data.get("username")
+            password = form.cleaned_data.get("password")
+            user = authenticate(username=username, password=password)
+            if user is not None:
+                login(request, user)
+                return redirect("/")
+            else:
+                msg = 'Invalid credentials'
+        else:
+            msg = 'Error validating the form'
+
+    return render(request, "accounts/login.html", {"form": form, "msg": msg})
+
+
+def register_user(request):
+    msg = None
+    success = False
+
+    if request.method == "POST":
+        form = SignUpForm(request.POST)
+        if form.is_valid():
+            form.save()
+            username = form.cleaned_data.get("username")
+            raw_password = form.cleaned_data.get("password1")
+            user = authenticate(username=username, password=raw_password)
+
+            msg = 'User created - please <a href="/login">login</a>.'
+            success = True
+
+            # return redirect("/login/")
+
+        else:
+            msg = 'Form is not valid'
+    else:
+        form = SignUpForm()
+
+    return render(request, "accounts/register.html", {"form": form, "msg": msg, "success": success})
 
 
 @login_required(login_url="/login/")
@@ -32,7 +129,7 @@ def index(request):
     orders_count = Order.objects.count()
     products_count = Product.objects.count()
     raw_count = Raw.objects.count()
-    exchange_count = ExchangeTypeTime.objects.count()
+    exchange_count = Device.objects.count()
     process_count = Process.objects.count()
     context = {
         'segment': 'index',
@@ -92,7 +189,7 @@ def _upload(request):
             elif file_type == 'product':
                 preprocess_product(file_path)
             elif file_type == 'exchange':
-                preprocess_exchange(file_path)
+                preprocess_device(file_path)
             else:
                 return JsonResponse({"error": "Unknown file type."}, status=400)
         except Exception as e:
@@ -122,7 +219,7 @@ def upload(request):
             elif file_type == 'product':
                 preprocess_product(file_path)
             elif file_type == 'exchange':
-                preprocess_exchange(file_path)
+                preprocess_device(file_path)
             else:
                 raise ValueError("Invalid file type.")
 
@@ -183,13 +280,13 @@ def delete_order(request, order_id):
     return HttpResponse(status=400)
 
 
-def exchange_list(request):
-    exchanges = ExchangeTypeTime.objects.all()
-    return render(request, 'home/exchange_list.html', {'exchanges': exchanges})
+def device_list(request):
+    exchanges = Device.objects.all()
+    return render(request, 'home/device_list.html', {'devices': exchanges})
 
 
-def get_exchange(request, exchange_id):
-    exchange = get_object_or_404(ExchangeTypeTime, id=exchange_id)
+def get_device(request, exchange_id):
+    exchange = get_object_or_404(Device, id=exchange_id)
     data = {
         'device_name': exchange.device_name,
         'exchange_time': exchange.exchange_time,
@@ -198,9 +295,9 @@ def get_exchange(request, exchange_id):
     return JsonResponse(data)
 
 
-def update_exchange(request, exchange_id):
+def upate_device(request, exchange_id):
     if request.method == 'POST':
-        exchange = get_object_or_404(ExchangeTypeTime, id=exchange_id)
+        exchange = get_object_or_404(Device, id=exchange_id)
         exchange.device_name = request.POST.get('device_name')
         exchange.exchange_time = request.POST.get('exchange_time')
         exchange.current_raw = request.POST.get('current_raw')
@@ -209,9 +306,9 @@ def update_exchange(request, exchange_id):
     return HttpResponse(status=400)
 
 
-def delete_exchange(request, exchange_id):
+def delete_device(request, exchange_id):
     if request.method == 'POST':
-        exchange = get_object_or_404(ExchangeTypeTime, id=exchange_id)
+        exchange = get_object_or_404(Device, id=exchange_id)
         exchange.delete()
         return HttpResponse(status=200)
     return HttpResponse(status=400)
