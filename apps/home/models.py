@@ -231,8 +231,8 @@ class Process(models.Model):
 
 from django.db import models
 
-
 from django.utils import timezone
+
 
 class OrderProcessingResult(models.Model):
     execution_time = models.DateTimeField(default=timezone.now)  # 使用带时区的时间

@@ -48,4 +48,6 @@ urlpatterns = [
     path('users/<int:user_id>/update/', views.user_list_update, name='user_list_update'),
     path('users/<int:user_id>/delete/', views.user_list_delete, name='user_list_delete'),
     path('users/create/', views.user_list_create, name='user_list_create'),
+
+    path('filter_by_date/', views.filter_by_date, name='filter_by_date'),
 ]

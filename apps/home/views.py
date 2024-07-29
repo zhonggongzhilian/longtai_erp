@@ -17,15 +17,12 @@ from django.urls import reverse
 
 from .forms import LoginForm
 from .models import Order, OrderProduct
-from .models import OrderProcessingResult
 from .models import Process, Raw, Device, Product
 from .preprocess import preprocess_order, preprocess_product, preprocess_process, preprocess_device, preprocess_raw
-from .processing import process_orders
 
 logger = logging.getLogger(__name__)
 
 from django.shortcuts import render, get_object_or_404, redirect
-from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 from .models import CustomUser
 from .forms import SignUpForm, CustomUserChangeForm
@@ -466,3 +463,31 @@ def process_schedule(request):
         schedule_production()  # 重新计算排产结果
         return JsonResponse({'success': True})
     return JsonResponse({'success': False})
+
+
+from django.http import JsonResponse
+from django.views.decorators.csrf import csrf_exempt
+from django.utils.dateparse import parse_date
+from datetime import datetime, timedelta
+from .models import OrderProcessingResult
+
+import pytz
+
+@csrf_exempt
+def filter_by_date(request):
+    if request.method == 'GET':
+        date_str = request.GET.get('date', '2023-05-01')
+        selected_date = parse_date(date_str)
+        if selected_date:
+            # Convert to local timezone if needed
+            local_tz = pytz.timezone('Asia/Shanghai')  # Replace with your local timezone
+            start_datetime = local_tz.localize(datetime.combine(selected_date, datetime.min.time()))
+            end_datetime = start_datetime + timedelta(days=1)
+
+            # Filter results within the selected date
+            results = OrderProcessingResult.objects.filter(
+                execution_time__range=(start_datetime, end_datetime)
+            ).values()
+
+            return JsonResponse({'results': list(results)})
+        return JsonResponse({'results': []})
