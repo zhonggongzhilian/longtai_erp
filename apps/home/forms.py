@@ -82,8 +82,13 @@ class SignUpForm(UserCreationForm):
 class CustomUserChangeForm(UserChangeForm):
     class Meta:
         model = CustomUser
-        fields = ('username', 'email', 'phone_number', 'role', 'is_active', 'is_staff', 'is_superuser', 'last_login',
-                  'date_joined')
+        fields = ('username', 'phone_number', 'role', 'is_active', 'is_staff', 'is_superuser')
+
+    def save(self, commit=True):
+        user = super().save(commit=False)
+        if commit:
+            user.save()
+        return user
 
 
 class CustomUserCreationForm(UserCreationForm):

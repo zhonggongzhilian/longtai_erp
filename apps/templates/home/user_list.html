@@ -1,4 +1,3 @@
-<!-- user_list.html -->
 {% extends 'layouts/base.html' %}
 
 {% block title %}用户列表{% endblock title %}
@@ -12,7 +11,8 @@
                     <!-- Optionally add a title or other content here -->
                 </div>
                 <div class="col-lg-6 col-5 text-right">
-                    <a href="{% url 'user_list_create' %}" class="btn btn-sm btn-neutral">新增用户</a>
+                    <button class="btn btn-sm btn-neutral" data-toggle="modal" data-target="#createUserModal">新增用户
+                    </button>
                 </div>
             </div>
         </div>
@@ -70,6 +70,52 @@
     </div>
 </div>
 
+<!-- Create User Modal -->
+<div class="modal fade" id="createUserModal" tabindex="-1" role="dialog" aria-labelledby="createUserModalLabel"
+     aria-hidden="true">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="createUserModalLabel">新建用户</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <form id="createUserForm">
+                    {% csrf_token %}
+                    <div class="form-group">
+                        <label for="createUsername">用户名</label>
+                        <input type="text" class="form-control" id="createUsername" name="username" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="createPhoneNumber">手机号</label>
+                        <input type="text" class="form-control" id="createPhoneNumber" name="phone_number" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="createRole">角色</label>
+                        <select class="form-control" id="createRole" name="role" required>
+                            <option value="operator">操作员</option>
+                            <option value="inspector">检查员</option>
+                            <option value="admin">管理员</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="createPassword1">密码</label>
+                        <input type="password" class="form-control" id="createPassword1" name="password1" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="createPassword2">确认密码</label>
+                        <input type="password" class="form-control" id="createPassword2" name="password2" required>
+                    </div>
+                    <button type="submit" class="btn btn-primary">创建用户</button>
+                </form>
+                <div id="createUserStatusMessage" class="mt-2"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
 <!-- Edit User Modal -->
 <div class="modal fade" id="editUserModal" tabindex="-1" role="dialog" aria-labelledby="editUserModalLabel"
      aria-hidden="true">
@@ -96,20 +142,20 @@
                     <div class="form-group">
                         <label for="editRole">角色</label>
                         <select class="form-control" id="editRole" name="role">
-                            <option value="{{ CustomUser.OPERATOR }}">Operator</option>
-                            <option value="{{ CustomUser.INSPECTOR }}">Inspector</option>
-                            <option value="{{ CustomUser.ADMIN }}">Administrator</option>
+                            <option value="operator">操作员</option>
+                            <option value="inspector">检查员</option>
+                            <option value="admin">管理员</option>
                         </select>
                     </div>
                     <button type="submit" class="btn btn-primary">保存</button>
                 </form>
+                <div id="editUserStatusMessage" class="mt-2"></div>
             </div>
         </div>
     </div>
 </div>
 
 {% endblock content %}
-
 {% block javascripts %}
 <script>
     $(document).ready(function () {
@@ -141,6 +187,27 @@
             }
         });
 
+        // Handle create user
+        $('#createUserForm').on('submit', function (e) {
+            e.preventDefault();
+            var formData = $(this).serialize();
+            $('#createUserStatusMessage').hide();
+
+            $.ajax({
+                url: '/users/create/',
+                type: 'POST',
+                data: formData,
+                success: function (response) {
+                    $('#createUserStatusMessage').html('<div class="alert alert-success">' + response.success + '</div>');
+                    $('#createUserModal').modal('hide');
+                    location.reload(); // Optionally refresh the page or update the user list
+                },
+                error: function (response) {
+                    $('#createUserStatusMessage').html('<div class="alert alert-danger">' + response.responseJSON.error + '</div>');
+                }
+            });
+        });
+
         // Handle edit user
         $('.edit-user').on('click', function () {
             var userId = $(this).data('user-id');
@@ -156,6 +223,9 @@
                     $('#editPhoneNumber').val(data.phone_number);
                     $('#editRole').val(data.role);
                     $('#editUserModal').modal('show');
+                },
+                error: function () {
+                    showStatusModal('Error fetching user data.');
                 }
             });
         });
@@ -163,18 +233,18 @@
         $('#editUserForm').on('submit', function (e) {
             e.preventDefault();
             var formData = $(this).serialize();
-            $('#loadingSpinner').show();
-            $('#statusMessage').hide();
+            $('#editUserStatusMessage').hide();
 
             $.ajax({
                 url: '/users/' + $('#editUserId').val() + '/update/',
                 type: 'POST',
                 data: formData,
                 success: function () {
-                    location.reload();
+                    $('#editUserModal').modal('hide');
+                    location.reload(); // Optionally refresh the page or update the user list
                 },
                 error: function () {
-                    showStatusModal('Error updating user.');
+                    $('#editUserStatusMessage').html('<div class="alert alert-danger">Error updating user.</div>');
                 }
             });
         });
@@ -190,10 +260,10 @@
                     url: '/users/' + userId + '/delete/',
                     type: 'POST',
                     success: function () {
-                        location.reload();
+                        location.reload(); // Optionally refresh the page or update the user list
                     },
                     error: function () {
-                        showStatusModal('Error deleting user.');
+                        $('#statusMessage').html('<div class="alert alert-danger">Error deleting user.</div>');
                     }
                 });
             }

@@ -2,7 +2,6 @@ import pandas as pd
 
 from django.contrib.auth.models import AbstractUser
 
-# 在你的 CustomUser 模型中，确保 role 字段定义正确
 from django.db import models
 from django.conf import settings  # 用于引用自定义用户模型
 
@@ -32,8 +31,7 @@ class CustomUser(AbstractUser):
 class Device(models.Model):
     device_name = models.CharField(max_length=255, unique=True)
     exchange_time = models.CharField(max_length=255)
-    current_raw = models.CharField(max_length=255, blank=True, null=True)
-    user = models.ForeignKey(settings.AUTH_USER_MODEL, null=True, on_delete=models.CASCADE, blank=True)  # 添加外键字段
+    user = models.ForeignKey(CustomUser, null=True, on_delete=models.CASCADE, blank=True)  # 添加外键字段
 
     def __str__(self):
         return self.device_name

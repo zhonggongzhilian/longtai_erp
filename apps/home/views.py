@@ -48,6 +48,7 @@ def user_list_get(request, user_id):
 
 @csrf_exempt
 def user_list_update(request, user_id):
+    print(f"user list update !")
     if request.method == 'POST':
         user = get_object_or_404(CustomUser, id=user_id)
         form = CustomUserChangeForm(request.POST, instance=user)
@@ -55,7 +56,11 @@ def user_list_update(request, user_id):
             form.save()
             return JsonResponse({'status': 'success'})
         else:
-            return JsonResponse({'status': 'error', 'errors': form.errors})
+            errors = form.errors.as_json()
+            return JsonResponse({'status': 'error', 'errors': errors})
+    return JsonResponse({'status': 'error', 'message': 'Invalid request method'})
+
+
 
 
 @csrf_exempt
@@ -66,15 +71,39 @@ def user_list_delete(request, user_id):
         return JsonResponse({'status': 'success'})
 
 
+from django.core.exceptions import ValidationError
+
+@csrf_exempt
+@login_required
 def user_list_create(request):
     if request.method == 'POST':
-        form = SignUpForm(request.POST)
-        if form.is_valid():
-            form.save()
-            return redirect('user_list_list')
+        username = request.POST.get('username')
+        password1 = request.POST.get('password1')
+        password2 = request.POST.get('password2')
+        phone_number = request.POST.get('phone_number')
+        role = request.POST.get('role')
+
+        if password1 != password2:
+            return JsonResponse({'error': 'Passwords do not match.'}, status=400)
+
+        if CustomUser.objects.filter(username=username).exists():
+            return JsonResponse({'error': 'Username already exists.'}, status=400)
+
+        try:
+            user = CustomUser.objects.create_user(username=username, password=password1, phone_number=phone_number, role=role)
+            # You can add extra logic to save phone_number and role in a custom user profile model
+            user.save()
+            # Optionally log in the user after creation
+            # user = authenticate(username=username, password=password1)
+            # if user is not None:
+            #     login(request, user)
+            return JsonResponse({'success': 'User created successfully.'})
+        except ValidationError as e:
+            return JsonResponse({'error': str(e)}, status=400)
+        except Exception as e:
+            return JsonResponse({'error': 'An error occurred while creating the user.'}, status=500)
     else:
-        form = SignUpForm()
-    return render(request, 'create_user.html', {'form': form})
+        return JsonResponse({'error': 'Invalid request method.'}, status=405)
 
 
 def login_view(request):
