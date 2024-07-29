@@ -50,29 +50,31 @@
                     <table class="table align-items-center table-flush">
                         <thead class="thead-light">
                         <tr>
-                            <th scope="col">时间</th>
-                            <th scope="col">操作</th>
+                            <th scope="col">执行时间</th>
+                            <th scope="col">完成时间</th>
+                            <th scope="col">换型</th>
                             <th scope="col">订单</th>
-                            <th scope="col">订单交付日期</th>
                             <th scope="col">产品</th>
-                            <th scope="col">当前设备</th>
-                            <th scope="col">目前已生产的产品重量</th>
-                            <th scope="col">操作</th>
+                            <th scope="col">工序号</th>
+                            <th scope="col">工序名称</th>
+                            <th scope="col">设备</th>
+                            <th scope="col">是否完成</th>
+                            <th scope="col">是否检查</th>
                         </tr>
                         </thead>
                         <tbody>
                         {% for result in results %}
                         <tr id="result-{{ result.id }}">
-                            <td>{{ result.time }}</td>
-                            <td>{{ result.operation }}</td>
-                            <td>{{ result.order.order_id }}</td>
-                            <td>{{ result.delivery_date }}</td>
+                            <td>{{ result.execution_time }}</td>
+                            <td>{{ result.completion_time }}</td>
+                            <td>{{ result.changeover }}</td>
+                            <td>{{ result.order }}</td>
                             <td>{{ result.product }}</td>
-                            <td>{{ result.equipment }}</td>
-                            <td>{{ result.produced_weight }}</td>
-                            <td>
-                                <button class="btn btn-sm btn-danger delete-result" data-id="{{ result.id }}">已完成</button>
-                            </td>
+                            <td>{{ result.process_sequence }}</td>
+                            <td>{{ result.process_name }}</td>
+                            <td>{{ result.device }}</td>
+                            <td>{{ result.completed|yesno:"是,否" }}</td>
+                            <td>{{ result.inspected|yesno:"是,否" }}</td>
                         </tr>
                         {% endfor %}
                         </tbody>
@@ -110,7 +112,7 @@
                     }, 2000); // Hide modal after 2 seconds
                 },
                 error: function (xhr, status, error) {
-                    $('#processingModalBody').text('排产失败: ' + xhr.responseText);
+                    $('#processingModalBody').text('排产失败! 请检查数据是否完整！');
                 }
             });
         });

@@ -229,17 +229,26 @@ class Process(models.Model):
     completion_date = models.CharField(max_length=255, null=True, blank=True, default='')
 
 
+from django.db import models
+
+
+from django.utils import timezone
+
 class OrderProcessingResult(models.Model):
-    """
-    结果模型
-    """
-    time = models.DateTimeField()
-    operation = models.CharField(max_length=255)
-    order = models.ForeignKey(Order, on_delete=models.CASCADE)
-    delivery_date = models.DateField()
-    product = models.CharField(max_length=255)
-    equipment = models.CharField(max_length=255)
-    produced_weight = models.FloatField()
+    execution_time = models.DateTimeField(default=timezone.now)  # 使用带时区的时间
+    completion_time = models.DateTimeField(default=timezone.now)  # 使用带时区的时间
+    changeover = models.CharField(max_length=3, default='No')
+    order = models.CharField(max_length=20, default='')
+    product = models.CharField(max_length=20, default='')
+    process_sequence = models.PositiveIntegerField(default=0)
+    process_name = models.CharField(max_length=100, default='')
+    device = models.CharField(max_length=100, default='')
+    completed = models.BooleanField(default=False)
+    inspected = models.BooleanField(default=False)
+
+    class Meta:
+        verbose_name = 'Order Processing Result'
+        verbose_name_plural = 'Order Processing Results'
 
     def __str__(self):
-        return f"{self.time} - {self.operation} - {self.order.order_id} - {self.product}"
+        return f"Order {self.order}, Product {self.product}, Process {self.process_sequence}"
