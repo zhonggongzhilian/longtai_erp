@@ -26,7 +26,7 @@ urlpatterns = [
 
     path('device/', views.device_list, name='device_list'),
     path('device/<int:device_id>/get/', views.get_device, name='get_device'),
-    path('device/<int:device_id>/update/', views.upate_device, name='update_device'),
+    path('device/<int:device_id>/update/', views.update_device, name='update_device'),
     path('device/<int:device_id>/delete/', views.delete_device, name='delete_device'),
 
     path('products/', views.product_list, name='product_list'),

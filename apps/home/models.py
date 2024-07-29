@@ -3,10 +3,12 @@ import pandas as pd
 from django.contrib.auth.models import AbstractUser
 
 from django.db import models
-from django.conf import settings  # 用于引用自定义用户模型
 
 
 class CustomUser(AbstractUser):
+    """
+    自定义用户模型
+    """
     # 定义角色选项
     OPERATOR = 'operator'
     INSPECTOR = 'inspector'
@@ -29,15 +31,25 @@ class CustomUser(AbstractUser):
 
 
 class Device(models.Model):
+    """
+    设备模型
+    """
     device_name = models.CharField(max_length=255, unique=True)
     exchange_time = models.CharField(max_length=255)
-    user = models.ForeignKey(CustomUser, null=True, on_delete=models.CASCADE, blank=True)  # 添加外键字段
+    raw = models.CharField(max_length=255, blank=True, null=True)
+    operator = models.ForeignKey(CustomUser, related_name='operator_devices', null=True, blank=True,
+                                 on_delete=models.SET_NULL)
+    inspector = models.ForeignKey(CustomUser, related_name='inspector_devices', null=True, blank=True,
+                                  on_delete=models.SET_NULL)
 
     def __str__(self):
         return self.device_name
 
 
 class Order(models.Model):
+    """
+    订单模型
+    """
     order_id = models.CharField(max_length=255, primary_key=True)
     order_date = models.CharField(max_length=255)
     associate_sale_id = models.CharField(max_length=255, blank=True, null=True)
@@ -88,6 +100,9 @@ class Order(models.Model):
 
 
 class OrderProduct(models.Model):
+    """
+    订单产品信息
+    """
     order = models.ForeignKey(Order, on_delete=models.CASCADE)
     product_code = models.CharField(max_length=255)
     product_name = models.CharField(max_length=255)
@@ -181,6 +196,9 @@ class OrderProduct(models.Model):
 
 
 class Raw(models.Model):
+    """
+    毛坯模型
+    """
     raw_code = models.CharField(max_length=255, unique=True)
     raw_name = models.CharField(max_length=255)
 
@@ -189,6 +207,9 @@ class Raw(models.Model):
 
 
 class Product(models.Model):
+    """
+    产品模型
+    """
     product_code = models.CharField(max_length=255, unique=True)
     product_category = models.CharField(max_length=255, null=True, blank=True)
     raw = models.ForeignKey('Raw', on_delete=models.SET_NULL, null=True, blank=True)
@@ -196,6 +217,9 @@ class Product(models.Model):
 
 
 class Process(models.Model):
+    """
+    工序模型
+    """
     product_code = models.ForeignKey("Product", on_delete=models.CASCADE, null=True, blank=True)
     process_sequence = models.IntegerField(default=1)
     process_name = models.CharField(max_length=255)
@@ -206,6 +230,9 @@ class Process(models.Model):
 
 
 class OrderProcessingResult(models.Model):
+    """
+    结果模型
+    """
     time = models.DateTimeField()
     operation = models.CharField(max_length=255)
     order = models.ForeignKey(Order, on_delete=models.CASCADE)

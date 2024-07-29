@@ -61,8 +61,6 @@ def user_list_update(request, user_id):
     return JsonResponse({'status': 'error', 'message': 'Invalid request method'})
 
 
-
-
 @csrf_exempt
 def user_list_delete(request, user_id):
     if request.method == 'POST':
@@ -72,6 +70,7 @@ def user_list_delete(request, user_id):
 
 
 from django.core.exceptions import ValidationError
+
 
 @csrf_exempt
 @login_required
@@ -90,7 +89,8 @@ def user_list_create(request):
             return JsonResponse({'error': 'Username already exists.'}, status=400)
 
         try:
-            user = CustomUser.objects.create_user(username=username, password=password1, phone_number=phone_number, role=role)
+            user = CustomUser.objects.create_user(username=username, password=password1, phone_number=phone_number,
+                                                  role=role)
             # You can add extra logic to save phone_number and role in a custom user profile model
             user.save()
             # Optionally log in the user after creation
@@ -310,35 +310,38 @@ def delete_order(request, order_id):
 
 
 def device_list(request):
-    exchanges = Device.objects.all()
-    return render(request, 'home/device_list.html', {'devices': exchanges})
+    devices = Device.objects.all()
+    return render(request, 'home/device_list.html', {'devices': devices})
 
 
-def get_device(request, exchange_id):
-    exchange = get_object_or_404(Device, id=exchange_id)
+def get_device(request, device_id):
+    device = get_object_or_404(Device, id=device_id)
     data = {
-        'device_name': exchange.device_name,
-        'exchange_time': exchange.exchange_time,
-        'current_raw': exchange.current_raw,
+        'device_name': device.device_name,
+        'exchange_time': device.exchange_time,
+        'operator': device.operator.id if device.operator else None,
+        'inspector': device.inspector.id if device.inspector else None,
     }
     return JsonResponse(data)
 
 
-def upate_device(request, exchange_id):
+def update_device(request, device_id):
     if request.method == 'POST':
-        exchange = get_object_or_404(Device, id=exchange_id)
-        exchange.device_name = request.POST.get('device_name')
-        exchange.exchange_time = request.POST.get('exchange_time')
-        exchange.current_raw = request.POST.get('current_raw')
-        exchange.save()
+        device = get_object_or_404(Device, id=device_id)
+        device.device_name = request.POST.get('device_name')
+        device.exchange_time = request.POST.get('exchange_time')
+        # Update operator and inspector fields
+        device.operator_id = request.POST.get('operator')
+        device.inspector_id = request.POST.get('inspector')
+        device.save()
         return HttpResponse(status=200)
     return HttpResponse(status=400)
 
 
-def delete_device(request, exchange_id):
+def delete_device(request, device_id):
     if request.method == 'POST':
-        exchange = get_object_or_404(Device, id=exchange_id)
-        exchange.delete()
+        device = get_object_or_404(Device, id=device_id)
+        device.delete()
         return HttpResponse(status=200)
     return HttpResponse(status=400)
 
@@ -457,8 +460,9 @@ def delete_result(request, result_id):
 
 
 def process_schedule(request):
+    from .job_scheduler import schedule_production
     if request.method == 'POST':
         OrderProcessingResult.objects.all().delete()  # 清空 OrderProcessingResult 表
-        process_orders()  # 重新计算排产结果
+        schedule_production()  # 重新计算排产结果
         return JsonResponse({'success': True})
     return JsonResponse({'success': False})

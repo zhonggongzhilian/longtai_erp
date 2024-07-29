@@ -40,19 +40,21 @@ def insert_data(df):
                 'completion_date': row.get(('工序' + str(i), '统计完成时间（日期）'), None)
             }
 
-            try:
-                Process.objects.create(
-                    product_code=product,
-                    process_sequence=process_info['process_sequence'],
-                    process_name=process_info['process_name'],
-                    quantity=int(process_info['quantity']) if pd.notna(process_info['quantity']) else None,
-                    duration=float(process_info['duration']) if pd.notna(process_info['duration']) else None,
-                    equipment=process_info['equipment'],
-                    completion_date=process_info['completion_date']
-                )
-            except (ValueError, IntegrityError, ValidationError) as e:
-                logger.error(f"Error creating process for product {product_code}: {e}")
-                continue
+            # 只插入 process_name 非空的记录
+            if not pd.isna(process_info['process_name']) and not pd.isna(process_info['duration']):
+                try:
+                    Process.objects.create(
+                        product_code=product,
+                        process_sequence=process_info['process_sequence'],
+                        process_name=process_info['process_name'],
+                        quantity=int(process_info['quantity']) if pd.notna(process_info['quantity']) else None,
+                        duration=float(process_info['duration']) if pd.notna(process_info['duration']) else None,
+                        equipment=process_info['equipment'],
+                        completion_date=process_info['completion_date']
+                    )
+                except (ValueError, IntegrityError, ValidationError) as e:
+                    logger.error(f"Error creating process for product {product_code}: {e}")
+                    continue
 
 
 @log_execution

@@ -1,4 +1,3 @@
-<!-- device_list.html -->
 {% extends 'layouts/base.html' %}
 
 {% block title %}Device List{% endblock title %}
@@ -11,7 +10,7 @@
                 <div class="col-lg-6 col-7">
                 </div>
                 <div class="col-lg-6 col-5 text-right">
-                    <a href="#" class="btn btn-sm btn-neutral">新增</a>
+                    <a href="#" class="btn btn-sm btn-neutral" id="add-device-btn">新增</a>
                 </div>
             </div>
         </div>
@@ -31,8 +30,8 @@
                         <tr>
                             <th scope="col">设备名称</th>
                             <th scope="col">换型时间</th>
-                            <th scope="col">当前毛坯</th>
-                            <th scope="col">用户名</th> <!-- Added column -->
+                            <th scope="col">操作员</th> <!-- Changed to Operator -->
+                            <th scope="col">检查员</th> <!-- Changed to Inspector -->
                             <th scope="col"></th>
                         </tr>
                         </thead>
@@ -45,8 +44,20 @@
                                 </a>
                             </td>
                             <td>{{ device.exchange_time }}</td>
-                            <td>{{ device.current_raw }}</td>
-                            <td>{{ device.user.username }}</td> <!-- Displaying the username -->
+                            <td>
+                                {% if device.operator %}
+                                    {{ device.operator.username }}
+                                {% else %}
+                                    N/A
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if device.inspector %}
+                                    {{ device.inspector.username }}
+                                {% else %}
+                                    N/A
+                                {% endif %}
+                            </td>
                             <td class="text-right">
                                 <div class="dropdown">
                                     <a class="btn btn-sm btn-icon-only text-light" href="#" role="button"
@@ -85,7 +96,7 @@
             <div class="modal-body">
                 <form id="editExchangeForm">
                     {% csrf_token %}
-                    <input type="hidden" id="editExchangeId" name="exchange_id">
+                    <input type="hidden" id="editDeviceId" name="device_id">
                     <div class="form-group">
                         <label for="editDeviceName">设备名称</label>
                         <input type="text" class="form-control" id="editDeviceName" name="device_name">
@@ -95,8 +106,12 @@
                         <input type="text" class="form-control" id="editExchangeTime" name="exchange_time">
                     </div>
                     <div class="form-group">
-                        <label for="editCurrentRaw">当前毛坯</label>
-                        <input type="text" class="form-control" id="editCurrentRaw" name="current_raw">
+                        <label for="editOperator">操作员</label>
+                        <input type="text" class="form-control" id="editOperator" name="operator">
+                    </div>
+                    <div class="form-group">
+                        <label for="editInspector">检查员</label>
+                        <input type="text" class="form-control" id="editInspector" name="inspector">
                     </div>
                     <button type="submit" class="btn btn-primary">保存</button>
                 </form>
@@ -138,59 +153,55 @@
             }
         });
 
-        // Handle edit device
+        // Handle edit device button click
         $('.edit-device').on('click', function () {
-            var exchangeId = $(this).data('device-id');
-            $('#loadingSpinner').show();
-            $('#statusMessage').hide();
-
+            var deviceId = $(this).data('device-id');
             $.ajax({
-                url: '/exchanges/' + exchangeId + '/get/',
+                url: '/device/' + deviceId + '/get/',
                 type: 'GET',
                 success: function (data) {
-                    $('#editExchangeId').val(exchangeId);
+                    $('#editDeviceId').val(deviceId);
                     $('#editDeviceName').val(data.device_name);
                     $('#editExchangeTime').val(data.exchange_time);
-                    $('#editCurrentRaw').val(data.current_raw);
+                    $('#editOperator').val(data.operator);
+                    $('#editInspector').val(data.inspector);
                     $('#editExchangeModal').modal('show');
+                },
+                error: function () {
+                    alert('Error retrieving device details.');
                 }
             });
         });
 
+        // Handle edit device form submission
         $('#editExchangeForm').on('submit', function (e) {
             e.preventDefault();
             var formData = $(this).serialize();
-            $('#loadingSpinner').show();
-            $('#statusMessage').hide();
-
             $.ajax({
-                url: '/device/' + $('#editExchangeId').val() + '/update/',
+                url: '/device/' + $('#editDeviceId').val() + '/update/',
                 type: 'POST',
                 data: formData,
                 success: function () {
                     location.reload();
                 },
                 error: function () {
-                    showStatusModal('Error updating device.');
+                    alert('Error updating device.');
                 }
             });
         });
 
-        // Handle delete device
+        // Handle delete device button click
         $('.delete-device').on('click', function () {
-            var exchangeId = $(this).data('device-id');
+            var deviceId = $(this).data('device-id');
             if (confirm('Are you sure you want to delete this device?')) {
-                $('#loadingSpinner').show();
-                $('#statusMessage').hide();
-
                 $.ajax({
-                    url: '/exchanges/' + exchangeId + '/delete/',
+                    url: '/device/' + deviceId + '/delete/',
                     type: 'POST',
                     success: function () {
                         location.reload();
                     },
                     error: function () {
-                        showStatusModal('Error deleting device.');
+                        alert('Error deleting device.');
                     }
                 });
             }
