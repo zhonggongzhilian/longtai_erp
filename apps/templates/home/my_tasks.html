@@ -47,12 +47,11 @@
                             <th scope="col">设备</th>
                             <th scope="col">完成状态</th>
                             <th scope="col">检查状态</th>
-                            {% if request.user.role == 'operator' %}
-                            <th scope="col">操作</th>
-                            {% elif request.user.role == 'inspector' %}
-                            <th scope="col">操作</th>
-                            {% elif request.user.role == 'admin' %}
-                            <th scope="col">操作</th>
+                            {% if request.user.role == 'operator' or request.user.role == 'admin' %}
+                            <th scope="col">生产操作</th>
+                            {% endif %}
+                            {% if request.user.role == 'inspector' or request.user.role == 'admin' %}
+                            <th scope="col">质检操作</th>
                             {% endif %}
                         </tr>
                         </thead>
