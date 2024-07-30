@@ -48,18 +48,17 @@
                             <th scope="col">完成状态</th>
                             <th scope="col">检查状态</th>
                             {% if request.user.role == 'operator' %}
-                            <th scope="col">完成操作</th>
+                            <th scope="col">操作</th>
                             {% elif request.user.role == 'inspector' %}
-                            <th scope="col">完成检查</th>
+                            <th scope="col">操作</th>
                             {% elif request.user.role == 'admin' %}
-                            <th scope="col">完成操作</th>
-                            <th scope="col">完成检查</th>
+                            <th scope="col">操作</th>
                             {% endif %}
                         </tr>
                         </thead>
                         <tbody id="resultTableBody">
                         {% for task in tasks %}
-                        <tr class="task-row" data-id="{{ task.id }}" data-execution-time="{{ task.execution_time }}">
+                        <tr class="task-row {% if task.completed and task.inspected %}completed-and-inspected-task{% elif task.completed %}completed-task{% elif task.inspected %}inspected-task{% endif %}" data-id="{{ task.id }}" data-execution-time="{{ task.execution_time }}">
                             <td>{{ task.execution_time }}</td>
                             <td>{{ task.completion_time }}</td>
                             <td>{{ task.changeover }}</td>
@@ -72,18 +71,34 @@
                             <td>{{ task.inspected|yesno:"是,否" }}</td>
                             {% if request.user.role == 'operator' %}
                             <td>
+                                {% if task.completed %}
+                                <button class="btn btn-warning btn-sm mark-not-complete" data-id="{{ task.id }}">未生产完成</button>
+                                {% else %}
                                 <button class="btn btn-success btn-sm mark-complete" data-id="{{ task.id }}">生产完成</button>
+                                {% endif %}
                             </td>
                             {% elif request.user.role == 'inspector' %}
                             <td>
+                                {% if task.inspected %}
+                                <button class="btn btn-warning btn-sm mark-not-inspected" data-id="{{ task.id }}">未检查完成</button>
+                                {% else %}
                                 <button class="btn btn-info btn-sm mark-inspected" data-id="{{ task.id }}">检查完成</button>
+                                {% endif %}
                             </td>
                             {% elif request.user.role == 'admin' %}
                             <td>
+                                {% if task.completed %}
+                                <button class="btn btn-warning btn-sm mark-not-complete" data-id="{{ task.id }}">未生产完成</button>
+                                {% else %}
                                 <button class="btn btn-success btn-sm mark-complete" data-id="{{ task.id }}">生产完成</button>
+                                {% endif %}
                             </td>
                             <td>
+                                {% if task.inspected %}
+                                <button class="btn btn-warning btn-sm mark-not-inspected" data-id="{{ task.id }}">未检查完成</button>
+                                {% else %}
                                 <button class="btn btn-info btn-sm mark-inspected" data-id="{{ task.id }}">检查完成</button>
+                                {% endif %}
                             </td>
                             {% endif %}
                         </tr>
@@ -97,6 +112,18 @@
 
     {% include "includes/footer.html" %}
 </div>
+
+<style>
+    .completed-task {
+        background-color: #e0f7fa; /* Example color for completed tasks */
+    }
+    .inspected-task {
+        background-color: #e8f5e9; /* Example color for inspected tasks */
+    }
+    .completed-and-inspected-task {
+        background-color: #c8e6c9; /* Example color for both completed and inspected tasks */
+    }
+</style>
 
 <script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
 <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
@@ -117,7 +144,7 @@
                     $('#resultTableBody').empty();
                     response.results.forEach(function(result) {
                         $('#resultTableBody').append(
-                            `<tr class="task-row" data-id="${result.id}" data-execution-time="${result.execution_time}">
+                            `<tr class="task-row ${result.completed && result.inspected ? 'completed-and-inspected-task' : (result.completed ? 'completed-task' : (result.inspected ? 'inspected-task' : ''))}" data-id="${result.id}" data-execution-time="${result.execution_time}">
                                 <td>${result.execution_time}</td>
                                 <td>${result.completion_time}</td>
                                 <td>${result.changeover}</td>
@@ -130,18 +157,18 @@
                                 <td>${result.inspected ? '是' : '否'}</td>
                                 {% if user.role == 'Operator' %}
                                 <td>
-                                    <button class="btn btn-success btn-sm mark-complete" data-id="${result.id}">标记为完成</button>
+                                    ${result.completed ? '<button class="btn btn-warning btn-sm mark-not-complete" data-id="${result.id}">未生产完成</button>' : '<button class="btn btn-success btn-sm mark-complete" data-id="${result.id}">生产完成</button>'}
                                 </td>
                                 {% elif user.role == 'Inspector' %}
                                 <td>
-                                    <button class="btn btn-info btn-sm mark-inspected" data-id="${result.id}">标记为检查完成</button>
+                                    ${result.inspected ? '<button class="btn btn-warning btn-sm mark-not-inspected" data-id="${result.id}">未检查完成</button>' : '<button class="btn btn-info btn-sm mark-inspected" data-id="${result.id}">检查完成</button>'}
                                 </td>
                                 {% elif user.role == 'Administrator' %}
                                 <td>
-                                    <button class="btn btn-success btn-sm mark-complete" data-id="${result.id}">标记为完成</button>
+                                    ${result.completed ? '<button class="btn btn-warning btn-sm mark-not-complete" data-id="${result.id}">未生产完成</button>' : '<button class="btn btn-success btn-sm mark-complete" data-id="${result.id}">生产完成</button>'}
                                 </td>
                                 <td>
-                                    <button class="btn btn-info btn-sm mark-inspected" data-id="${result.id}">标记为检查完成</button>
+                                    ${result.inspected ? '<button class="btn btn-warning btn-sm mark-not-inspected" data-id="${result.id}">未检查完成</button>' : '<button class="btn btn-info btn-sm mark-inspected" data-id="${result.id}">检查完成</button>'}
                                 </td>
                                 {% endif %}
                             </tr>`
@@ -167,12 +194,39 @@
                 success: function (response) {
                     if (response.success) {
                         row.find('td:nth-child(9)').text('是'); // Update completion status
+                        row.removeClass('inspected-task completed-and-inspected-task').addClass('completed-task');
+                        row.find('.mark-complete').replaceWith('<button class="btn btn-warning btn-sm mark-not-complete" data-id="' + taskId + '">未生产完成</button>');
                     } else {
                         alert('标记为完成失败');
                     }
                 },
                 error: function (xhr, status, error) {
                     alert('标记为完成失败: ' + xhr.responseText);
+                }
+            });
+        });
+
+        $(document).on('click', '.mark-not-complete', function () {
+            const taskId = $(this).data('id');
+            const row = $(this).closest('tr');
+
+            $.ajax({
+                url: `/tasks/${taskId}/mark-not-complete/`,
+                method: 'POST',
+                data: {
+                    csrfmiddlewaretoken: '{{ csrf_token }}'
+                },
+                success: function (response) {
+                    if (response.success) {
+                        row.find('td:nth-child(9)').text('否'); // Update completion status
+                        row.removeClass('completed-task completed-and-inspected-task').addClass('');
+                        row.find('.mark-not-complete').replaceWith('<button class="btn btn-success btn-sm mark-complete" data-id="' + taskId + '">生产完成</button>');
+                    } else {
+                        alert('标记为未完成失败');
+                    }
+                },
+                error: function (xhr, status, error) {
+                    alert('标记为未完成失败: ' + xhr.responseText);
                 }
             });
         });
@@ -190,6 +244,8 @@
                 success: function (response) {
                     if (response.success) {
                         row.find('td:nth-child(10)').text('是'); // Update inspected status
+                        row.removeClass('completed-task completed-and-inspected-task').addClass('inspected-task');
+                        row.find('.mark-inspected').replaceWith('<button class="btn btn-warning btn-sm mark-not-inspected" data-id="' + taskId + '">未检查完成</button>');
                     } else {
                         alert('标记为检查完成失败');
                     }
@@ -199,6 +255,32 @@
                 }
             });
         });
+
+        $(document).on('click', '.mark-not-inspected', function () {
+            const taskId = $(this).data('id');
+            const row = $(this).closest('tr');
+
+            $.ajax({
+                url: `/tasks/${taskId}/mark-not-inspected/`,
+                method: 'POST',
+                data: {
+                    csrfmiddlewaretoken: '{{ csrf_token }}'
+                },
+                success: function (response) {
+                    if (response.success) {
+                        row.find('td:nth-child(10)').text('否'); // Update inspected status
+                        row.removeClass('inspected-task completed-and-inspected-task').addClass('');
+                        row.find('.mark-not-inspected').replaceWith('<button class="btn btn-info btn-sm mark-inspected" data-id="' + taskId + '">检查完成</button>');
+                    } else {
+                        alert('标记为未检查完成失败');
+                    }
+                },
+                error: function (xhr, status, error) {
+                    alert('标记为未检查完成失败: ' + xhr.responseText);
+                }
+            });
+        });
     });
 </script>
+
 {% endblock content %}

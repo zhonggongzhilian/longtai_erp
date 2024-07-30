@@ -523,14 +523,32 @@ def filter_by_date(request):
 
 
 def mark_complete(request, id):
-    task = OrderProduct.objects.get(pk=id)
+    task = OrderProcessingResult.objects.get(pk=id)
     task.completed = True
     task.save()
     return JsonResponse({'success': True})
 
 
+def mark_not_complete(request, id):
+    task = OrderProcessingResult.objects.get(pk=id)
+    if task:
+        task.completed = False
+        task.save()
+        return JsonResponse({'success': True})
+    return JsonResponse({'success': False}, status=400)
+
+
 def mark_inspected(request, id):
-    task = OrderProduct.objects.get(pk=id)
+    task = OrderProcessingResult.objects.get(pk=id)
     task.inspected = True
     task.save()
     return JsonResponse({'success': True})
+
+
+def mark_not_inspected(request, id):
+    task = OrderProcessingResult.objects.get(pk=id)
+    if task:
+        task.inspected = False
+        task.save()
+        return JsonResponse({'success': True})
+    return JsonResponse({'success': False}, status=400)

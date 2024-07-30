@@ -51,4 +51,9 @@ urlpatterns = [
 
     path('filter_by_date/', views.filter_by_date, name='filter_by_date'),
     path('my-tasks/', views.my_tasks, name='my_tasks'),
+    path('tasks/filter_by_date/', views.filter_by_date, name='filter_by_date'),
+    path('tasks/<int:id>/mark-complete/', views.mark_complete, name='mark_complete'),
+    path('tasks/<int:id>/mark-not-complete/', views.mark_not_complete, name='mark_complete'),
+    path('tasks/<int:id>/mark-inspected/', views.mark_inspected, name='mark_inspected'),
+    path('tasks/<int:id>/mark-not-inspected/', views.mark_not_inspected, name='mark_inspected'),
 ]
