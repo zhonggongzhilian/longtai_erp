@@ -1,0 +1,182 @@
+{% extends 'layouts/base.html' %}
+
+{% block title %} 我的任务 {% endblock title %}
+
+{% block content %}
+<div class="header bg-primary pb-6">
+    <div class="container-fluid">
+        <div class="header-body">
+            <div class="row align-items-center py-4">
+                <div class="col-lg-6 col-7">
+                    <h6 class="h2 text-white d-inline-block mb-0">我的任务</h6>
+                </div>
+                <div class="col-lg-6 col-5 text-right">
+                    <span class="text-white">用户: {{ user.username }}</span><br>
+                    <span class="text-white">角色: {{ user.role }}</span>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Add the modal HTML at the end of the body or a suitable place in the template -->
+<div class="modal fade" id="processingModal" tabindex="-1" role="dialog" aria-labelledby="processingModalLabel" aria-hidden="true">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="processingModalLabel">状态</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body" id="processingModalBody">
+                正在排产...
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">关闭</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="container-fluid mt--6">
+    <div class="row">
+        <div class="col">
+            <div class="card">
+                <div class="card-header border-0">
+                    <h3 class="mb-0">任务计划表</h3>
+                </div>
+                <div class="card-body">
+                    <!-- Add date picker with default value -->
+                    <div class="form-group">
+                        <label for="datePicker">选择执行日期:</label>
+                        <input type="date" id="datePicker" class="form-control" value="2023-05-01">
+                    </div>
+                </div>
+                <div class="table-responsive">
+                    <table class="table align-items-center table-flush">
+                        <thead class="thead-light">
+                        <tr>
+                            <th scope="col">执行时间</th>
+                            <th scope="col">完成时间</th>
+                            <th scope="col">换型</th>
+                            <th scope="col">订单</th>
+                            <th scope="col">产品</th>
+                            <th scope="col">工序号</th>
+                            <th scope="col">工序名称</th>
+                            <th scope="col">设备</th>
+                            <th scope="col">是否完成</th>
+                            <th scope="col">是否检查</th>
+                            <th scope="col">操作</th>
+                        </tr>
+                        </thead>
+                        <tbody id="resultTableBody">
+                        {% for task in tasks %}
+                        <tr id="task-{{ task.id }}">
+                            <td>{{ task.execution_time }}</td>
+                            <td>{{ task.completion_time }}</td>
+                            <td>{{ task.changeover }}</td>
+                            <td>{{ task.order }}</td>
+                            <td>{{ task.product }}</td>
+                            <td>{{ task.process_sequence }}</td>
+                            <td>{{ task.process_name }}</td>
+                            <td>{{ task.device }}</td>
+                            <td>{{ task.completed|yesno:"是,否" }}</td>
+                            <td>{{ task.inspected|yesno:"是,否" }}</td>
+                            <td>
+                                <button class="btn btn-danger btn-sm delete-task" data-id="{{ task.id }}">删除</button>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {% include "includes/footer.html" %}
+</div>
+
+<!-- Include jQuery and Bootstrap JS if not already included -->
+<script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
+<script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+
+<!-- Add the script to handle the scheduling and modal updates -->
+<script>
+    $(document).ready(function () {
+        // Trigger the date picker change event on page load to show the default date results
+        $('#datePicker').trigger('change');
+
+        $('#datePicker').on('change', function () {
+            const selectedDate = $(this).val();
+            const selectedDateTime = new Date(selectedDate + 'T00:00:00'); // Assuming start of the day in local time
+
+            // Convert to UTC
+            const utcDateTime = new Date(selectedDateTime.getTime() - selectedDateTime.getTimezoneOffset() * 60000);
+
+            // Format UTC date as YYYY-MM-DD
+            const formattedDate = utcDateTime.toISOString().split('T')[0];
+
+            $.ajax({
+                url: "{% url 'filter_by_date' %}",
+                method: 'GET',
+                data: {
+                    date: formattedDate
+                },
+                success: function (response) {
+                    // Clear existing table body
+                    $('#resultTableBody').empty();
+
+                    // Append new rows
+                    response.tasks.forEach(function(task) {
+                        $('#resultTableBody').append(
+                            `<tr id="task-${task.id}">
+                                <td>${task.execution_time}</td>
+                                <td>${task.completion_time}</td>
+                                <td>${task.changeover}</td>
+                                <td>${task.order}</td>
+                                <td>${task.product}</td>
+                                <td>${task.process_sequence}</td>
+                                <td>${task.process_name}</td>
+                                <td>${task.device}</td>
+                                <td>${task.completed ? '是' : '否'}</td>
+                                <td>${task.inspected ? '是' : '否'}</td>
+                                <td>
+                                    <button class="btn btn-danger btn-sm delete-task" data-id="${task.id}">删除</button>
+                                </td>
+                            </tr>`
+                        );
+                    });
+                },
+                error: function (xhr, status, error) {
+                    alert('加载数据失败: ' + xhr.responseText);
+                }
+            });
+        });
+
+        $(document).on('click', '.delete-task', function () {
+            const taskId = $(this).data('id');
+            const row = $('#task-' + taskId);
+
+            $.ajax({
+                url: `/tasks/${taskId}/delete/`,
+                method: 'POST',
+                data: {
+                    csrfmiddlewaretoken: '{{ csrf_token }}'
+                },
+                success: function (response) {
+                    if (response.success) {
+                        row.remove();
+                    } else {
+                        alert('删除失败');
+                    }
+                },
+                error: function (xhr, status, error) {
+                    alert('删除失败: ' + xhr.responseText);
+                }
+            });
+        });
+    });
+</script>
+{% endblock content %}

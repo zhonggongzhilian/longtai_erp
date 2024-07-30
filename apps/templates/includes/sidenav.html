@@ -1,7 +1,7 @@
-<nav class="sidenav navbar navbar-vertical  fixed-left  navbar-expand-xs navbar-light bg-white" id="sidenav-main">
+<nav class="sidenav navbar navbar-vertical fixed-left navbar-expand-xs navbar-light bg-white" id="sidenav-main">
     <div class="scrollbar-inner">
         <!-- Brand -->
-        <div class="sidenav-header  align-items-center">
+        <div class="sidenav-header align-items-center">
             <a class="navbar-brand" href="/">
                 <img src="/static/assets/img/brand/zgzl.png" class="navbar-brand-img"
                      alt="Argon Design - Jinja Template Logo."> 中工智联
@@ -13,11 +13,19 @@
                 <!-- Nav items -->
                 <ul class="navbar-nav">
                     <li class="nav-item">
-                        <a class="nav-link {% if 'index' in segment %} active {% endif %}" href="/">
+                        <a class="nav-link {% if request.resolver_match.url_name == 'index' %} active {% endif %}" href="/">
                             <i class="ni ni-tv-2 text-primary"></i>
                             <span class="nav-link-text">数据看板</span>
                         </a>
                     </li>
+                    <li class="nav-item">
+                        <a class="nav-link {% if request.resolver_match.url_name == 'my_tasks' %} active {% endif %}"
+                           href="{% url 'my_tasks' %}">
+                            <i class="ni ni-single-02 text-pink"></i>
+                            <span class="nav-link-text">我的生产</span>
+                        </a>
+                    </li>
+                    {% if request.user.role == 'admin' %}
                     <li class="nav-item">
                         <a class="nav-link {% if request.resolver_match.url_name == 'result_list' %} active {% endif %}"
                            href="{% url 'result_list' %}">
@@ -25,6 +33,7 @@
                             <span class="nav-link-text">排产计划</span>
                         </a>
                     </li>
+                    {% endif %}
                     <li class="nav-item">
                         <a class="nav-link {% if request.resolver_match.url_name == 'order_list' %} active {% endif %}"
                            href="{% url 'order_list' %}">
@@ -47,12 +56,13 @@
                         </a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link {% if request.resolver_match.url_name == 'exchange_list' %} active {% endif %}"
+                        <a class="nav-link {% if request.resolver_match.url_name == 'device_list' %} active {% endif %}"
                            href="{% url 'device_list' %}">
                             <i class="ni ni-time-alarm text-red"></i>
                             <span class="nav-link-text">设备信息</span>
                         </a>
                     </li>
+                    {% if request.user.role == 'admin' %}
                     <li class="nav-item">
                         <a class="nav-link {% if request.resolver_match.url_name == 'user_list' %} active {% endif %}"
                            href="{% url 'user_list_list' %}">
@@ -60,7 +70,7 @@
                             <span class="nav-link-text">用户信息</span>
                         </a>
                     </li>
-
+                    {% endif %}
                 </ul>
                 <!-- Divider -->
                 <hr class="my-3">
@@ -70,7 +80,6 @@
                 </h6>
                 <!-- Navigation -->
                 <ul class="navbar-nav mb-md-3">
-
                     <li class="nav-item">
                         <a class="nav-link" href="{% url 'login' %}">
                             <i class="ni ni-key-25 text-info"></i>
@@ -83,7 +92,6 @@
                             <span class="nav-link-text">注册</span>
                         </a>
                     </li>
-
                     <li class="nav-item">
                         <a class="nav-link" href="{% url 'logout' %}">
                             <i class="ni ni-user-run text-red"></i>

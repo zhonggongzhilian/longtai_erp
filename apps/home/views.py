@@ -8,7 +8,6 @@ import os
 
 from django import template
 from django.contrib.auth import authenticate, login
-from django.contrib.auth.decorators import login_required
 from django.core.files.storage import FileSystemStorage
 from django.core.paginator import Paginator
 from django.http import HttpResponse, HttpResponseRedirect
@@ -17,15 +16,44 @@ from django.urls import reverse
 
 from .forms import LoginForm
 from .models import Order, OrderProduct
-from .models import Process, Raw, Device, Product
+from .models import Process, Raw, Product
 from .preprocess import preprocess_order, preprocess_product, preprocess_process, preprocess_device, preprocess_raw
 
 logger = logging.getLogger(__name__)
 
-from django.shortcuts import render, get_object_or_404, redirect
+from django.shortcuts import get_object_or_404, redirect
 from django.views.decorators.csrf import csrf_exempt
-from .models import CustomUser
 from .forms import SignUpForm, CustomUserChangeForm
+
+# views.py
+
+from django.shortcuts import render
+from django.contrib.auth.decorators import login_required
+from .models import Device, CustomUser
+
+
+@login_required
+def my_tasks(request):
+    user = request.user
+    if user.role == 'admin':
+        # Admins see all results
+        tasks = OrderProcessingResult.objects.all().order_by('execution_time')
+    else:
+        # Operators and Inspectors see only related tasks
+        related_device_names = Device.objects.filter(
+            operator=user
+        ).values_list('device_name', flat=True) | Device.objects.filter(
+            inspector=user
+        ).values_list('device_name', flat=True)
+        tasks = OrderProcessingResult.objects.filter(
+            device__in=related_device_names
+        ).order_by('execution_time')
+
+    context = {
+        'tasks': tasks,
+        'user': user,
+    }
+    return render(request, 'home/my_tasks.html', context)
 
 
 def user_list_list(request):
@@ -472,6 +500,7 @@ from datetime import datetime, timedelta
 from .models import OrderProcessingResult
 
 import pytz
+
 
 @csrf_exempt
 def filter_by_date(request):

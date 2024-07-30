@@ -50,4 +50,5 @@ urlpatterns = [
     path('users/create/', views.user_list_create, name='user_list_create'),
 
     path('filter_by_date/', views.filter_by_date, name='filter_by_date'),
+    path('my-tasks/', views.my_tasks, name='my_tasks'),
 ]
