@@ -8,10 +8,7 @@
         <div class="header-body">
             <div class="row align-items-center py-4">
                 <div class="col-lg-6 col-7">
-                    <h6 class="h2 text-white d-inline-block mb-0"></h6>
-                </div>
-                <div class="col-lg-6 col-5 text-right">
-                    <button class="btn btn-sm btn-neutral" id="scheduleButton">排产</button>
+                    <h6 class="h2 text-white d-inline-block mb-0">排产计划</h6>
                 </div>
             </div>
         </div>
@@ -43,14 +40,19 @@
     <div class="row">
         <div class="col">
             <div class="card">
-                <div class="card-header border-0">
-                    <h3 class="mb-0">排产计划表</h3>
-                </div>
                 <div class="card-body">
-                    <!-- Add date picker with default value -->
-                    <div class="form-group">
-                        <label for="datePicker">选择执行日期:</label>
-                        <input type="date" id="datePicker" class="form-control" value="2023-05-01">
+                    <div class="form-row align-items-center">
+                        <div class="col-auto">
+                            <label for="datePicker" class="col-form-label">选择执行日期:</label>
+                        </div>
+                        <div class="col-auto">
+                            <input type="date" id="datePicker" class="form-control" value="2023-05-01">
+                        </div>
+                        <div class="col-auto ml-auto">
+                            <button class="btn btn-danger" id="scheduleButton">
+                                排产
+                            </button>
+                        </div>
                     </div>
                 </div>
                 <div class="table-responsive">
@@ -90,8 +92,6 @@
             </div>
         </div>
     </div>
-
-    {% include "includes/footer.html" %}
 </div>
 
 <!-- Include jQuery and Bootstrap JS if not already included -->

@@ -128,17 +128,41 @@ def schedule_production():
                 # 计算预计完成时间
                 completion_time = get_next_working_time(current_time, process_duration)
 
+                # 赋值
+                task_execution_time = current_time.strftime('%Y-%m-%d %H:%M:%S')
+                task_completion_time = completion_time.strftime('%Y-%m-%d %H:%M:%S')
+                task_changeover = 'Yes' if changeover else 'No'
+                task_order = order.order_id
+                task_product = product_code
+                task_process_sequence = process_sequence
+                task_process_name = process.process_name
+                task_device = equipment
+
                 # 输出操作信息
                 results.append({
-                    'execution_time': current_time.strftime('%Y-%m-%d %H:%M:%S'),
-                    'completion_time': completion_time.strftime('%Y-%m-%d %H:%M:%S'),
-                    'changeover': 'Yes' if changeover else 'No',
-                    'order': order.order_id,
-                    'product': product_code,
-                    'process_sequence': process_sequence,
-                    'process_name': process.process_name,
-                    'device': equipment
+                    'execution_time': task_execution_time,
+                    'completion_time': task_completion_time,
+                    'changeover': task_changeover,
+                    'order': task_order,
+                    'product': task_product,
+                    'process_sequence': task_process_sequence,
+                    'process_name': task_process_name,
+                    'device': task_device
                 })
+
+                Tasks.objects.create(
+                    execution_time=task_execution_time,
+                    completion_time=task_completion_time,
+                    changeover=task_changeover,
+                    order=task_order,
+                    product=task_product,
+                    process_sequence=task_process_sequence,
+                    process_name=task_process_name,
+                    device=task_device
+                )
+                print(
+                    f"{task_execution_time=}|{task_completion_time=}|{task_changeover=}|{task_order=}|{task_product=}|"
+                    f"{task_process_sequence=}|{task_process_name=}|{task_device=}")
 
                 # 更新设备的毛坯信息
                 if device:
@@ -146,20 +170,6 @@ def schedule_production():
 
                 # 更新当前时间为完成时间
                 current_time = completion_time
-
-    # 打印排产结果
-    for result in results:
-        print(f"Process Sequence: {result['process_sequence']}")
-        print(f"Execution Time: {result['execution_time']}")
-        print(f"Expected Completion Time: {result['completion_time']}")
-        print(f"Changeover: {result['changeover']}")
-        print(f"Order ID: {result['order']}")
-        print(f"Product Code: {result['product']}")
-        print(f"Process Name: {result['process_name']}")
-        print(f"Device: {result['device']}")
-        print("-----")
-
-    save_production_results(results)
 
 
 def save_production_results(results):

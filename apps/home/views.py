@@ -11,6 +11,7 @@ import pytz
 from django import template
 from django.contrib.auth import authenticate, login
 from django.contrib.auth.decorators import login_required
+from django.core.exceptions import ValidationError
 from django.core.files.storage import FileSystemStorage
 from django.core.paginator import Paginator
 from django.http import HttpResponse, HttpResponseRedirect
@@ -96,9 +97,6 @@ def user_list_delete(request, user_id):
         user = get_object_or_404(CustomUser, id=user_id)
         user.delete()
         return JsonResponse({'status': 'success'})
-
-
-from django.core.exceptions import ValidationError
 
 
 @csrf_exempt
