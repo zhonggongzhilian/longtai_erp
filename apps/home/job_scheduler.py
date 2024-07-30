@@ -1,6 +1,6 @@
 from datetime import datetime, timedelta
 
-from .models import Order, OrderProduct, Process, Product, Device, OrderProcessingResult
+from .models import Order, OrderProduct, Process, Product, Device, Tasks
 
 # 定义工作时间范围
 WORK_START_MORNING = 9
@@ -167,7 +167,7 @@ def save_production_results(results):
     保存生产结果到数据库
     """
     for result in results:
-        OrderProcessingResult.objects.create(
+        Tasks.objects.create(
             execution_time=result['execution_time'],
             completion_time=result['completion_time'],
             changeover=result['changeover'],

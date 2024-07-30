@@ -5,31 +5,35 @@ Copyright (c) 2019 - present AppSeed.us
 
 import logging
 import os
+from datetime import datetime, timedelta
 
+import pytz
 from django import template
 from django.contrib.auth import authenticate, login
+from django.contrib.auth.decorators import login_required
 from django.core.files.storage import FileSystemStorage
 from django.core.paginator import Paginator
 from django.http import HttpResponse, HttpResponseRedirect
+from django.http import JsonResponse
+from django.shortcuts import get_object_or_404, redirect
+from django.shortcuts import render
 from django.template import loader
 from django.urls import reverse
+from django.utils.dateparse import parse_date
+from django.views.decorators.csrf import csrf_exempt
+from django.views.decorators.http import require_POST
 
 from .forms import LoginForm
+from .forms import SignUpForm, CustomUserChangeForm
+from .models import Device, CustomUser
 from .models import Order, OrderProduct
 from .models import Process, Raw, Product
+from .models import Tasks
 from .preprocess import preprocess_order, preprocess_product, preprocess_process, preprocess_device, preprocess_raw
-
-logger = logging.getLogger(__name__)
-
-from django.shortcuts import get_object_or_404, redirect
-from django.views.decorators.csrf import csrf_exempt
-from .forms import SignUpForm, CustomUserChangeForm
 
 # views.py
 
-from django.shortcuts import render
-from django.contrib.auth.decorators import login_required
-from .models import Device, CustomUser
+logger = logging.getLogger(__name__)
 
 
 @login_required
@@ -37,7 +41,7 @@ def my_tasks(request):
     user = request.user
     if user.role == 'admin':
         # Admins see all results
-        tasks = OrderProcessingResult.objects.all().order_by('execution_time')
+        tasks = Tasks.objects.all().order_by('execution_time')
     else:
         # Operators and Inspectors see only related tasks
         related_device_names = Device.objects.filter(
@@ -45,7 +49,7 @@ def my_tasks(request):
         ).values_list('device_name', flat=True) | Device.objects.filter(
             inspector=user
         ).values_list('device_name', flat=True)
-        tasks = OrderProcessingResult.objects.filter(
+        tasks = Tasks.objects.filter(
             device__in=related_device_names
         ).order_by('execution_time')
 
@@ -472,13 +476,13 @@ def raw_delete(request, pk):
 
 
 def result_list(request):
-    results = OrderProcessingResult.objects.all()
+    results = Tasks.objects.all()
     return render(request, 'home/result_list.html', {'results': results})
 
 
 def delete_result(request, result_id):
     if request.method == 'POST':
-        result = OrderProcessingResult.objects.get(id=result_id)
+        result = Tasks.objects.get(id=result_id)
         result.delete()
         return JsonResponse({'success': True})
     return JsonResponse({'success': False})
@@ -487,19 +491,10 @@ def delete_result(request, result_id):
 def process_schedule(request):
     from .job_scheduler import schedule_production
     if request.method == 'POST':
-        OrderProcessingResult.objects.all().delete()  # 清空 OrderProcessingResult 表
+        Tasks.objects.all().delete()  # 清空 OrderProcessingResult 表
         schedule_production()  # 重新计算排产结果
         return JsonResponse({'success': True})
     return JsonResponse({'success': False})
-
-
-from django.http import JsonResponse
-from django.views.decorators.csrf import csrf_exempt
-from django.utils.dateparse import parse_date
-from datetime import datetime, timedelta
-from .models import OrderProcessingResult
-
-import pytz
 
 
 @csrf_exempt
@@ -514,7 +509,7 @@ def filter_by_date(request):
             end_datetime = start_datetime + timedelta(days=1)
 
             # Filter results within the selected date
-            results = OrderProcessingResult.objects.filter(
+            results = Tasks.objects.filter(
                 execution_time__range=(start_datetime, end_datetime)
             ).values()
 
@@ -523,14 +518,14 @@ def filter_by_date(request):
 
 
 def mark_complete(request, id):
-    task = OrderProcessingResult.objects.get(pk=id)
+    task = Tasks.objects.get(pk=id)
     task.completed = True
     task.save()
     return JsonResponse({'success': True})
 
 
 def mark_not_complete(request, id):
-    task = OrderProcessingResult.objects.get(pk=id)
+    task = Tasks.objects.get(pk=id)
     if task:
         task.completed = False
         task.save()
@@ -539,22 +534,20 @@ def mark_not_complete(request, id):
 
 
 def mark_inspected(request, id):
-    task = OrderProcessingResult.objects.get(pk=id)
+    task = Tasks.objects.get(pk=id)
     task.inspected = True
     task.save()
     return JsonResponse({'success': True})
 
 
 def mark_not_inspected(request, id):
-    task = OrderProcessingResult.objects.get(pk=id)
+    task = Tasks.objects.get(pk=id)
     if task:
         task.inspected = False
         task.save()
         return JsonResponse({'success': True})
     return JsonResponse({'success': False}, status=400)
 
-
-from django.views.decorators.http import require_POST
 
 @require_POST
 @csrf_exempt
@@ -567,7 +560,7 @@ def add_urgent_task(request):
     process_name = request.POST.get('process_name')
     device = request.POST.get('device')
 
-    task = OrderProcessingResult.objects.create(
+    task = Tasks.objects.create(
         execution_time=execution_time,
         completion_time=completion_time,
         order=order,

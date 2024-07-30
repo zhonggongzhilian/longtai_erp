@@ -5,6 +5,7 @@ from django.contrib.auth.forms import UserChangeForm
 from django.contrib.auth.forms import UserCreationForm
 
 from .models import CustomUser
+from .models import Tasks
 
 
 class LoginForm(forms.Form):
@@ -97,13 +98,9 @@ class CustomUserCreationForm(UserCreationForm):
         fields = ('username', 'email', 'phone_number', 'role')
 
 
-from django import forms
-from .models import OrderProcessingResult
-
-
 class TaskForm(forms.ModelForm):
     class Meta:
-        model = OrderProcessingResult
+        model = Tasks
         fields = [
             'execution_time',
             'completion_time',

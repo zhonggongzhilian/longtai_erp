@@ -4,6 +4,8 @@ from django.contrib.auth.models import AbstractUser
 
 from django.db import models
 
+from django.utils import timezone
+
 
 class CustomUser(AbstractUser):
     """
@@ -233,12 +235,7 @@ class Process(models.Model):
     last_process = models.BooleanField(default=False)
 
 
-from django.db import models
-
-from django.utils import timezone
-
-
-class OrderProcessingResult(models.Model):
+class Tasks(models.Model):
     execution_time = models.DateTimeField(default=timezone.now)  # 使用带时区的时间
     completion_time = models.DateTimeField(default=timezone.now)  # 使用带时区的时间
     changeover = models.CharField(max_length=3, default='No')
