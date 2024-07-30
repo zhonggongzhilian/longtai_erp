@@ -68,6 +68,7 @@ class Order(models.Model):
     remark = models.TextField(blank=True, null=True)
     delivery_method = models.CharField(max_length=255, blank=True, null=True)
     print_count = models.IntegerField(blank=True, null=True)
+    done = models.BooleanField(default=False)
 
     def __str__(self):
         return self.order_id
@@ -143,6 +144,7 @@ class OrderProduct(models.Model):
     custom_column_three = models.CharField(max_length=255, blank=True, null=True)
     custom_column_four = models.CharField(max_length=255, blank=True, null=True)
     custom_column_five = models.CharField(max_length=255, blank=True, null=True)
+    done = models.BooleanField(default=False)
 
     def __str__(self):
         return f"{self.order.order_id} - {self.product_code}"
@@ -227,6 +229,8 @@ class Process(models.Model):
     duration = models.FloatField(null=True, blank=True, default=0.0)
     equipment = models.CharField(max_length=255, null=True, blank=True, default='')
     completion_date = models.CharField(max_length=255, null=True, blank=True, default='')
+    done = models.BooleanField(default=False)
+    last_process = models.BooleanField(default=False)
 
 
 from django.db import models

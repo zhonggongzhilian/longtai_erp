@@ -520,3 +520,17 @@ def filter_by_date(request):
 
             return JsonResponse({'results': list(results)})
         return JsonResponse({'results': []})
+
+
+def mark_complete(request, id):
+    task = OrderProduct.objects.get(pk=id)
+    task.completed = True
+    task.save()
+    return JsonResponse({'success': True})
+
+
+def mark_inspected(request, id):
+    task = OrderProduct.objects.get(pk=id)
+    task.inspected = True
+    task.save()
+    return JsonResponse({'success': True})

@@ -128,48 +128,48 @@
         });
 
         $('#datePicker').on('change', function () {
-        const selectedDate = $(this).val();
-        const selectedDateTime = new Date(selectedDate + 'T00:00:00'); // Assuming start of the day in local time
+            const selectedDate = $(this).val();
+            const selectedDateTime = new Date(selectedDate + 'T00:00:00'); // Assuming start of the day in local time
 
-        // Convert to UTC
-        const utcDateTime = new Date(selectedDateTime.getTime() - selectedDateTime.getTimezoneOffset() * 60000);
+            // Convert to UTC
+            const utcDateTime = new Date(selectedDateTime.getTime() - selectedDateTime.getTimezoneOffset() * 60000);
 
-        // Format UTC date as YYYY-MM-DD
-        const formattedDate = utcDateTime.toISOString().split('T')[0];
+            // Format UTC date as YYYY-MM-DD
+            const formattedDate = utcDateTime.toISOString().split('T')[0];
 
-        $.ajax({
-            url: "{% url 'filter_by_date' %}",
-            method: 'GET',
-            data: {
-                date: formattedDate
-            },
-            success: function (response) {
-                // Clear existing table body
-                $('#resultTableBody').empty();
+            $.ajax({
+                url: "{% url 'filter_by_date' %}",
+                method: 'GET',
+                data: {
+                    date: formattedDate
+                },
+                success: function (response) {
+                    // Clear existing table body
+                    $('#resultTableBody').empty();
 
-                // Append new rows
-                response.results.forEach(function(result) {
-                    $('#resultTableBody').append(
-                        `<tr id="result-${result.id}">
-                            <td>${result.execution_time}</td>
-                            <td>${result.completion_time}</td>
-                            <td>${result.changeover}</td>
-                            <td>${result.order}</td>
-                            <td>${result.product}</td>
-                            <td>${result.process_sequence}</td>
-                            <td>${result.process_name}</td>
-                            <td>${result.device}</td>
-                            <td>${result.completed ? '是' : '否'}</td>
-                            <td>${result.inspected ? '是' : '否'}</td>
-                        </tr>`
-                    );
-                });
-            },
-            error: function (xhr, status, error) {
-                alert('加载数据失败: ' + xhr.responseText);
-            }
+                    // Append new rows
+                    response.results.forEach(function(result) {
+                        $('#resultTableBody').append(
+                            `<tr id="result-${result.id}">
+                                <td>${result.execution_time}</td>
+                                <td>${result.completion_time}</td>
+                                <td>${result.changeover}</td>
+                                <td>${result.order}</td>
+                                <td>${result.product}</td>
+                                <td>${result.process_sequence}</td>
+                                <td>${result.process_name}</td>
+                                <td>${result.device}</td>
+                                <td>${result.completed ? '是' : '否'}</td>
+                                <td>${result.inspected ? '是' : '否'}</td>
+                            </tr>`
+                        );
+                    });
+                },
+                error: function (xhr, status, error) {
+                    alert('加载数据失败: ' + xhr.responseText);
+                }
+            });
         });
-    });
 
         $('.delete-result').on('click', function () {
             const resultId = $(this).data('id');

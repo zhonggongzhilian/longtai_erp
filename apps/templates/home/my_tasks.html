@@ -19,38 +19,18 @@
     </div>
 </div>
 
-<!-- Add the modal HTML at the end of the body or a suitable place in the template -->
-<div class="modal fade" id="processingModal" tabindex="-1" role="dialog" aria-labelledby="processingModalLabel" aria-hidden="true">
-    <div class="modal-dialog" role="document">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title" id="processingModalLabel">状态</h5>
-                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                    <span aria-hidden="true">&times;</span>
-                </button>
-            </div>
-            <div class="modal-body" id="processingModalBody">
-                正在排产...
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-dismiss="modal">关闭</button>
-            </div>
-        </div>
-    </div>
-</div>
-
 <div class="container-fluid mt--6">
     <div class="row">
         <div class="col">
             <div class="card">
-                <div class="card-header border-0">
-                    <h3 class="mb-0">任务计划表</h3>
-                </div>
                 <div class="card-body">
-                    <!-- Add date picker with default value -->
-                    <div class="form-group">
-                        <label for="datePicker">选择执行日期:</label>
-                        <input type="date" id="datePicker" class="form-control" value="2023-05-01">
+                    <div class="form-row align-items-center">
+                        <div class="col-auto">
+                            <label for="datePicker" class="col-form-label">选择执行日期:</label>
+                        </div>
+                        <div class="col-auto">
+                            <input type="date" id="datePicker" class="form-control" value="2023-05-01">
+                        </div>
                     </div>
                 </div>
                 <div class="table-responsive">
@@ -65,14 +45,21 @@
                             <th scope="col">工序号</th>
                             <th scope="col">工序名称</th>
                             <th scope="col">设备</th>
-                            <th scope="col">是否完成</th>
-                            <th scope="col">是否检查</th>
-                            <th scope="col">操作</th>
+                            <th scope="col">完成状态</th>
+                            <th scope="col">检查状态</th>
+                            {% if request.user.role == 'operator' %}
+                            <th scope="col">完成操作</th>
+                            {% elif request.user.role == 'inspector' %}
+                            <th scope="col">完成检查</th>
+                            {% elif request.user.role == 'admin' %}
+                            <th scope="col">完成操作</th>
+                            <th scope="col">完成检查</th>
+                            {% endif %}
                         </tr>
                         </thead>
                         <tbody id="resultTableBody">
                         {% for task in tasks %}
-                        <tr id="task-{{ task.id }}">
+                        <tr class="task-row" data-id="{{ task.id }}" data-execution-time="{{ task.execution_time }}">
                             <td>{{ task.execution_time }}</td>
                             <td>{{ task.completion_time }}</td>
                             <td>{{ task.changeover }}</td>
@@ -83,9 +70,22 @@
                             <td>{{ task.device }}</td>
                             <td>{{ task.completed|yesno:"是,否" }}</td>
                             <td>{{ task.inspected|yesno:"是,否" }}</td>
+                            {% if request.user.role == 'operator' %}
                             <td>
-                                <button class="btn btn-danger btn-sm delete-task" data-id="{{ task.id }}">删除</button>
+                                <button class="btn btn-success btn-sm mark-complete" data-id="{{ task.id }}">生产完成</button>
                             </td>
+                            {% elif request.user.role == 'inspector' %}
+                            <td>
+                                <button class="btn btn-info btn-sm mark-inspected" data-id="{{ task.id }}">检查完成</button>
+                            </td>
+                            {% elif request.user.role == 'admin' %}
+                            <td>
+                                <button class="btn btn-success btn-sm mark-complete" data-id="{{ task.id }}">生产完成</button>
+                            </td>
+                            <td>
+                                <button class="btn btn-info btn-sm mark-inspected" data-id="{{ task.id }}">检查完成</button>
+                            </td>
+                            {% endif %}
                         </tr>
                         {% endfor %}
                         </tbody>
@@ -98,53 +98,52 @@
     {% include "includes/footer.html" %}
 </div>
 
-<!-- Include jQuery and Bootstrap JS if not already included -->
 <script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
 <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
 
-<!-- Add the script to handle the scheduling and modal updates -->
 <script>
     $(document).ready(function () {
-        // Trigger the date picker change event on page load to show the default date results
-        $('#datePicker').trigger('change');
-
         $('#datePicker').on('change', function () {
             const selectedDate = $(this).val();
-            const selectedDateTime = new Date(selectedDate + 'T00:00:00'); // Assuming start of the day in local time
-
-            // Convert to UTC
+            const selectedDateTime = new Date(selectedDate + 'T00:00:00');
             const utcDateTime = new Date(selectedDateTime.getTime() - selectedDateTime.getTimezoneOffset() * 60000);
-
-            // Format UTC date as YYYY-MM-DD
             const formattedDate = utcDateTime.toISOString().split('T')[0];
 
             $.ajax({
                 url: "{% url 'filter_by_date' %}",
                 method: 'GET',
-                data: {
-                    date: formattedDate
-                },
+                data: { date: formattedDate },
                 success: function (response) {
-                    // Clear existing table body
                     $('#resultTableBody').empty();
-
-                    // Append new rows
-                    response.tasks.forEach(function(task) {
+                    response.results.forEach(function(result) {
                         $('#resultTableBody').append(
-                            `<tr id="task-${task.id}">
-                                <td>${task.execution_time}</td>
-                                <td>${task.completion_time}</td>
-                                <td>${task.changeover}</td>
-                                <td>${task.order}</td>
-                                <td>${task.product}</td>
-                                <td>${task.process_sequence}</td>
-                                <td>${task.process_name}</td>
-                                <td>${task.device}</td>
-                                <td>${task.completed ? '是' : '否'}</td>
-                                <td>${task.inspected ? '是' : '否'}</td>
+                            `<tr class="task-row" data-id="${result.id}" data-execution-time="${result.execution_time}">
+                                <td>${result.execution_time}</td>
+                                <td>${result.completion_time}</td>
+                                <td>${result.changeover}</td>
+                                <td>${result.order}</td>
+                                <td>${result.product}</td>
+                                <td>${result.process_sequence}</td>
+                                <td>${result.process_name}</td>
+                                <td>${result.device}</td>
+                                <td>${result.completed ? '是' : '否'}</td>
+                                <td>${result.inspected ? '是' : '否'}</td>
+                                {% if user.role == 'Operator' %}
                                 <td>
-                                    <button class="btn btn-danger btn-sm delete-task" data-id="${task.id}">删除</button>
+                                    <button class="btn btn-success btn-sm mark-complete" data-id="${result.id}">标记为完成</button>
                                 </td>
+                                {% elif user.role == 'Inspector' %}
+                                <td>
+                                    <button class="btn btn-info btn-sm mark-inspected" data-id="${result.id}">标记为检查完成</button>
+                                </td>
+                                {% elif user.role == 'Administrator' %}
+                                <td>
+                                    <button class="btn btn-success btn-sm mark-complete" data-id="${result.id}">标记为完成</button>
+                                </td>
+                                <td>
+                                    <button class="btn btn-info btn-sm mark-inspected" data-id="${result.id}">标记为检查完成</button>
+                                </td>
+                                {% endif %}
                             </tr>`
                         );
                     });
@@ -155,25 +154,48 @@
             });
         });
 
-        $(document).on('click', '.delete-task', function () {
+        $(document).on('click', '.mark-complete', function () {
             const taskId = $(this).data('id');
-            const row = $('#task-' + taskId);
+            const row = $(this).closest('tr');
 
             $.ajax({
-                url: `/tasks/${taskId}/delete/`,
+                url: `/tasks/${taskId}/mark-complete/`,
                 method: 'POST',
                 data: {
                     csrfmiddlewaretoken: '{{ csrf_token }}'
                 },
                 success: function (response) {
                     if (response.success) {
-                        row.remove();
+                        row.find('td:nth-child(9)').text('是'); // Update completion status
                     } else {
-                        alert('删除失败');
+                        alert('标记为完成失败');
                     }
                 },
                 error: function (xhr, status, error) {
-                    alert('删除失败: ' + xhr.responseText);
+                    alert('标记为完成失败: ' + xhr.responseText);
+                }
+            });
+        });
+
+        $(document).on('click', '.mark-inspected', function () {
+            const taskId = $(this).data('id');
+            const row = $(this).closest('tr');
+
+            $.ajax({
+                url: `/tasks/${taskId}/mark-inspected/`,
+                method: 'POST',
+                data: {
+                    csrfmiddlewaretoken: '{{ csrf_token }}'
+                },
+                success: function (response) {
+                    if (response.success) {
+                        row.find('td:nth-child(10)').text('是'); // Update inspected status
+                    } else {
+                        alert('标记为检查完成失败');
+                    }
+                },
+                error: function (xhr, status, error) {
+                    alert('标记为检查完成失败: ' + xhr.responseText);
                 }
             });
         });
