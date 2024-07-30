@@ -95,3 +95,35 @@ class CustomUserCreationForm(UserCreationForm):
     class Meta:
         model = CustomUser
         fields = ('username', 'email', 'phone_number', 'role')
+
+
+from django import forms
+from .models import OrderProcessingResult
+
+
+class TaskForm(forms.ModelForm):
+    class Meta:
+        model = OrderProcessingResult
+        fields = [
+            'execution_time',
+            'completion_time',
+            'order',
+            'product',
+            'process_sequence',
+            'process_name',
+            'device'
+        ]
+        widgets = {
+            'execution_time': forms.DateTimeInput(attrs={'type': 'datetime-local'}),
+            'completion_time': forms.DateTimeInput(attrs={'type': 'datetime-local'}),
+        }
+
+    def __init__(self, *args, **kwargs):
+        super(TaskForm, self).__init__(*args, **kwargs)
+        self.fields['execution_time'].widget.attrs.update({'class': 'form-control'})
+        self.fields['completion_time'].widget.attrs.update({'class': 'form-control'})
+        self.fields['order'].widget.attrs.update({'class': 'form-control'})
+        self.fields['product'].widget.attrs.update({'class': 'form-control'})
+        self.fields['process_sequence'].widget.attrs.update({'class': 'form-control'})
+        self.fields['process_name'].widget.attrs.update({'class': 'form-control'})
+        self.fields['device'].widget.attrs.update({'class': 'form-control'})

@@ -552,3 +552,31 @@ def mark_not_inspected(request, id):
         task.save()
         return JsonResponse({'success': True})
     return JsonResponse({'success': False}, status=400)
+
+
+from django.views.decorators.http import require_POST
+
+@require_POST
+@csrf_exempt
+def add_urgent_task(request):
+    execution_time = request.POST.get('execution_time')
+    completion_time = request.POST.get('completion_time')
+    order = request.POST.get('order')
+    product = request.POST.get('product')
+    process_sequence = request.POST.get('process_sequence')
+    process_name = request.POST.get('process_name')
+    device = request.POST.get('device')
+
+    task = OrderProcessingResult.objects.create(
+        execution_time=execution_time,
+        completion_time=completion_time,
+        order=order,
+        product=product,
+        process_sequence=process_sequence,
+        process_name=process_name,
+        device=device,
+        completed=False,
+        inspected=False
+    )
+
+    return JsonResponse({'success': True, 'task_id': task.id})

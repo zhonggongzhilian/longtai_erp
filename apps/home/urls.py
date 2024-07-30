@@ -56,4 +56,6 @@ urlpatterns = [
     path('tasks/<int:id>/mark-not-complete/', views.mark_not_complete, name='mark_complete'),
     path('tasks/<int:id>/mark-inspected/', views.mark_inspected, name='mark_inspected'),
     path('tasks/<int:id>/mark-not-inspected/', views.mark_not_inspected, name='mark_inspected'),
+
+    path('tasks/add-urgent/', views.add_urgent_task, name='add_urgent_task'),
 ]

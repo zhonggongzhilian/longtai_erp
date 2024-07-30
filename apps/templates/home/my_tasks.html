@@ -31,6 +31,11 @@
                         <div class="col-auto">
                             <input type="date" id="datePicker" class="form-control" value="2023-05-01">
                         </div>
+                        <div class="col-auto ml-auto">
+                            <button class="btn btn-danger" data-toggle="modal" data-target="#addUrgentTaskModal">
+                                添加紧急任务
+                            </button>
+                        </div>
                     </div>
                 </div>
                 <div class="table-responsive">
@@ -57,7 +62,8 @@
                         </thead>
                         <tbody id="resultTableBody">
                         {% for task in tasks %}
-                        <tr class="task-row {% if task.completed and task.inspected %}completed-and-inspected-task{% elif task.completed %}completed-task{% elif task.inspected %}inspected-task{% endif %}" data-id="{{ task.id }}" data-execution-time="{{ task.execution_time }}">
+                        <tr class="task-row {% if task.completed and task.inspected %}completed-and-inspected-task{% elif task.completed %}completed-task{% elif task.inspected %}inspected-task{% endif %}"
+                            data-id="{{ task.id }}" data-execution-time="{{ task.execution_time }}">
                             <td>{{ task.execution_time }}</td>
                             <td>{{ task.completion_time }}</td>
                             <td>{{ task.changeover }}</td>
@@ -71,32 +77,44 @@
                             {% if request.user.role == 'operator' %}
                             <td>
                                 {% if task.completed %}
-                                <button class="btn btn-warning btn-sm mark-not-complete" data-id="{{ task.id }}">未生产完成</button>
+                                <button class="btn btn-warning btn-sm mark-not-complete" data-id="{{ task.id }}">
+                                    未生产完成
+                                </button>
                                 {% else %}
-                                <button class="btn btn-success btn-sm mark-complete" data-id="{{ task.id }}">生产完成</button>
+                                <button class="btn btn-success btn-sm mark-complete" data-id="{{ task.id }}">生产完成
+                                </button>
                                 {% endif %}
                             </td>
                             {% elif request.user.role == 'inspector' %}
                             <td>
                                 {% if task.inspected %}
-                                <button class="btn btn-warning btn-sm mark-not-inspected" data-id="{{ task.id }}">未检查完成</button>
+                                <button class="btn btn-warning btn-sm mark-not-inspected" data-id="{{ task.id }}">
+                                    未检查完成
+                                </button>
                                 {% else %}
-                                <button class="btn btn-info btn-sm mark-inspected" data-id="{{ task.id }}">检查完成</button>
+                                <button class="btn btn-info btn-sm mark-inspected" data-id="{{ task.id }}">检查完成
+                                </button>
                                 {% endif %}
                             </td>
                             {% elif request.user.role == 'admin' %}
                             <td>
                                 {% if task.completed %}
-                                <button class="btn btn-warning btn-sm mark-not-complete" data-id="{{ task.id }}">未生产完成</button>
+                                <button class="btn btn-warning btn-sm mark-not-complete" data-id="{{ task.id }}">
+                                    未生产完成
+                                </button>
                                 {% else %}
-                                <button class="btn btn-success btn-sm mark-complete" data-id="{{ task.id }}">生产完成</button>
+                                <button class="btn btn-success btn-sm mark-complete" data-id="{{ task.id }}">生产完成
+                                </button>
                                 {% endif %}
                             </td>
                             <td>
                                 {% if task.inspected %}
-                                <button class="btn btn-warning btn-sm mark-not-inspected" data-id="{{ task.id }}">未检查完成</button>
+                                <button class="btn btn-warning btn-sm mark-not-inspected" data-id="{{ task.id }}">
+                                    未检查完成
+                                </button>
                                 {% else %}
-                                <button class="btn btn-info btn-sm mark-inspected" data-id="{{ task.id }}">检查完成</button>
+                                <button class="btn btn-info btn-sm mark-inspected" data-id="{{ task.id }}">检查完成
+                                </button>
                                 {% endif %}
                             </td>
                             {% endif %}
@@ -108,8 +126,55 @@
             </div>
         </div>
     </div>
+</div>
 
-    {% include "includes/footer.html" %}
+<div class="modal fade" id="addUrgentTaskModal" tabindex="-1" role="dialog" aria-labelledby="addUrgentTaskModalLabel" aria-hidden="true">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="addUrgentTaskModalLabel">添加紧急任务</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <form id="addUrgentTaskForm">
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label for="executionTime">执行时间</label>
+                        <input type="datetime-local" class="form-control" id="executionTime" name="execution_time" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="completionTime">完成时间</label>
+                        <input type="datetime-local" class="form-control" id="completionTime" name="completion_time" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="order">订单</label>
+                        <input type="text" class="form-control" id="order" name="order" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="product">产品</label>
+                        <input type="text" class="form-control" id="product" name="product" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="processSequence">工序号</label>
+                        <input type="text" class="form-control" id="processSequence" name="process_sequence" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="processName">工序名称</label>
+                        <input type="text" class="form-control" id="processName" name="process_name" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="device">设备</label>
+                        <input type="text" class="form-control" id="device" name="device" required>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">关闭</button>
+                    <button type="submit" class="btn btn-primary">添加任务</button>
+                </div>
+            </form>
+        </div>
+    </div>
 </div>
 
 <style>
@@ -279,7 +344,32 @@
                 }
             });
         });
+
+        $('#addUrgentTaskForm').on('submit', function (e) {
+        e.preventDefault();
+        const formData = $(this).serialize();
+
+        $.ajax({
+            url: "{% url 'add_urgent_task' %}",
+            method: 'POST',
+            data: formData,
+            success: function (response) {
+                if (response.success) {
+                    alert('任务添加成功');
+                    $('#addUrgentTaskModal').modal('hide');
+                    // Optionally, you can add the new task to the table here or refresh the page
+                } else {
+                    alert('任务添加失败');
+                }
+            },
+            error: function (xhr, status, error) {
+                alert('任务添加失败: ' + xhr.responseText);
+            }
+        });
     });
+    });
+
+
 </script>
 
 {% endblock content %}
