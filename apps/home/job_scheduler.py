@@ -80,7 +80,7 @@ def update_device_raw(device_name, new_raw_code):
     """
     device = Device.objects.filter(device_name=device_name).first()
     if device:
-        device.raw = new_raw_code
+        device.raw_code = new_raw_code
         device.save()
 
 
@@ -102,7 +102,7 @@ def schedule_production():
         for product in order_products:
             product_code = product.product_code
             try:
-                product_raw_code = Product.objects.filter(product_code=product_code).first().raw.raw_code
+                product_raw_code = Product.objects.filter(product_code=product_code).first().raw_code.raw_code
             except AttributeError as e:
                 product_raw_code = "TG-VH-2-50-C"
             processes = get_processes_for_product(product_code)
@@ -110,13 +110,13 @@ def schedule_production():
             current_time = start_time
 
             for process in processes:
-                process_duration = process.duration
-                equipment = process.equipment
+                process_duration = process.process_duration
+                equipment = process.device_name
                 process_sequence = process.process_sequence
 
                 # 获取设备当前的毛坯
                 device = Device.objects.filter(device_name=equipment).first()
-                device_raw_code = device.raw if device else None
+                device_raw_code = device.raw_code if device else None
 
                 # 判断是否需要换型
                 changeover = False

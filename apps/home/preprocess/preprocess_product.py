@@ -14,12 +14,18 @@ def preprocess_product(file_path):
 
     with transaction.atomic():
         for index, row in df.iterrows():
-            if pd.notna(row['Weight重量(kg)']):
-                product_code = row['PartNumber零件号码']
-                weight = row['Weight重量(kg)']
+            if pd.notna(row['净重（KG)']):
+                product_code = row['商品编码'].strip()
+                product_name = row['商品编码'].strip()
+                product_kind = row['商品类别'].strip()
+                raw_code = row['毛坯编码'].strip()
+                weight = row['净重（KG)'].strip()
                 if not Product.objects.filter(product_code=product_code).exists():
                     Product.objects.create(
-                        product_code=product_code.strip(),
+                        product_code=product_code,
+                        product_name=product_name,
+                        product_kind=product_kind,
+                        raw_code=raw_code,
                         weight=float(weight)
                     )
                     logger.info(f"Create {product_code} weight {weight}")

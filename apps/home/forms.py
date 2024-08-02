@@ -5,7 +5,7 @@ from django.contrib.auth.forms import UserChangeForm
 from django.contrib.auth.forms import UserCreationForm
 
 from .models import CustomUser
-from .models import Tasks
+from .models import Task
 
 
 class LoginForm(forms.Form):
@@ -100,27 +100,27 @@ class CustomUserCreationForm(UserCreationForm):
 
 class TaskForm(forms.ModelForm):
     class Meta:
-        model = Tasks
+        model = Task
         fields = [
-            'execution_time',
-            'completion_time',
-            'order',
-            'product',
-            'process_sequence',
+            'task_start_time',
+            'task_end_time',
+            'order_code',
+            'product_code',
+            'process_i',
             'process_name',
-            'device'
+            'device_name'
         ]
         widgets = {
-            'execution_time': forms.DateTimeInput(attrs={'type': 'datetime-local'}),
-            'completion_time': forms.DateTimeInput(attrs={'type': 'datetime-local'}),
+            'task_start_time': forms.DateTimeInput(attrs={'type': 'datetime-local'}),
+            'task_end_time': forms.DateTimeInput(attrs={'type': 'datetime-local'}),
         }
 
     def __init__(self, *args, **kwargs):
         super(TaskForm, self).__init__(*args, **kwargs)
-        self.fields['execution_time'].widget.attrs.update({'class': 'form-control'})
-        self.fields['completion_time'].widget.attrs.update({'class': 'form-control'})
-        self.fields['order'].widget.attrs.update({'class': 'form-control'})
-        self.fields['product'].widget.attrs.update({'class': 'form-control'})
-        self.fields['process_sequence'].widget.attrs.update({'class': 'form-control'})
+        self.fields['task_start_time'].widget.attrs.update({'class': 'form-control'})
+        self.fields['task_end_time'].widget.attrs.update({'class': 'form-control'})
+        self.fields['order_code'].widget.attrs.update({'class': 'form-control'})
+        self.fields['product_code'].widget.attrs.update({'class': 'form-control'})
+        self.fields['process_i'].widget.attrs.update({'class': 'form-control'})
         self.fields['process_name'].widget.attrs.update({'class': 'form-control'})
-        self.fields['device'].widget.attrs.update({'class': 'form-control'})
+        self.fields['device_name'].widget.attrs.update({'class': 'form-control'})

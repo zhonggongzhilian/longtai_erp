@@ -36,9 +36,7 @@
                             <tr>
                                 <th scope="col">商品编号</th>
                                 <th scope="col">商品名称</th>
-                                <th scope="col">数量</th>
-                                <th scope="col">销售单价</th>
-                                <th scope="col">金额</th>
+                                <th scope="col">数量</th>q
                             </tr>
                         </thead>
                         <tbody class="list">
@@ -47,8 +45,6 @@
                                 <td>{{ product.product_code }}</td>
                                 <td>{{ product.product_name }}</td>
                                 <td>{{ product.quantity }}</td>
-                                <td>{{ product.sale_price }}</td>
-                                <td>{{ product.quantity|multiply:product.sale_price }}</td>
                             </tr>
                             {% endfor %}
                         </tbody>

@@ -31,7 +31,7 @@ def insert_product(product_code, product_category, raw_code):
         )
         if not created:
             product.product_category = product_category
-            product.raw = raw
+            product.raw_code = raw
             product.save()
         return product.product_code
     except IntegrityError as e:

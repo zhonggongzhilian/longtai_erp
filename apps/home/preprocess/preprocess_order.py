@@ -12,7 +12,7 @@ def insert_order(order):
     Order.objects.update_or_create(
         order_id=order.order_id,
         defaults={
-            'order_date': order.order_date,
+            'order_date': order.order_start_date,
             'associate_sale_id': order.associate_sale_id,
             'business_kind': order.business_kind,
             'associate_purchase_order_id': order.associate_purchase_order_id,
@@ -22,7 +22,7 @@ def insert_order(order):
             'discount_price': order.discount_price,
             'discounted_price': order.discounted_price,
             'order_state': order.order_state,
-            'delivery_date': order.delivery_date,
+            'delivery_date': order.order_end_date,
             'order_maker': order.order_maker,
             'order_making_time': order.order_making_time,
             'reviewer': order.reviewer,
@@ -45,7 +45,7 @@ def insert_product(product, order_id):
             'category': product.category,
             'product_remark': product.product_remark,
             'unit': product.unit,
-            'quantity': product.quantity,
+            'quantity': product.product_num_todo,
             'sale_price': product.sale_price,
             'estimated_purchase_price': product.estimated_purchase_price,
             'discount_rate': product.discount_rate,

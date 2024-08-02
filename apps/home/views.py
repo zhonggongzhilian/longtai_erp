@@ -29,7 +29,7 @@ from .forms import SignUpForm, CustomUserChangeForm
 from .models import Device, CustomUser
 from .models import Order, OrderProduct
 from .models import Process, Raw, Product
-from .models import Tasks
+from .models import Task
 from .preprocess import preprocess_order, preprocess_product, preprocess_process, preprocess_device, preprocess_raw
 
 # views.py
@@ -42,7 +42,7 @@ def my_tasks(request):
     user = request.user
     if user.role == 'admin':
         # Admins see all results
-        tasks = Tasks.objects.all().order_by('execution_time')
+        tasks = Task.objects.all().order_by('execution_time')
     else:
         # Operators and Inspectors see only related tasks
         related_device_names = Device.objects.filter(
@@ -50,7 +50,7 @@ def my_tasks(request):
         ).values_list('device_name', flat=True) | Device.objects.filter(
             inspector=user
         ).values_list('device_name', flat=True)
-        tasks = Tasks.objects.filter(
+        tasks = Task.objects.filter(
             device__in=related_device_names
         ).order_by('execution_time')
 
@@ -307,7 +307,7 @@ def get_order(request, order_id):
     order = get_object_or_404(Order, order_id=order_id)
     data = {
         'order_id': order.order_id,
-        'order_date': order.order_date,
+        'order_date': order.order_start_date,
         'customer': order.customer,
         'sale_amount': order.sale_amount,
         'order_state': order.order_state,
@@ -318,7 +318,7 @@ def get_order(request, order_id):
 def update_order(request, order_id):
     if request.method == 'POST':
         order = get_object_or_404(Order, order_id=order_id)
-        order.order_date = request.POST.get('order_date')
+        order.order_start_date = request.POST.get('order_date')
         order.customer = request.POST.get('customer')
         order.sale_amount = request.POST.get('sale_amount')
         order.order_state = request.POST.get('order_state')
@@ -384,7 +384,7 @@ def product_list(request):
     # 处理产品列表，添加原料代码
     product_list = []
     for product in page_obj:
-        raw_code = product.raw.raw_code if product.raw else ''
+        raw_code = product.raw_code.raw_code if product.raw_code else ''
         product_list.append({
             'id': product.id,
             'product_code': product.product_code,
@@ -406,7 +406,7 @@ def get_product(request, product_id):
     data = {
         'product_code': product.product_code,
         'product_category': product.product_category,
-        'raw': product.raw.raw_code if product.raw else None,
+        'raw': product.raw_code.raw_code if product.raw_code else None,
     }
     return JsonResponse(data)
 
@@ -418,9 +418,9 @@ def update_product(request, product_id):
         product.product_category = request.POST.get('product_category')
         raw_code = request.POST.get('raw')
         if raw_code:
-            product.raw = get_object_or_404(Raw, raw_code=raw_code)
+            product.raw_code = get_object_or_404(Raw, raw_code=raw_code)
         else:
-            product.raw = None
+            product.raw_code = None
         product.save()
         return HttpResponse(status=200)
     return HttpResponse(status=400)
@@ -474,13 +474,13 @@ def raw_delete(request, pk):
 
 
 def result_list(request):
-    results = Tasks.objects.all()
+    results = Task.objects.all()
     return render(request, 'home/result_list.html', {'results': results})
 
 
 def delete_result(request, result_id):
     if request.method == 'POST':
-        result = Tasks.objects.get(id=result_id)
+        result = Task.objects.get(id=result_id)
         result.delete()
         return JsonResponse({'success': True})
     return JsonResponse({'success': False})
@@ -489,7 +489,7 @@ def delete_result(request, result_id):
 def process_schedule(request):
     from .job_scheduler import schedule_production
     if request.method == 'POST':
-        Tasks.objects.all().delete()  # 清空 OrderProcessingResult 表
+        Task.objects.all().delete()  # 清空 OrderProcessingResult 表
         schedule_production()  # 重新计算排产结果
         return JsonResponse({'success': True})
     return JsonResponse({'success': False})
@@ -507,7 +507,7 @@ def filter_by_date(request):
             end_datetime = start_datetime + timedelta(days=1)
 
             # Filter results within the selected date
-            results = Tasks.objects.filter(
+            results = Task.objects.filter(
                 execution_time__range=(start_datetime, end_datetime)
             ).values()
 
@@ -516,14 +516,14 @@ def filter_by_date(request):
 
 
 def mark_complete(request, id):
-    task = Tasks.objects.get(pk=id)
+    task = Task.objects.get(pk=id)
     task.completed = True
     task.save()
     return JsonResponse({'success': True})
 
 
 def mark_not_complete(request, id):
-    task = Tasks.objects.get(pk=id)
+    task = Task.objects.get(pk=id)
     if task:
         task.completed = False
         task.save()
@@ -532,14 +532,14 @@ def mark_not_complete(request, id):
 
 
 def mark_inspected(request, id):
-    task = Tasks.objects.get(pk=id)
+    task = Task.objects.get(pk=id)
     task.inspected = True
     task.save()
     return JsonResponse({'success': True})
 
 
 def mark_not_inspected(request, id):
-    task = Tasks.objects.get(pk=id)
+    task = Task.objects.get(pk=id)
     if task:
         task.inspected = False
         task.save()
@@ -558,7 +558,7 @@ def add_urgent_task(request):
     process_name = request.POST.get('process_name')
     device = request.POST.get('device')
 
-    task = Tasks.objects.create(
+    task = Task.objects.create(
         execution_time=execution_time,
         completion_time=completion_time,
         order=order,
