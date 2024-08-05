@@ -9,13 +9,6 @@
         <div class="header-body">
             <div class="row align-items-center py-4">
                 <div class="col-lg-6 col-7">
-<!--                    <h6 class="h2 text-white d-inline-block mb-0">毛坯列表</h6>-->
-<!--                    <nav aria-label="breadcrumb" class="d-none d-md-inline-block ml-md-4">-->
-<!--                        <ol class="breadcrumb breadcrumb-links breadcrumb-dark">-->
-<!--                            <li class="breadcrumb-item"><a href="#"><i class="fas fa-home"></i></a></li>-->
-<!--                            <li class="breadcrumb-item active" aria-current="page">毛坯列表</li>-->
-<!--                        </ol>-->
-<!--                    </nav>-->
                 </div>
                 <div class="col-lg-6 col-5 text-right">
                     <a href="#" class="btn btn-sm btn-neutral">新建</a>
@@ -36,218 +29,43 @@
                 <!-- Light table -->
                 <div class="table-responsive">
                     <table class="table align-items-center table-flush">
-                        <thead class="thead-light">
-                        <tr>
-                            <th scope="col" class="sort" data-sort="order_id">订单编号</th>
-                            <th scope="col" class="sort" data-sort="order_date">订单日期</th>
-                            <th scope="col" class="sort" data-sort="customer">客户</th>
-                            <th scope="col" class="sort" data-sort="sale_amount">销售金额</th>
-                            <th scope="col" class="sort" data-sort="status">订单状态</th>
-                            <th scope="col"></th>
-                        </tr>
+                        <thead>
+                            <tr>
+                                <th>订单编号</th>
+                                <th>订单开始日期</th>
+                                <th>订单结束日期</th>
+                                <th>产品编码</th>
+                                <th>待处理数量</th>
+                                <th>已完成数量</th>
+                                <th>是否完成</th>
+                            </tr>
                         </thead>
-                        <tbody class="list">
-                        {% for order in orders %}
-                        <tr>
-                            <td scope="row">
-                                <a href="{% url 'order_product_list' order.order_id %}">
-                                    {{ order.order_id }}
-                                </a>
-                            </td>
-                            <td scope="row">
-                                <a href="{% url 'order_product_list' order.order_id %}">
-                                    {{ order.order_date }}
-                                </a>
-                            </td>
-                            <td scope="row">
-                                <a href="{% url 'order_product_list' order.order_id %}">
-                                    {{ order.customer }}
-                                </a>
-                            </td>
-                            <td scope="row">
-                                <a href="{% url 'order_product_list' order.order_id %}">
-                                    {{ order.sale_amount }}
-                                </a>
-                            </td>
-                            <td scope="row">
-                                <a href="{% url 'order_product_list' order.order_id %}">
-                                    {{ order.order_state }}
-                                </a>
-                            </td>
-                            <td class="text-right">
-                                <div class="dropdown">
-                                    <a class="btn btn-sm btn-icon-only text-light" href="#" role="button"
-                                       data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-                                        <i class="fas fa-ellipsis-v"></i>
-                                    </a>
-                                    <div class="dropdown-menu dropdown-menu-right dropdown-menu-arrow">
-                                        <a class="dropdown-item edit-order" href="#" data-toggle="modal"
-                                           data-target="#editOrderModal" data-order-id="{{ order.order_id }}">编辑</a>
-                                        <a class="dropdown-item delete-order" href="#"
-                                           data-order-id="{{ order.order_id }}">删除</a>
-                                    </div>
-                                </div>
-                            </td>
-                        </tr>
-                        {% endfor %}
+                        <tbody>
+                            {% for product in order_products %}
+                            <tr>
+                                <td>{{ product.order.order_code }}</td>
+                                <td>{{ product.order.order_start_date }}</td>
+                                <td>{{ product.order.order_end_date }}</td>
+                                <td>{{ product.product_code }}</td>
+                                <td>{{ product.product_num_todo }}</td>
+                                <td>{{ product.product_num_done }}</td>
+                                <td>{% if product.is_done %} 是 {% else %} 否 {% endif %}</td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="7">没有订单产品记录</td>
+                            </tr>
+                            {% endfor %}
                         </tbody>
-
-                        <!-- Edit Order Modal -->
-                        <div class="modal fade" id="editOrderModal" tabindex="-1" role="dialog"
-                             aria-labelledby="editOrderModalLabel" aria-hidden="true">
-                            <div class="modal-dialog" role="document">
-                                <div class="modal-content">
-                                    <div class="modal-header">
-                                        <h5 class="modal-title" id="editOrderModalLabel">修改订单信息</h5>
-                                        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                                            <span aria-hidden="true">&times;</span>
-                                        </button>
-                                    </div>
-                                    <div class="modal-body">
-                                        <form id="editOrderForm">
-                                            {% csrf_token %}
-                                            <input type="hidden" id="editOrderId" name="order_id">
-                                            <div class="form-group">
-                                                <label for="editOrderDate">订单日期</label>
-                                                <input type="text" class="form-control" id="editOrderDate"
-                                                       name="order_date">
-                                            </div>
-                                            <div class="form-group">
-                                                <label for="editCustomer">客户</label>
-                                                <input type="text" class="form-control" id="editCustomer"
-                                                       name="customer">
-                                            </div>
-                                            <div class="form-group">
-                                                <label for="editSaleAmount">客户</label>
-                                                <input type="text" class="form-control" id="editSaleAmount"
-                                                       name="sale_amount">
-                                            </div>
-                                            <div class="form-group">
-                                                <label for="editOrderState">订单状态</label>
-                                                <input type="text" class="form-control" id="editOrderState"
-                                                       name="order_state">
-                                            </div>
-                                            <button type="submit" class="btn btn-primary">保存</button>
-                                        </form>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
                     </table>
-                </div>
-                <!-- Card footer -->
-                <div class="card-footer py-4">
-                    <nav aria-label="...">
-                        <ul class="pagination justify-content-end mb-0">
-                            <li class="page-item disabled">
-                                <a class="page-link" href="#" tabindex="-1">
-                                    <i class="fas fa-angle-left"></i>
-                                    <span class="sr-only">上一页</span>
-                                </a>
-                            </li>
-                            <li class="page-item active">
-                                <a class="page-link" href="#">1</a>
-                            </li>
-                            <li class="page-item">
-                                <a class="page-link" href="#">2 <span class="sr-only">(current)</span></a>
-                            </li>
-                            <li class="page-item"><a class="page-link" href="#">3</a></li>
-                            <li class="page-item">
-                                <a class="page-link" href="#">
-                                    <i class="fas fa-angle-right"></i>
-                                    <span class="sr-only">下一页</span>
-                                </a>
-                            </li>
-                        </ul>
-                    </nav>
                 </div>
             </div>
         </div>
     </div>
 </div>
 
-<script>
-$(document).ready(function () {
-    function getCookie(name) {
-        var cookieValue = null;
-        if (document.cookie && document.cookie !== '') {
-            var cookies = document.cookie.split(';');
-            for (var i = 0; i < cookies.length; i++) {
-                var cookie = cookies[i].trim();
-                // Does this cookie string begin with the name we want?
-                if (cookie.substring(0, name.length + 1) === (name + '=')) {
-                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
-                    break;
-                }
-            }
-        }
-        return cookieValue;
-    }
-    var csrftoken = getCookie('csrftoken');
-
-    function csrfSafeMethod(method) {
-        // these HTTP methods do not require CSRF protection
-        return (/^(GET|HEAD|OPTIONS|TRACE)$/.test(method));
-    }
-
-    $.ajaxSetup({
-        beforeSend: function(xhr, settings) {
-            if (!csrfSafeMethod(settings.type) && !this.crossDomain) {
-                xhr.setRequestHeader("X-CSRFToken", csrftoken);
-            }
-        }
-    });
-
-    // Handle edit order
-    $('.edit-order').on('click', function () {
-        var orderId = $(this).data('order-id');
-        // Fetch the order data and populate the form
-        $.ajax({
-            url: '/orders/' + orderId + '/get/',
-            type: 'GET',
-            success: function (data) {
-                $('#editOrderId').val(data.order_id);
-                $('#editOrderDate').val(data.order_date);
-                $('#editCustomer').val(data.customer);
-                $('#editSaleAmount').val(data.sale_amount);
-                $('#editOrderState').val(data.order_state);
-            }
-        });
-    });
-
-    $('#editOrderForm').on('submit', function (e) {
-        e.preventDefault();
-        var formData = $(this).serialize();
-        $.ajax({
-            url: '/orders/' + $('#editOrderId').val() + '/update/',
-            type: 'POST',
-            data: formData,
-            success: function (data) {
-                location.reload();
-            }
-        });
-    });
-
-    // Handle delete order
-    $('.delete-order').on('click', function () {
-        var orderId = $(this).data('order-id');
-        if (confirm('Are you sure you want to delete this order?')) {
-            $.ajax({
-                url: '/orders/' + orderId + '/delete/',
-                type: 'POST',
-                data: {
-                    'csrfmiddlewaretoken': csrftoken
-                },
-                success: function (data) {
-                    location.reload();
-                }
-            });
-        }
-    });
-});
-</script>
-
 {% endblock content %}
 
-<!-- Specific JS goes HERE -->
-{% block javascripts %}{% endblock javascripts %}
+{% block javascripts %}
+<!-- 在这里加入你需要的特定JS -->
+{% endblock javascripts %}

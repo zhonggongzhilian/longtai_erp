@@ -52,7 +52,7 @@ class Order(models.Model):
     """
     订单模型
     """
-    order_code = models.CharField(max_length=255, primary_key=True)
+    order_code = models.CharField(max_length=255, blank=True, unique=True)  # 确保 order_code 是唯一的
     order_start_date = models.CharField(max_length=255, blank=True)
     order_end_date = models.CharField(max_length=255, blank=True)
     is_done = models.BooleanField(default=False)
@@ -63,9 +63,9 @@ class Order(models.Model):
     @classmethod
     def from_dataframe_rows(cls, order_row, products_rows):
         order = cls(
-            order_id=order_row['订单编号'],
-            order_date=order_row['订单日期'],
-            delivery_date=order_row['交货日期']
+            order_code=order_row['订单编号'],
+            order_start_date=order_row['订单日期'],
+            order_end_date=order_row['交货日期']
         )
         order.save()  # 保存订单
         products = [OrderProduct.from_dataframe_row(row, order) for _, row in products_rows.iterrows()]
@@ -76,21 +76,21 @@ class OrderProduct(models.Model):
     """
     订单产品信息
     """
-    order_code = models.ForeignKey(Order, on_delete=models.CASCADE)
+    order = models.ForeignKey(Order, on_delete=models.CASCADE, related_name='products', null=True, blank=True)
     product_code = models.CharField(max_length=255, blank=True)
     product_num_todo = models.IntegerField(default=0)
     product_num_done = models.IntegerField(default=0)
     is_done = models.BooleanField(default=False)
 
     def __str__(self):
-        return f"{self.order_code} - {self.product_code}"
+        return f"{self.order.order_code} - {self.product_code}"
 
     @classmethod
     def from_dataframe_row(cls, row, order):
         product = cls(
             order=order,
             product_code=row['商品编码'],
-            quantity=row['数量'],
+            product_num_todo=row['数量']
         )
         product.save()  # 保存产品
         return product
@@ -112,8 +112,9 @@ class Product(models.Model):
     产品模型
     """
     product_code = models.CharField(max_length=255, unique=True)
+    product_name = models.CharField(max_length=255, null=True, blank=True)
     product_kind = models.CharField(max_length=255, null=True, blank=True)
-    raw_code = models.ForeignKey('Raw', on_delete=models.SET_NULL, null=True, blank=True)
+    raw_code = models.CharField(max_length=255, blank=True, null=True)
     weight = models.FloatField(null=True, blank=True, default=0.0)
 
 
@@ -121,11 +122,12 @@ class Process(models.Model):
     """
     工序模型
     """
-    product_code = models.ForeignKey("Product", on_delete=models.CASCADE, null=True, blank=True)
+    process_code = models.CharField(max_length=255, primary_key=True, default=0)
     process_sequence = models.IntegerField(default=1)
     process_name = models.CharField(max_length=255)
     process_capacity = models.IntegerField(null=True, blank=True, default=0)
     process_duration = models.FloatField(null=True, blank=True, default=0.0)
+    product_code = models.CharField(max_length=255, null=True, blank=True)
     device_name = models.CharField(max_length=255, null=True, blank=True, default='')
     completion_date = models.CharField(max_length=255, null=True, blank=True, default='')
     is_done = models.BooleanField(default=False)

@@ -42,7 +42,7 @@ def my_tasks(request):
     user = request.user
     if user.role == 'admin':
         # Admins see all results
-        tasks = Task.objects.all().order_by('execution_time')
+        tasks = Task.objects.all().order_by('task_start_time')
     else:
         # Operators and Inspectors see only related tasks
         related_device_names = Device.objects.filter(
@@ -52,7 +52,7 @@ def my_tasks(request):
         ).values_list('device_name', flat=True)
         tasks = Task.objects.filter(
             device__in=related_device_names
-        ).order_by('execution_time')
+        ).order_by('task_start_time')
 
     context = {
         'tasks': tasks,
@@ -288,19 +288,11 @@ def upload(request):
 
 
 def order_list(request):
-    sort_by = request.GET.get('sort_by', 'order_date')  # 默认按 order_id 排序
-    orders = Order.objects.all().order_by(sort_by)
-    return render(request, 'home/order_list.html', {'orders': orders})
-
-
-def order_product_list(request, order_id):
-    order = get_object_or_404(Order, order_id=order_id)
-    products = OrderProduct.objects.filter(order=order)
+    order_products = OrderProduct.objects.select_related('order').all()
     context = {
-        'order': order,
-        'products': products
+        'order_products': order_products,
     }
-    return render(request, 'home/order_product_list.html', context)
+    return render(request, 'home/order_list.html', context)
 
 
 def get_order(request, order_id):
@@ -384,12 +376,11 @@ def product_list(request):
     # 处理产品列表，添加原料代码
     product_list = []
     for product in page_obj:
-        raw_code = product.raw_code.raw_code if product.raw_code else ''
         product_list.append({
-            'id': product.id,
             'product_code': product.product_code,
-            'product_category': product.product_category,
-            'raw_code': raw_code,
+            'product_name': product.product_name,
+            'product_kind': product.product_kind,
+            'raw_code': product.raw_code,
             'weight': product.weight
         })
 

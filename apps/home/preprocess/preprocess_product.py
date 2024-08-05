@@ -19,7 +19,7 @@ def preprocess_product(file_path):
                 product_name = row['商品编码'].strip()
                 product_kind = row['商品类别'].strip()
                 raw_code = row['毛坯编码'].strip()
-                weight = row['净重（KG)'].strip()
+                weight = row['净重（KG)']
                 if not Product.objects.filter(product_code=product_code).exists():
                     Product.objects.create(
                         product_code=product_code,

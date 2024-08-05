@@ -19,10 +19,6 @@ urlpatterns = [
     path('upload', views.upload, name='upload'),
 
     path('orders/', views.order_list, name='order_list'),
-    path('orders/<str:order_id>/products/', views.order_product_list, name='order_product_list'),
-    path('orders/<str:order_id>/get/', views.get_order, name='get_order'),
-    path('orders/<str:order_id>/update/', views.update_order, name='update_order'),
-    path('orders/<str:order_id>/delete/', views.delete_order, name='delete_order'),
 
     path('device/', views.device_list, name='device_list'),
     path('device/<int:device_id>/get/', views.get_device, name='get_device'),
