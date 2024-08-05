@@ -18,18 +18,19 @@ def process_file(file_path):
             if pd.notna(row['设备名称']):
                 device_names = row['设备名称'].split('/')
                 for device_name in device_names:
-                    exchange_time = row['每次平均换型时间（分钟)']
-                    print(f"{device_name=}, {exchange_time=}")
+                    changeover_time = row['每次平均换型时间（分钟)']
+                    print(f"{device_name=}, {changeover_time=}")
                     if not Device.objects.filter(device_name=device_name).exists():
                         Device.objects.create(
                             device_name=device_name.strip(),
-                            exchange_time=str(exchange_time),
+                            changeover_time=str(changeover_time),
                             # 省略 user 字段，因为它可以为空
                         )
                     else:
                         device = Device.objects.get(device_name=device_name.strip())
-                        device.exchange_time = str(exchange_time)
+                        device.exchange_time = str(changeover_time)
                         device.save()
+
 
 @log_execution
 def preprocess_device(file_path='../data/换型时间_MES.xlsx'):

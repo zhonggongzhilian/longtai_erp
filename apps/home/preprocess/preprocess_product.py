@@ -16,7 +16,7 @@ def preprocess_product(file_path):
         for index, row in df.iterrows():
             if pd.notna(row['净重（KG)']):
                 product_code = row['商品编码'].strip()
-                product_name = row['商品编码'].strip()
+                product_name = row['商品名称'].strip()
                 product_kind = row['商品类别'].strip()
                 raw_code = row['毛坯编码'].strip()
                 weight = row['净重（KG)']
@@ -31,6 +31,9 @@ def preprocess_product(file_path):
                     logger.info(f"Create {product_code} weight {weight}")
                 else:
                     product = Product.objects.get(product_code=product_code.strip())
+                    product.product_name = product_name
+                    product.product_kind = product_kind
+                    product.raw_code = raw_code
                     product.weight = weight
                     product.save()
                     logger.info(f"Update {product_code} weight {weight}")

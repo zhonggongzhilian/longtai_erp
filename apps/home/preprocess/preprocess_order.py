@@ -34,17 +34,10 @@ def preprocess_order(file_path='./data/销货订单导出_202306241022.xlsx'):
     df = pd.read_excel(file_path, header=4).ffill()
     df = df[~df['商品编码'].str.contains('合计', na=False)]
 
-    orders = []
     for order_id, group in df.groupby('订单编号'):
         order_row = group.iloc[0]
         products_rows = group
-        order, products = Order.from_dataframe_rows(order_row, products_rows)
-        orders.append((order, products))
-
-    for order, products in orders:
-        order.save()
-        for product in products:
-            product.save()
+        Order.from_dataframe_rows(order_row, products_rows)
 
 
 if __name__ == "__main__":

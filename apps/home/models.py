@@ -122,15 +122,13 @@ class Process(models.Model):
     """
     工序模型
     """
-    process_code = models.CharField(max_length=255, primary_key=True, default=0)
-    process_sequence = models.IntegerField(default=1)
+    process_i = models.IntegerField(default=1)
     process_name = models.CharField(max_length=255)
     process_capacity = models.IntegerField(null=True, blank=True, default=0)
     process_duration = models.FloatField(null=True, blank=True, default=0.0)
     product_code = models.CharField(max_length=255, null=True, blank=True)
-    device_name = models.CharField(max_length=255, null=True, blank=True, default='')
-    completion_date = models.CharField(max_length=255, null=True, blank=True, default='')
-    is_done = models.BooleanField(default=False)
+    device_name = models.CharField(max_length=255, null=True, blank=True)
+    is_outside = models.BooleanField(default=False)
     is_last_process = models.BooleanField(default=False)
 
 
