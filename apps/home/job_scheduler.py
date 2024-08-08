@@ -1,193 +1,92 @@
 from datetime import datetime, timedelta
-
-from .models import Order, OrderProduct, Process, Product, Device, Tasks
-
-# 定义工作时间范围
-WORK_START_MORNING = 9
-WORK_END_MORNING = 12
-WORK_START_AFTERNOON = 13
-WORK_END_AFTERNOON = 18
+from django.utils import timezone
+from .models import Device, Order, Process
 
 
-def is_working_time(current_time):
+def is_max_process(order_product):
     """
-    判断当前时间是否在工作时间内
+    判断当前工序是否是订单产品的最大工序。
     """
-    current_hour = current_time.hour
-    return (WORK_START_MORNING <= current_hour < WORK_END_MORNING) or (
-            WORK_START_AFTERNOON <= current_hour < WORK_END_AFTERNOON)
+    all_processes = Process.objects.filter(product_code=order_product.product_code).order_by('process_i')
+    process_indices = [p.process_i for p in all_processes]
+    max_process_i = max(process_indices)
+    return order_product.cur_process_i == max_process_i
 
-
-def get_next_working_time(start_time, duration_minutes):
+def has_process(order_product):
     """
-    根据工作时间计算预计完成时间
+    检查订单产品是否有对应的工序。
     """
-    current_time = start_time
-    remaining_minutes = duration_minutes
-
-    while remaining_minutes > 0:
-        if is_working_time(current_time):
-            end_of_work_period = datetime(current_time.year, current_time.month, current_time.day,
-                                          WORK_END_MORNING if current_time.hour < WORK_START_AFTERNOON else WORK_END_AFTERNOON,
-                                          0)
-            if end_of_work_period < current_time:
-                end_of_work_period = datetime(current_time.year, current_time.month, current_time.day,
-                                              WORK_END_AFTERNOON, 0)
-
-            work_period_minutes = (end_of_work_period - current_time).seconds // 60
-            if work_period_minutes > remaining_minutes:
-                current_time += timedelta(minutes=remaining_minutes)
-                remaining_minutes = 0
-            else:
-                remaining_minutes -= work_period_minutes
-                current_time = datetime(current_time.year, current_time.month, current_time.day,
-                                        WORK_START_AFTERNOON, 0) if current_time.hour < WORK_START_AFTERNOON else \
-                    datetime(current_time.year, current_time.month, current_time.day + 1,
-                             WORK_START_MORNING, 0)
-        else:
-            current_time += timedelta(minutes=1)
-
-    return current_time
+    return Process.objects.filter(
+        product_code=order_product.product_code,
+        process_i__gt=order_product.cur_process_i
+    ).exists()
 
 
-def get_orders_sorted_by_delivery_date():
-    """
-    获取按交付时间排序的订单
-    """
-    orders = Order.objects.all().order_by('delivery_date')
-    return orders
+def schedule_production(start_date_str='2024-01-01'):
+    devices = Device.objects.all()
+    orders = Order.objects.filter(is_done=False).order_by('order_end_date')
+    order_products = sorted(
+        (order_product for order in orders for order_product in order.products.filter(is_done=False)
+         if has_process(order_product)),
+        key=lambda p: p.order.order_end_date
+    )
 
-
-def get_order_products(order):
-    """
-    获取订单中所有需要生产的产品及其数量
-    """
-    products = OrderProduct.objects.filter(order=order)
-    return products
-
-
-def get_processes_for_product(product_code):
-    """
-    获取指定产品的工序
-    """
-    processes = Process.objects.filter(product_code__product_code=product_code).order_by('process_sequence', 'duration')
-    return processes
-
-
-def update_device_raw(device_name, new_raw_code):
-    """
-    更新设备的毛坯信息
-    """
-    device = Device.objects.filter(device_name=device_name).first()
-    if device:
-        device.raw_code = new_raw_code
-        device.save()
-
-
-def schedule_production():
-    """
-    排产逻辑
-    """
-    orders = get_orders_sorted_by_delivery_date()
-
-    results = []  # 用于存储排产结果
-
-    # 设置开始时间
-    start_time = datetime(2023, 5, 1, WORK_START_MORNING, 0)
-    print(f"{start_time=}")
-
+    # 使用一个字典缓存所有工序，避免重复查询
+    process_cache = {}
     for order in orders:
-        order_products = get_order_products(order)
+        for order_product in order.products.filter(is_done=False):
+            processes = Process.objects.filter(
+                product_code=order_product.product_code,
+                process_i__gt=order_product.cur_process_i
+            ).values('device_name', 'process_i', 'process_duration')
 
-        for product in order_products:
-            product_code = product.product_code
-            try:
-                product_raw_code = Product.objects.filter(product_code=product_code).first().raw_code.raw_code
-            except AttributeError as e:
-                product_raw_code = "TG-VH-2-50-C"
-            processes = get_processes_for_product(product_code)
+            if processes.exists():
+                process_cache[order_product.id] = {
+                    p['process_i']: p for p in processes
+                }
 
-            current_time = start_time
+    start_date = timezone.make_aware(datetime.strptime(start_date_str, '%Y-%m-%d'))
+    current_time = start_date
 
-            for process in processes:
-                process_duration = process.process_duration
-                equipment = process.device_name
-                process_sequence = process.process_sequence
+    while order_products:
+        for device in devices:
+            # 如果当前时间在设备的使用时间范围内，则跳过
+            if device.start_time <= current_time < device.end_time:
+                continue
+            # print(f"{current_time.strftime('%Y-%m-%d %H:%M:%S')} {device.device_name} is free.")
 
-                # 获取设备当前的毛坯
-                device = Device.objects.filter(device_name=equipment).first()
-                device_raw_code = device.raw_code if device else None
+            for order_product in order_products:
+                next_process_i = order_product.cur_process_i + 1
+                processes = process_cache.get(order_product.id, {})
+                process = processes.get(next_process_i)
 
-                # 判断是否需要换型
-                changeover = False
-                if device_raw_code and device_raw_code != product_raw_code:
-                    changeover = True
-                    # 假设换型时间为10分钟
-                    process_duration += 10
+                if process:
+                    # 进行排产
+                    duration = process['process_duration']
+                    device.start_time = current_time
+                    device.end_time = current_time + timedelta(minutes=duration)
 
-                # 计算预计完成时间
-                completion_time = get_next_working_time(current_time, process_duration)
+                    # 更新产品的当前工序索引
+                    order_product.cur_process_i = process['process_i']
 
-                # 赋值
-                task_execution_time = current_time.strftime('%Y-%m-%d %H:%M:%S')
-                task_completion_time = completion_time.strftime('%Y-%m-%d %H:%M:%S')
-                task_changeover = 'Yes' if changeover else 'No'
-                task_order = order.order_id
-                task_product = product_code
-                task_process_sequence = process_sequence
-                task_process_name = process.process_name
-                task_device = equipment
+                    print(f"Schedule: "
+                          f"remain: {len(order_products)}\t"
+                          f"product: {order_product.product_code}\t"
+                          f"device: {device.device_name}\t"
+                          f"process i: {process['process_i']}\t"
+                          f"start: {device.start_time.strftime('%Y-%m-%d %H:%M:%S')}\t"
+                          f"end: {device.end_time.strftime('%Y-%m-%d %H:%M:%S')}")
 
-                # 输出操作信息
-                results.append({
-                    'execution_time': task_execution_time,
-                    'completion_time': task_completion_time,
-                    'changeover': task_changeover,
-                    'order': task_order,
-                    'product': task_product,
-                    'process_sequence': task_process_sequence,
-                    'process_name': task_process_name,
-                    'device': task_device
-                })
+                    # 移除已处理的订单产品，如果当前工序是最大序号工序
+                    if is_max_process(order_product):
+                        order_products.remove(order_product)
+                        print(f"\tFinish {order_product.order.order_code} {order_product.product_code}")
 
-                Tasks.objects.create(
-                    execution_time=task_execution_time,
-                    completion_time=task_completion_time,
-                    changeover=task_changeover,
-                    order=task_order,
-                    product=task_product,
-                    process_sequence=task_process_sequence,
-                    process_name=task_process_name,
-                    device=task_device
-                )
-                print(
-                    f"{task_execution_time=}|{task_completion_time=}|{task_changeover=}|{task_order=}|{task_product=}|"
-                    f"{task_process_sequence=}|{task_process_name=}|{task_device=}")
+                    break
 
-                # 更新设备的毛坯信息
-                if device:
-                    update_device_raw(equipment, product_raw_code)
-
-                # 更新当前时间为完成时间
-                current_time = completion_time
+        # 更新当前时间
+        current_time += timedelta(minutes=1)
 
 
-def save_production_results(results):
-    """
-    保存生产结果到数据库
-    """
-    for result in results:
-        Tasks.objects.create(
-            execution_time=result['execution_time'],
-            completion_time=result['completion_time'],
-            changeover=result['changeover'],
-            order=result['order'],
-            product=result['product'],
-            process_sequence=result['process_sequence'],
-            process_name=result['process_name'],
-            device=result['device']
-        )
-
-
-if __name__ == "__main__":
-    schedule_production()
+# 调用函数
+schedule_production('2024-01-01')

@@ -1,10 +1,10 @@
-import pandas as pd
-
 from django.contrib.auth.models import AbstractUser
 
 from django.db import models
 
 from django.utils import timezone
+
+from datetime import datetime
 
 
 class CustomUser(AbstractUser):
@@ -32,6 +32,28 @@ class CustomUser(AbstractUser):
     # 其他字段和方法
 
 
+class Raw(models.Model):
+    """
+    毛坯模型
+    """
+    raw_code = models.CharField(max_length=255, unique=True)
+    raw_name = models.CharField(max_length=255, blank=True)
+
+    def __str__(self):
+        return self.raw_code
+
+
+class Product(models.Model):
+    """
+    产品模型
+    """
+    product_code = models.CharField(max_length=255, unique=True)
+    product_name = models.CharField(max_length=255, null=True, blank=True)
+    product_kind = models.CharField(max_length=255, null=True, blank=True)
+    raw_code = models.CharField(max_length=255, blank=True, null=True)
+    weight = models.FloatField(null=True, blank=True, default=0.0)
+
+
 class Device(models.Model):
     """
     设备模型
@@ -43,6 +65,9 @@ class Device(models.Model):
                                  on_delete=models.SET_NULL)
     inspector = models.ForeignKey(CustomUser, related_name='inspector_devices', null=True, blank=True,
                                   on_delete=models.SET_NULL)
+
+    start_time = models.DateTimeField(default=timezone.make_aware(datetime(1970, 1, 1)))
+    end_time = models.DateTimeField(default=timezone.make_aware(datetime(1970, 1, 1)))
 
     def __str__(self):
         return self.device_name
@@ -74,12 +99,13 @@ class Order(models.Model):
 
 class OrderProduct(models.Model):
     """
-    订单产品信息
+    订单中待产品信息
     """
     order = models.ForeignKey(Order, on_delete=models.CASCADE, related_name='products', null=True, blank=True)
     product_code = models.CharField(max_length=255, blank=True)
     product_num_todo = models.IntegerField(default=0)
     product_num_done = models.IntegerField(default=0)
+    cur_process_i = models.IntegerField(default=0)
     is_done = models.BooleanField(default=False)
 
     def __str__(self):
@@ -96,28 +122,6 @@ class OrderProduct(models.Model):
         return product
 
 
-class Raw(models.Model):
-    """
-    毛坯模型
-    """
-    raw_code = models.CharField(max_length=255, unique=True)
-    raw_name = models.CharField(max_length=255, blank=True)
-
-    def __str__(self):
-        return self.raw_code
-
-
-class Product(models.Model):
-    """
-    产品模型
-    """
-    product_code = models.CharField(max_length=255, unique=True)
-    product_name = models.CharField(max_length=255, null=True, blank=True)
-    product_kind = models.CharField(max_length=255, null=True, blank=True)
-    raw_code = models.CharField(max_length=255, blank=True, null=True)
-    weight = models.FloatField(null=True, blank=True, default=0.0)
-
-
 class Process(models.Model):
     """
     工序模型
@@ -130,6 +134,9 @@ class Process(models.Model):
     device_name = models.CharField(max_length=255, null=True, blank=True)
     is_outside = models.BooleanField(default=False)
     is_last_process = models.BooleanField(default=False)
+
+    def __str__(self):
+        return f"{self.process_name}-{self.process_i}"
 
 
 class Task(models.Model):
