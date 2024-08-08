@@ -29,7 +29,7 @@
                             <label for="datePicker" class="col-form-label">选择执行日期:</label>
                         </div>
                         <div class="col-auto">
-                            <input type="date" id="datePicker" class="form-control" value="2023-05-01">
+                            <input type="date" id="datePicker" class="form-control" value="2024-01-01">
                         </div>
                         <div class="col-auto ml-auto">
                             <button class="btn btn-danger" data-toggle="modal" data-target="#addUrgentTaskModal">
@@ -64,14 +64,14 @@
                         {% for task in tasks %}
                         <tr class="task-row {% if task.completed and task.inspected %}completed-and-inspected-task{% elif task.completed %}completed-task{% elif task.inspected %}inspected-task{% endif %}"
                             data-id="{{ task.id }}" data-execution-time="{{ task.execution_time }}">
-                            <td>{{ task.execution_time }}</td>
-                            <td>{{ task.completion_time }}</td>
-                            <td>{{ task.changeover }}</td>
-                            <td>{{ task.order }}</td>
-                            <td>{{ task.product }}</td>
-                            <td>{{ task.process_sequence }}</td>
+                            <td>{{ task.task_start_time }}</td>
+                            <td>{{ task.task_end_time }}</td>
+                            <td>{{ task.is_changeover }}</td>
+                            <td>{{ task.order_code }}</td>
+                            <td>{{ task.product_code }}</td>
+                            <td>{{ task.process_i }}</td>
                             <td>{{ task.process_name }}</td>
-                            <td>{{ task.device }}</td>
+                            <td>{{ task.device_name }}</td>
                             <td>{{ task.completed|yesno:"是,否" }}</td>
                             <td>{{ task.inspected|yesno:"是,否" }}</td>
                             {% if request.user.role == 'operator' %}
@@ -209,14 +209,14 @@
                     response.results.forEach(function(result) {
                         $('#resultTableBody').append(
                             `<tr class="task-row ${result.completed && result.inspected ? 'completed-and-inspected-task' : (result.completed ? 'completed-task' : (result.inspected ? 'inspected-task' : ''))}" data-id="${result.id}" data-execution-time="${result.execution_time}">
-                                <td>${result.execution_time}</td>
-                                <td>${result.completion_time}</td>
-                                <td>${result.changeover}</td>
-                                <td>${result.order}</td>
-                                <td>${result.product}</td>
-                                <td>${result.process_sequence}</td>
+                                <td>${result.task_start_time}</td>
+                                <td>${result.task_end_time}</td>
+                                <td>${result.is_changeover}</td>
+                                <td>${result.order_code}</td>
+                                <td>${result.product_code}</td>
+                                <td>${result.process_i}</td>
                                 <td>${result.process_name}</td>
-                                <td>${result.device}</td>
+                                <td>${result.device_name}</td>
                                 <td>${result.completed ? '是' : '否'}</td>
                                 <td>${result.inspected ? '是' : '否'}</td>
                                 {% if user.role == 'Operator' %}

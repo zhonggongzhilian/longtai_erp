@@ -74,14 +74,14 @@
                         <tbody id="resultTableBody">
                         {% for result in results %}
                         <tr id="result-{{ result.id }}">
-                            <td>{{ result.execution_time }}</td>
-                            <td>{{ result.completion_time }}</td>
-                            <td>{{ result.changeover }}</td>
-                            <td>{{ result.order }}</td>
-                            <td>{{ result.product }}</td>
-                            <td>{{ result.process_sequence }}</td>
+                            <td>{{ result.task_start_time }}</td>
+                            <td>{{ result.task_end_time }}</td>
+                            <td>{{ result.is_changeover }}</td>
+                            <td>{{ result.order_code }}</td>
+                            <td>{{ result.product_code }}</td>
+                            <td>{{ result.process_i }}</td>
                             <td>{{ result.process_name }}</td>
-                            <td>{{ result.device }}</td>
+                            <td>{{ result.device_name }}</td>
                             <td>{{ result.completed|yesno:"是,否" }}</td>
                             <td>{{ result.inspected|yesno:"是,否" }}</td>
                         </tr>

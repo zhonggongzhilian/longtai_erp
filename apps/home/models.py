@@ -59,7 +59,7 @@ class Device(models.Model):
     设备模型
     """
     device_name = models.CharField(max_length=255, unique=True)
-    changeover_time = models.CharField(max_length=255)
+    changeover_time = models.CharField(max_length=255, default="10")
     raw = models.CharField(max_length=255, blank=True, null=True)
     operator = models.ForeignKey(CustomUser, related_name='operator_devices', null=True, blank=True,
                                  on_delete=models.SET_NULL)
@@ -107,6 +107,7 @@ class OrderProduct(models.Model):
     product_num_done = models.IntegerField(default=0)
     cur_process_i = models.IntegerField(default=0)
     is_done = models.BooleanField(default=False)
+    end_time = models.DateTimeField(default=timezone.make_aware(datetime(1970, 1, 1)))
 
     def __str__(self):
         return f"{self.order.order_code} - {self.product_code}"
@@ -150,6 +151,7 @@ class Task(models.Model):
     device_name = models.CharField(max_length=100, default='')
     completed = models.BooleanField(default=False)
     inspected = models.BooleanField(default=False)
+    product_num = models.IntegerField(default=0, null=True)
 
     class Meta:
         verbose_name = 'Order Processing Result'
