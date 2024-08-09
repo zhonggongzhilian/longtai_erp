@@ -159,3 +159,10 @@ class Task(models.Model):
 
     def __str__(self):
         return f"Order {self.order_code}, Product {self.product_code}, Process {self.process_i}"
+
+
+class Weight(models.Model):
+    weight = models.FloatField(default=0.0)
+
+    def __str__(self):
+        return f"{self.weight}"

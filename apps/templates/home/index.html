@@ -2,6 +2,8 @@
 
 {% block title %} Dashboard {% endblock title %}
 
+{% load static %}
+
 <!-- Specific CSS goes HERE -->
 {% block stylesheets %}
 <style>
@@ -15,6 +17,77 @@
         margin-top: 1rem;
         font-size: 1.2rem;
     }
+    .progress-circle {
+    position: relative;
+    width: 100px;
+    height: 100px;
+}
+
+.circle-background,
+.circle-progress {
+    position: absolute;
+    border-radius: 50%;
+    width: 100px;
+    height: 100px;
+    top: 0;
+    left: 0;
+}
+
+.circle-background {
+    background-color: #e9ecef; /* Background color of the circle */
+    z-index: 1;
+}
+
+.circle-progress {
+    background: conic-gradient(
+        blue 0%,
+        blue var(--progress),
+        #e9ecef var(--progress),
+        #e9ecef 100%
+    );
+    z-index: 2;
+    clip-path: circle(50% at 50% 50%);
+}
+
+.car-img {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 50%;
+    height: auto;
+    z-index: 3;
+}
+
+#progress-container {
+    display: flex;
+    justify-content: space-between;
+}
+
+    .car {
+    position: relative;
+    width: 100px;
+    height: 60px;
+}
+
+.car-img {
+    width: 100%;
+    height: auto;
+}
+
+.car-overlay {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    background-color: blue;
+    transition: height 0.3s;
+}
+
+#car-container {
+    position: relative;
+    height: 60px;
+}
 </style>
 {% endblock stylesheets %}
 
@@ -178,42 +251,35 @@
     <div class="row">
         <div class="col-xl-8">
             <div class="card bg-default">
-                <div class="card-header bg-transparent">
-                    <div class="row align-items-center">
-                        <div class="col">
-                            <h6 class="text-light text-uppercase ls-1 mb-1">生产情况</h6>
-                            <h5 class="h3 text-white mb-0">生产总值</h5>
-                        </div>
-                        <div class="col">
-                            <ul class="nav nav-pills justify-content-end">
-                                <li class="nav-item mr-2 mr-md-0" data-toggle="chart" data-target="#chart-sales-dark"
-                                    data-update='{"data":{"datasets":[{"data":[0, 20, 10, 30, 15, 40, 20, 60, 60]}]}}'
-                                    data-prefix="$" data-suffix="k">
-                                    <a href="#" class="nav-link py-2 px-3 active" data-toggle="tab">
-                                        <span class="d-none d-md-block">月份</span>
-                                        <span class="d-md-none">M</span>
-                                    </a>
-                                </li>
-                                <li class="nav-item" data-toggle="chart" data-target="#chart-sales-dark"
-                                    data-update='{"data":{"datasets":[{"data":[0, 20, 5, 25, 10, 30, 15, 40, 40]}]}}'
-                                    data-prefix="$" data-suffix="k">
-                                    <a href="#" class="nav-link py-2 px-3" data-toggle="tab">
-                                        <span class="d-none d-md-block">周数</span>
-                                        <span class="d-md-none">W</span>
-                                    </a>
-                                </li>
-                            </ul>
-                        </div>
-                    </div>
-                </div>
-                <div class="card-body">
-                    <!-- Chart -->
-                    <div class="chart">
-                        <!-- Chart wrapper -->
-                        <canvas id="chart-sales-dark" class="chart-canvas"></canvas>
-                    </div>
-                </div>
+    <div class="card-header bg-transparent">
+        <div class="row align-items-center">
+            <div class="col">
+                <h6 class="text-light text-uppercase ls-1 mb-1">生产情况</h6>
+                <h5 class="h3 text-white mb-0">模型重量</h5>
             </div>
+        </div>
+    </div>
+    <div class="card-body">
+        <div id="progress-container" class="d-flex justify-content-between">
+            <!-- Progress Circles -->
+            <div class="progress-circle" data-index="0">
+                <div class="circle-background"></div>
+                <div class="circle-progress"></div>
+                <img src="{% static 'assets/img/car.svg' %}" alt="Car" class="car-img">
+            </div>
+            <div class="progress-circle" data-index="1">
+                <div class="circle-background"></div>
+                <div class="circle-progress"></div>
+                <img src="{% static 'assets/img/car.svg' %}" alt="Car" class="car-img">
+            </div>
+            <div class="progress-circle" data-index="2">
+                <div class="circle-background"></div>
+                <div class="circle-progress"></div>
+                <img src="{% static 'assets/img/car.svg' %}" alt="Car" class="car-img">
+            </div>
+        </div>
+    </div>
+</div>
         </div>
         <div class="col-xl-4">
             <div class="card">
@@ -516,6 +582,31 @@
         setupUploadButton('uploadButton_Process');
         setupUploadButton('uploadButton_Product');
         setupUploadButton('uploadButton_Exchange');
+    });
+</script>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // 从 Django 模板中获取 weight 数据
+        const weight = {{ weight|floatformat:2 }};
+
+        // Constants
+        const totalCars = 3;
+        const carCapacity = 13.5;
+
+        const cars = document.querySelectorAll('.car');
+        cars.forEach((car, index) => {
+            const overlay = car.querySelector('.car-overlay');
+            let fillHeight = 0;
+
+            if (weight > (index + 1) * carCapacity) {
+                fillHeight = 100; // Fully fill the car
+            } else if (weight > index * carCapacity) {
+                fillHeight = ((weight - index * carCapacity) / carCapacity) * 100;
+            }
+
+            overlay.style.height = `${fillHeight}%`;
+        });
     });
 </script>
 

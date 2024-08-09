@@ -1,0 +1,212 @@
+{% extends 'layouts/base.html' %}
+{% block title %} 我的生产 {% endblock title %}
+{% block content %}
+
+<div class="header bg-primary pb-6">
+    <div class="container-fluid">
+        <div class="header-body">
+            <div class="row align-items-center py-4">
+                <div class="col-lg-6 col-7">
+                    <h6 class="h2 text-white d-inline-block mb-0">我的生产</h6>
+                </div>
+                <div class="col-lg-6 col-5 text-right">
+                    <span class="text-white">用户: {{ user.username }}</span><br>
+                    <span class="text-white">角色: {{ user.role }}</span>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="container-fluid mt--6">
+    <div class="row">
+        <div class="col">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">任务信息</h5>
+                    <div class="card-text">
+                        <p><strong>执行时间:</strong> {{ task.task_start_time }}</p>
+                        <p><strong>完成时间:</strong> {{ task.task_end_time }}</p>
+                        <p><strong>换型:</strong> {{ task.is_changeover }}</p>
+                        <p><strong>订单:</strong> {{ task.order_code }}</p>
+                        <p><strong>产品:</strong> {{ task.product_code }}</p>
+                        <p><strong>工序号:</strong> {{ task.process_i }}</p>
+                        <p><strong>工序名称:</strong> {{ task.process_name }}</p>
+                        <p><strong>设备:</strong> {{ task.device_name }}</p>
+                        <p><strong>已完成数量:</strong> <span id="task_product_num">{{ task.product_num }}</span></p>
+                    </div>
+                    <div class="d-flex justify-content-between mt-3">
+                        <button class="btn btn-secondary" onclick="window.history.back()">返回</button>
+                        <div>
+                            <a class="btn btn-success mr-2" data-toggle="modal"
+                               data-target="#completeTaskModal">完成</a>
+                            <a class="btn btn-warning mr-2" data-toggle="modal" data-target="#reworkTaskModal">返工</a>
+                            <a class="btn btn-danger" data-toggle="modal" data-target="#scrapTaskModal">报废</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 完成任务模态框 -->
+<div class="modal fade" id="completeTaskModal" tabindex="-1" role="dialog" aria-labelledby="completeTaskModalLabel"
+     aria-hidden="true">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="completeTaskModalLabel">完成任务</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <form id="completeTaskForm">
+                <div class="modal-body">
+                    <input type="hidden" id="taskId" name="task_id" value="{{ task.id }}">
+                    <p><strong>执行时间:</strong> {{ task.task_start_time }}</p>
+                    <p><strong>完成时间:</strong> {{ task.task_end_time }}</p>
+                    <div class="form-group">
+                        <label for="productNum">完成数量</label>
+                        <input type="number" class="form-control" id="productNum" name="product_num" required>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">关闭</button>
+                    <button type="submit" class="btn btn-success">确认完成</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- 返工任务模态框 -->
+<div class="modal fade" id="reworkTaskModal" tabindex="-1" role="dialog" aria-labelledby="reworkTaskModalLabel" aria-hidden="true">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="reworkTaskModalLabel">返工任务</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <form id="reworkTaskForm">
+                <div class="modal-body">
+                    <input type="hidden" id="taskId2" name="task_id" value="{{ task.id }}">
+                    <p><strong>执行时间:</strong> {{ task.task_start_time }}</p>
+                    <p><strong>完成时间:</strong> {{ task.task_end_time }}</p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">关闭</button>
+                    <button type="submit" class="btn btn-warning">确认返工</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- 报废任务模态框 -->
+<div class="modal fade" id="scrapTaskModal" tabindex="-1" role="dialog" aria-labelledby="scrapTaskModalLabel" aria-hidden="true">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="scrapTaskModalLabel">报废任务</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <form id="scrapTaskForm">
+                <div class="modal-body">
+                    <input type="hidden" id="taskId3" name="task_id" value="{{ task.id }}">
+                    <p><strong>执行时间:</strong> {{ task.task_start_time }}</p>
+                    <p><strong>完成时间:</strong> {{ task.task_end_time }}</p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">关闭</button>
+                    <button type="submit" class="btn btn-danger">确认报废</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+
+<script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
+<script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+
+<script>
+    $(document).ready(function () {
+        $('#completeTaskForm').on('submit', function (e) {
+            e.preventDefault();
+            const formData = $(this).serialize();
+
+            $.ajax({
+                url: "{% url 'my_tasks_operator_complete_task' %}",  // 更换为你的视图URL
+                method: 'POST',
+                data: formData,
+                success: function (response) {
+                    if (response.success) {
+                        $('#completeTaskModal').modal('hide');
+                        // 刷新页面或更新任务信息
+                        window.location.reload();
+                    } else {
+                        alert('保存任务完成信息失败');
+                    }
+                },
+                error: function (xhr, status, error) {
+                    alert('保存任务完成信息失败: ' + xhr.responseText);
+                }
+            });
+        });
+        // 返工任务
+        $('#reworkTaskForm').on('submit', function (e) {
+            e.preventDefault();
+            const formData = $(this).serialize();
+
+            $.ajax({
+                url: "{% url 'my_tasks_operator_rework_task' %}",
+                method: 'POST',
+                data: formData,
+                success: function (response) {
+                    if (response.success) {
+                        alert('任务返工信息已保存');
+                        $('#reworkTaskModal').modal('hide');
+                        // 这里可以选择刷新页面或更新任务信息
+                        window.location.reload();
+                    } else {
+                        alert('保存任务返工信息失败: ' + response.error);
+                    }
+                },
+                error: function (xhr, status, error) {
+                    alert('保存任务返工信息失败: ' + xhr.responseText);
+                }
+            });
+        });
+
+        // 报废任务
+        $('#scrapTaskForm').on('submit', function (e) {
+            e.preventDefault();
+            const formData = $(this).serialize();
+
+            $.ajax({
+                url: "{% url 'my_tasks_operator_scrap_task' %}",
+                method: 'POST',
+                data: formData,
+                success: function (response) {
+                    if (response.success) {
+                        alert('任务报废信息已保存');
+                        $('#scrapTaskModal').modal('hide');
+                        // 这里可以选择刷新页面或更新任务信息
+                        window.location.reload();
+                    } else {
+                        alert('保存任务报废信息失败: ' + response.error);
+                    }
+                },
+                error: function (xhr, status, error) {
+                    alert('保存任务报废信息失败: ' + xhr.responseText);
+                }
+            });
+        });
+    });
+</script>
+{% endblock %}

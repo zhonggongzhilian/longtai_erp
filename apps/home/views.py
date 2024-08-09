@@ -29,36 +29,13 @@ from .forms import SignUpForm, CustomUserChangeForm
 from .models import Device, CustomUser
 from .models import Order, OrderProduct
 from .models import Process, Raw, Product
-from .models import Task
+from .models import Task, Weight
+
 from .preprocess import preprocess_order, preprocess_product, preprocess_process, preprocess_device, preprocess_raw
 
 # views.py
 
 logger = logging.getLogger(__name__)
-
-
-@login_required
-def my_tasks(request):
-    user = request.user
-    if user.role == 'admin':
-        # Admins see all results
-        tasks = Task.objects.all().order_by('task_start_time')
-    else:
-        # Operators and Inspectors see only related tasks
-        related_device_names = Device.objects.filter(
-            operator=user
-        ).values_list('device_name', flat=True) | Device.objects.filter(
-            inspector=user
-        ).values_list('device_name', flat=True)
-        tasks = Task.objects.filter(
-            device__in=related_device_names
-        ).order_by('task_start_time')
-
-    context = {
-        'tasks': tasks,
-        'user': user,
-    }
-    return render(request, 'home/my_tasks.html', context)
 
 
 def user_list_list(request):
@@ -187,13 +164,17 @@ def index(request):
     raw_count = Raw.objects.count()
     exchange_count = Device.objects.count()
     process_count = Process.objects.count()
+    # 获取最新的 weight 数据
+    weight = Weight.objects.latest('id').weight  # 根据你的模型字段名获取 weight
+
     context = {
         'segment': 'index',
         'orders_count': orders_count,
         'products_count': products_count,
         'raw_count': raw_count,
         'exchange_count': exchange_count,
-        'process_count': process_count
+        'process_count': process_count,
+        'weight': weight,
     }
 
     html_template = loader.get_template('home/index.html')
@@ -541,24 +522,152 @@ def mark_not_inspected(request, id):
 @require_POST
 @csrf_exempt
 def add_urgent_task(request):
-    execution_time = request.POST.get('execution_time')
-    completion_time = request.POST.get('completion_time')
-    order = request.POST.get('order')
-    product = request.POST.get('product')
-    process_sequence = request.POST.get('process_sequence')
+    task_start_time = request.POST.get('task_start_time')
+    task_end_time = request.POST.get('task_end_time')
+    order_code = request.POST.get('order_code')
+    product_code = request.POST.get('product_code')
+    process_i = request.POST.get('process_i')
     process_name = request.POST.get('process_name')
-    device = request.POST.get('device')
+    device_name = request.POST.get('device_name')
 
     task = Task.objects.create(
-        execution_time=execution_time,
-        completion_time=completion_time,
-        order=order,
-        product=product,
-        process_sequence=process_sequence,
+        task_start_time=task_start_time,
+        task_end_time=task_end_time,
+        order_code=order_code,
+        product_code=product_code,
+        process_i=process_i,
         process_name=process_name,
-        device=device,
+        device_name=device_name,
         completed=False,
         inspected=False
     )
 
     return JsonResponse({'success': True, 'task_id': task.id})
+
+
+# My tasks
+
+@login_required
+def my_tasks(request):
+    user = request.user
+    if user.role == 'admin':
+        # Admins see all results
+        tasks = Task.objects.all().order_by('task_start_time')
+    else:
+        # Operators and Inspectors see only related tasks
+        related_device_names = Device.objects.filter(
+            operator=user
+        ).values_list('device_name', flat=True) | Device.objects.filter(
+            inspector=user
+        ).values_list('device_name', flat=True)
+        tasks = Task.objects.filter(
+            device_name__in=related_device_names
+        ).order_by('task_start_time')
+
+    context = {
+        'tasks': tasks,
+        'user': user,
+    }
+    return render(request, 'home/my_tasks.html', context)
+
+
+def my_tasks_operator_detail(request, task_id):
+    task = get_object_or_404(Task, id=task_id)
+    return render(request, 'home/my_tasks_operator_detail.html', {'task': task})
+
+
+def is_max_process(order_product):
+    """
+    判断当前工序是否是订单产品的最大工序。
+    """
+    all_processes = Process.objects.filter(product_code=order_product.product_code).order_by('process_i')
+    process_indices = [p.process_i for p in all_processes]
+    max_process_i = max(process_indices)
+    return order_product.cur_process_i == max_process_i
+
+@csrf_exempt
+def my_tasks_operator_complete_task(request):
+    print("my_tasks_operator_complete_task")
+    if request.method == 'POST':
+        # Update OrderProduct
+
+        task_id = request.POST.get('task_id')
+        product_num = request.POST.get('product_num')
+
+        task = Task.objects.get(id=task_id)
+        order_code = task.order_code
+        order = get_object_or_404(Order, order_code=order_code)
+
+        product_code = task.product_code
+        order_product = OrderProduct.objects.get(product_code=product_code,
+                                                 order=order)
+        task.product_num += int(product_num)
+        task.save()
+
+        if is_max_process(order_product):
+            order_product.product_num_done += product_num
+            order_product.product_num_todo -= product_num
+            if order_product.product_num_todo <= 0:
+                order_product.is_done = 1
+            order_product.save()
+
+            # Update Order
+            order = order_product.order
+            if not OrderProduct.objects.filter(order=order, is_done=0).exists():
+                order.is_done = 1
+            order.save()
+
+            # Update Weight
+            product = Product.objects.get(code=order_product.product_code)
+            weight = Weight.objects.get(product=product)
+            weight.weight += product.weight * product_num
+            weight.save()
+
+        return JsonResponse({'success': True,
+                             'product_num': task.product_num,})
+    return JsonResponse({'success': False})
+
+
+@csrf_exempt
+def my_tasks_operator_rework_task(request):
+    if request.method == 'POST':
+        import json
+        data = json.loads(request.body)
+        task_id = data.get('task_id')
+
+        try:
+            # Get the OrderProduct instance
+            order_product = OrderProduct.objects.get(id=task_id)
+
+            # Decrement cur_process_i
+            if order_product.cur_process_i > 0:
+                order_product.cur_process_i -= 1
+                order_product.save()
+
+            return JsonResponse({'success': True})
+        except OrderProduct.DoesNotExist:
+            return JsonResponse({'success': False, 'error': 'OrderProduct not found'})
+
+    return JsonResponse({'success': False})
+
+
+@csrf_exempt
+def my_tasks_operator_scrap_task(request):
+    if request.method == 'POST':
+        import json
+        data = json.loads(request.body)
+        task_id = data.get('task_id')
+
+        try:
+            # Get the OrderProduct instance
+            order_product = OrderProduct.objects.get(id=task_id)
+
+            # Set cur_process_i to 0
+            order_product.cur_process_i = 0
+            order_product.save()
+
+            return JsonResponse({'success': True})
+        except OrderProduct.DoesNotExist:
+            return JsonResponse({'success': False, 'error': 'OrderProduct not found'})
+
+    return JsonResponse({'success': False})

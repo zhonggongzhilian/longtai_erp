@@ -1,6 +1,6 @@
 {% extends 'layouts/base.html' %}
 
-{% block title %} 我的任务 {% endblock title %}
+{% block title %} 我的生产 {% endblock title %}
 
 {% block content %}
 <div class="header bg-primary pb-6">
@@ -76,46 +76,14 @@
                             <td>{{ task.inspected|yesno:"是,否" }}</td>
                             {% if request.user.role == 'operator' %}
                             <td>
-                                {% if task.completed %}
-                                <button class="btn btn-warning btn-sm mark-not-complete" data-id="{{ task.id }}">
-                                    未生产完成
-                                </button>
-                                {% else %}
-                                <button class="btn btn-success btn-sm mark-complete" data-id="{{ task.id }}">生产完成
-                                </button>
-                                {% endif %}
+                                <a href="{% url 'my_tasks_operator_detail' task.id %}" class="btn btn-success btn-sm">
+                                    报工
+                                </a>
                             </td>
                             {% elif request.user.role == 'inspector' %}
                             <td>
-                                {% if task.inspected %}
-                                <button class="btn btn-warning btn-sm mark-not-inspected" data-id="{{ task.id }}">
-                                    未检查完成
+                                <button class="btn btn-info btn-sm mark-inspected" data-id="{{ task.id }}">检查
                                 </button>
-                                {% else %}
-                                <button class="btn btn-info btn-sm mark-inspected" data-id="{{ task.id }}">检查完成
-                                </button>
-                                {% endif %}
-                            </td>
-                            {% elif request.user.role == 'admin' %}
-                            <td>
-                                {% if task.completed %}
-                                <button class="btn btn-warning btn-sm mark-not-complete" data-id="{{ task.id }}">
-                                    未生产完成
-                                </button>
-                                {% else %}
-                                <button class="btn btn-success btn-sm mark-complete" data-id="{{ task.id }}">生产完成
-                                </button>
-                                {% endif %}
-                            </td>
-                            <td>
-                                {% if task.inspected %}
-                                <button class="btn btn-warning btn-sm mark-not-inspected" data-id="{{ task.id }}">
-                                    未检查完成
-                                </button>
-                                {% else %}
-                                <button class="btn btn-info btn-sm mark-inspected" data-id="{{ task.id }}">检查完成
-                                </button>
-                                {% endif %}
                             </td>
                             {% endif %}
                         </tr>
@@ -128,7 +96,9 @@
     </div>
 </div>
 
-<div class="modal fade" id="addUrgentTaskModal" tabindex="-1" role="dialog" aria-labelledby="addUrgentTaskModalLabel" aria-hidden="true">
+
+<div class="modal fade" id="addUrgentTaskModal" tabindex="-1" role="dialog" aria-labelledby="addUrgentTaskModalLabel"
+     aria-hidden="true">
     <div class="modal-dialog" role="document">
         <div class="modal-content">
             <div class="modal-header">
@@ -141,23 +111,25 @@
                 <div class="modal-body">
                     <div class="form-group">
                         <label for="executionTime">执行时间</label>
-                        <input type="datetime-local" class="form-control" id="executionTime" name="execution_time" required>
+                        <input type="datetime-local" class="form-control" id="executionTime" name="task_start_time"
+                               required>
                     </div>
                     <div class="form-group">
                         <label for="completionTime">完成时间</label>
-                        <input type="datetime-local" class="form-control" id="completionTime" name="completion_time" required>
+                        <input type="datetime-local" class="form-control" id="completionTime" name="task_end_time"
+                               required>
                     </div>
                     <div class="form-group">
                         <label for="order">订单</label>
-                        <input type="text" class="form-control" id="order" name="order" required>
+                        <input type="text" class="form-control" id="order" name="order_code" required>
                     </div>
                     <div class="form-group">
                         <label for="product">产品</label>
-                        <input type="text" class="form-control" id="product" name="product" required>
+                        <input type="text" class="form-control" id="product" name="product_code" required>
                     </div>
                     <div class="form-group">
                         <label for="processSequence">工序号</label>
-                        <input type="text" class="form-control" id="processSequence" name="process_sequence" required>
+                        <input type="text" class="form-control" id="processSequence" name="process_i" required>
                     </div>
                     <div class="form-group">
                         <label for="processName">工序名称</label>
@@ -165,7 +137,7 @@
                     </div>
                     <div class="form-group">
                         <label for="device">设备</label>
-                        <input type="text" class="form-control" id="device" name="device" required>
+                        <input type="text" class="form-control" id="device" name="device_name" required>
                     </div>
                 </div>
                 <div class="modal-footer">
@@ -194,179 +166,29 @@
 
 <script>
     $(document).ready(function () {
-        $('#datePicker').on('change', function () {
-            const selectedDate = $(this).val();
-            const selectedDateTime = new Date(selectedDate + 'T00:00:00');
-            const utcDateTime = new Date(selectedDateTime.getTime() - selectedDateTime.getTimezoneOffset() * 60000);
-            const formattedDate = utcDateTime.toISOString().split('T')[0];
-
-            $.ajax({
-                url: "{% url 'filter_by_date' %}",
-                method: 'GET',
-                data: { date: formattedDate },
-                success: function (response) {
-                    $('#resultTableBody').empty();
-                    response.results.forEach(function(result) {
-                        $('#resultTableBody').append(
-                            `<tr class="task-row ${result.completed && result.inspected ? 'completed-and-inspected-task' : (result.completed ? 'completed-task' : (result.inspected ? 'inspected-task' : ''))}" data-id="${result.id}" data-execution-time="${result.execution_time}">
-                                <td>${result.task_start_time}</td>
-                                <td>${result.task_end_time}</td>
-                                <td>${result.is_changeover}</td>
-                                <td>${result.order_code}</td>
-                                <td>${result.product_code}</td>
-                                <td>${result.process_i}</td>
-                                <td>${result.process_name}</td>
-                                <td>${result.device_name}</td>
-                                <td>${result.completed ? '是' : '否'}</td>
-                                <td>${result.inspected ? '是' : '否'}</td>
-                                {% if user.role == 'Operator' %}
-                                <td>
-                                    ${result.completed ? '<button class="btn btn-warning btn-sm mark-not-complete" data-id="${result.id}">未生产完成</button>' : '<button class="btn btn-success btn-sm mark-complete" data-id="${result.id}">生产完成</button>'}
-                                </td>
-                                {% elif user.role == 'Inspector' %}
-                                <td>
-                                    ${result.inspected ? '<button class="btn btn-warning btn-sm mark-not-inspected" data-id="${result.id}">未检查完成</button>' : '<button class="btn btn-info btn-sm mark-inspected" data-id="${result.id}">检查完成</button>'}
-                                </td>
-                                {% elif user.role == 'Administrator' %}
-                                <td>
-                                    ${result.completed ? '<button class="btn btn-warning btn-sm mark-not-complete" data-id="${result.id}">未生产完成</button>' : '<button class="btn btn-success btn-sm mark-complete" data-id="${result.id}">生产完成</button>'}
-                                </td>
-                                <td>
-                                    ${result.inspected ? '<button class="btn btn-warning btn-sm mark-not-inspected" data-id="${result.id}">未检查完成</button>' : '<button class="btn btn-info btn-sm mark-inspected" data-id="${result.id}">检查完成</button>'}
-                                </td>
-                                {% endif %}
-                            </tr>`
-                        );
-                    });
-                },
-                error: function (xhr, status, error) {
-                    alert('加载数据失败: ' + xhr.responseText);
-                }
-            });
-        });
-
-        $(document).on('click', '.mark-complete', function () {
-            const taskId = $(this).data('id');
-            const row = $(this).closest('tr');
-
-            $.ajax({
-                url: `/tasks/${taskId}/mark-complete/`,
-                method: 'POST',
-                data: {
-                    csrfmiddlewaretoken: '{{ csrf_token }}'
-                },
-                success: function (response) {
-                    if (response.success) {
-                        row.find('td:nth-child(9)').text('是'); // Update completion status
-                        row.removeClass('inspected-task completed-and-inspected-task').addClass('completed-task');
-                        row.find('.mark-complete').replaceWith('<button class="btn btn-warning btn-sm mark-not-complete" data-id="' + taskId + '">未生产完成</button>');
-                    } else {
-                        alert('标记为完成失败');
-                    }
-                },
-                error: function (xhr, status, error) {
-                    alert('标记为完成失败: ' + xhr.responseText);
-                }
-            });
-        });
-
-        $(document).on('click', '.mark-not-complete', function () {
-            const taskId = $(this).data('id');
-            const row = $(this).closest('tr');
-
-            $.ajax({
-                url: `/tasks/${taskId}/mark-not-complete/`,
-                method: 'POST',
-                data: {
-                    csrfmiddlewaretoken: '{{ csrf_token }}'
-                },
-                success: function (response) {
-                    if (response.success) {
-                        row.find('td:nth-child(9)').text('否'); // Update completion status
-                        row.removeClass('completed-task completed-and-inspected-task').addClass('');
-                        row.find('.mark-not-complete').replaceWith('<button class="btn btn-success btn-sm mark-complete" data-id="' + taskId + '">生产完成</button>');
-                    } else {
-                        alert('标记为未完成失败');
-                    }
-                },
-                error: function (xhr, status, error) {
-                    alert('标记为未完成失败: ' + xhr.responseText);
-                }
-            });
-        });
-
-        $(document).on('click', '.mark-inspected', function () {
-            const taskId = $(this).data('id');
-            const row = $(this).closest('tr');
-
-            $.ajax({
-                url: `/tasks/${taskId}/mark-inspected/`,
-                method: 'POST',
-                data: {
-                    csrfmiddlewaretoken: '{{ csrf_token }}'
-                },
-                success: function (response) {
-                    if (response.success) {
-                        row.find('td:nth-child(10)').text('是'); // Update inspected status
-                        row.removeClass('completed-task completed-and-inspected-task').addClass('inspected-task');
-                        row.find('.mark-inspected').replaceWith('<button class="btn btn-warning btn-sm mark-not-inspected" data-id="' + taskId + '">未检查完成</button>');
-                    } else {
-                        alert('标记为检查完成失败');
-                    }
-                },
-                error: function (xhr, status, error) {
-                    alert('标记为检查完成失败: ' + xhr.responseText);
-                }
-            });
-        });
-
-        $(document).on('click', '.mark-not-inspected', function () {
-            const taskId = $(this).data('id');
-            const row = $(this).closest('tr');
-
-            $.ajax({
-                url: `/tasks/${taskId}/mark-not-inspected/`,
-                method: 'POST',
-                data: {
-                    csrfmiddlewaretoken: '{{ csrf_token }}'
-                },
-                success: function (response) {
-                    if (response.success) {
-                        row.find('td:nth-child(10)').text('否'); // Update inspected status
-                        row.removeClass('inspected-task completed-and-inspected-task').addClass('');
-                        row.find('.mark-not-inspected').replaceWith('<button class="btn btn-info btn-sm mark-inspected" data-id="' + taskId + '">检查完成</button>');
-                    } else {
-                        alert('标记为未检查完成失败');
-                    }
-                },
-                error: function (xhr, status, error) {
-                    alert('标记为未检查完成失败: ' + xhr.responseText);
-                }
-            });
-        });
-
         $('#addUrgentTaskForm').on('submit', function (e) {
-        e.preventDefault();
-        const formData = $(this).serialize();
+            e.preventDefault();
+            const formData = $(this).serialize();
 
-        $.ajax({
-            url: "{% url 'add_urgent_task' %}",
-            method: 'POST',
-            data: formData,
-            success: function (response) {
-                if (response.success) {
-                    alert('任务添加成功');
-                    $('#addUrgentTaskModal').modal('hide');
-                    // Optionally, you can add the new task to the table here or refresh the page
-                } else {
-                    alert('任务添加失败');
+            $.ajax({
+                url: "{% url 'add_urgent_task' %}",
+                method: 'POST',
+                data: formData,
+                success: function (response) {
+                    if (response.success) {
+                        alert('任务添加成功');
+                        $('#addUrgentTaskModal').modal('hide');
+                        // Optionally, you can add the new task to the table here or refresh the page
+                        window.location.reload();
+                    } else {
+                        alert('任务添加失败');
+                    }
+                },
+                error: function (xhr, status, error) {
+                    alert('任务添加失败: ' + xhr.responseText);
                 }
-            },
-            error: function (xhr, status, error) {
-                alert('任务添加失败: ' + xhr.responseText);
-            }
+            });
         });
-    });
     });
 
 

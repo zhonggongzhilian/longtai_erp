@@ -45,13 +45,15 @@ urlpatterns = [
     path('users/<int:user_id>/delete/', views.user_list_delete, name='user_list_delete'),
     path('users/create/', views.user_list_create, name='user_list_create'),
 
+    # My tasks
     path('filter_by_date/', views.filter_by_date, name='filter_by_date'),
     path('my-tasks/', views.my_tasks, name='my_tasks'),
     path('tasks/filter_by_date/', views.filter_by_date, name='filter_by_date'),
-    path('tasks/<int:id>/mark-complete/', views.mark_complete, name='mark_complete'),
-    path('tasks/<int:id>/mark-not-complete/', views.mark_not_complete, name='mark_complete'),
-    path('tasks/<int:id>/mark-inspected/', views.mark_inspected, name='mark_inspected'),
-    path('tasks/<int:id>/mark-not-inspected/', views.mark_not_inspected, name='mark_inspected'),
+    path('my_tasks_operator_detail/<int:task_id>/', views.my_tasks_operator_detail, name='my_tasks_operator_detail'),
+    path('my_tasks_operator_complete_task/', views.my_tasks_operator_complete_task, name='my_tasks_operator_complete_task'),
+    path('my_tasks_operator_rework_task/', views.my_tasks_operator_rework_task, name='my_tasks_operator_rework_task'),
+    path('my_tasks_operator_scrap_task/', views.my_tasks_operator_scrap_task, name='my_tasks_operator_scrap_task'),
+
 
     path('tasks/add-urgent/', views.add_urgent_task, name='add_urgent_task'),
 ]
