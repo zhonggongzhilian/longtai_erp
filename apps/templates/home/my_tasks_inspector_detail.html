@@ -69,8 +69,8 @@
                     <div class="d-flex justify-content-between mt-3">
                         <button class="btn btn-secondary" onclick="window.history.back()">返回</button>
                         <div>
-                            <a class="btn btn-success mr-2" data-toggle="modal"
-                               data-target="#completeTaskModal">完成</a>
+                            <a class="btn btn-info mr-2" data-toggle="modal"
+                               data-target="#completeTaskModal">检查</a>
                             <a class="btn btn-warning mr-2" data-toggle="modal" data-target="#reworkTaskModal">返工</a>
                             <a class="btn btn-danger" data-toggle="modal" data-target="#scrapTaskModal">报废</a>
                         </div>
@@ -87,7 +87,7 @@
     <div class="modal-dialog" role="document">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title" id="completeTaskModalLabel">完成任务</h5>
+                <h5 class="modal-title" id="completeTaskModalLabel">完成检查</h5>
                 <button type="button" class="close" data-dismiss="modal" aria-label="Close">
                     <span aria-hidden="true">&times;</span>
                 </button>
@@ -97,14 +97,10 @@
                     <input type="hidden" id="taskId" name="task_id" value="{{ task.id }}">
                     <p><strong>执行时间:</strong> {{ task.task_start_time }}</p>
                     <p><strong>完成时间:</strong> {{ task.task_end_time }}</p>
-                    <div class="form-group">
-                        <label for="productNum">完成数量</label>
-                        <input type="number" class="form-control" id="productNum" name="product_num" required>
-                    </div>
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-dismiss="modal">关闭</button>
-                    <button type="submit" class="btn btn-success">确认完成</button>
+                    <button type="submit" class="btn btn-info">确认检查</button>
                 </div>
             </form>
         </div>
@@ -172,7 +168,7 @@
             const formData = $(this).serialize();
 
             $.ajax({
-                url: "{% url 'my_tasks_operator_complete_task' %}",  // 更换为你的视图URL
+                url: "{% url 'my_tasks_inspector_complete_task' %}",  // 更换为你的视图URL
                 method: 'POST',
                 data: formData,
                 success: function (response) {

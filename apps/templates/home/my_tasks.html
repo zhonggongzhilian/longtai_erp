@@ -82,8 +82,9 @@
                             </td>
                             {% elif request.user.role == 'inspector' %}
                             <td>
-                                <button class="btn btn-info btn-sm mark-inspected" data-id="{{ task.id }}">检查
-                                </button>
+                                <a href="{% url 'my_tasks_inspector_detail' task.id %}" class="btn btn-info btn-sm">
+                                    检查
+                                </a>
                             </td>
                             {% endif %}
                         </tr>

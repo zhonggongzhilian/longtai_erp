@@ -30,7 +30,6 @@ from .models import Device, CustomUser
 from .models import Order, OrderProduct
 from .models import Process, Raw, Product
 from .models import Task, Weight
-
 from .preprocess import preprocess_order, preprocess_product, preprocess_process, preprocess_device, preprocess_raw
 
 # views.py
@@ -553,17 +552,20 @@ def my_tasks(request):
     if user.role == 'admin':
         # Admins see all results
         tasks = Task.objects.all().order_by('task_start_time')
+    elif user.role == 'inspector':
+        related_device_names = Device.objects.filter(inspector=user).values_list('device_name', flat=True)
+        tasks = Task.objects.filter(
+            device_name__in=related_device_names,
+            completed=1,
+        ).order_by('task_start_time')
     else:
         # Operators and Inspectors see only related tasks
         related_device_names = Device.objects.filter(
             operator=user
-        ).values_list('device_name', flat=True) | Device.objects.filter(
-            inspector=user
         ).values_list('device_name', flat=True)
         tasks = Task.objects.filter(
             device_name__in=related_device_names
         ).order_by('task_start_time')
-
     context = {
         'tasks': tasks,
         'user': user,
@@ -585,12 +587,12 @@ def is_max_process(order_product):
     max_process_i = max(process_indices)
     return order_product.cur_process_i == max_process_i
 
+
 @csrf_exempt
 def my_tasks_operator_complete_task(request):
     print("my_tasks_operator_complete_task")
     if request.method == 'POST':
         # Update OrderProduct
-
         task_id = request.POST.get('task_id')
         product_num = request.POST.get('product_num')
 
@@ -602,6 +604,7 @@ def my_tasks_operator_complete_task(request):
         order_product = OrderProduct.objects.get(product_code=product_code,
                                                  order=order)
         task.product_num += int(product_num)
+        task.completed = 1
         task.save()
 
         if is_max_process(order_product):
@@ -624,20 +627,26 @@ def my_tasks_operator_complete_task(request):
             weight.save()
 
         return JsonResponse({'success': True,
-                             'product_num': task.product_num,})
+                             'product_num': task.product_num, })
     return JsonResponse({'success': False})
 
 
 @csrf_exempt
 def my_tasks_operator_rework_task(request):
     if request.method == 'POST':
-        import json
-        data = json.loads(request.body)
-        task_id = data.get('task_id')
+        task_id = request.POST.get('task_id')
 
         try:
             # Get the OrderProduct instance
-            order_product = OrderProduct.objects.get(id=task_id)
+            task = Task.objects.get(id=task_id)
+            task.product_num = 0
+            task.save()
+            order_code = task.order_code
+            order = get_object_or_404(Order, order_code=order_code)
+
+            product_code = task.product_code
+            order_product = OrderProduct.objects.get(product_code=product_code,
+                                                     order=order)
 
             # Decrement cur_process_i
             if order_product.cur_process_i > 0:
@@ -654,13 +663,19 @@ def my_tasks_operator_rework_task(request):
 @csrf_exempt
 def my_tasks_operator_scrap_task(request):
     if request.method == 'POST':
-        import json
-        data = json.loads(request.body)
-        task_id = data.get('task_id')
+        task_id = request.POST.get('task_id')
 
         try:
             # Get the OrderProduct instance
-            order_product = OrderProduct.objects.get(id=task_id)
+            task = Task.objects.get(id=task_id)
+            task.product_num = 0
+            task.save()
+            order_code = task.order_code
+            order = get_object_or_404(Order, order_code=order_code)
+
+            product_code = task.product_code
+            order_product = OrderProduct.objects.get(product_code=product_code,
+                                                     order=order)
 
             # Set cur_process_i to 0
             order_product.cur_process_i = 0
@@ -670,4 +685,23 @@ def my_tasks_operator_scrap_task(request):
         except OrderProduct.DoesNotExist:
             return JsonResponse({'success': False, 'error': 'OrderProduct not found'})
 
+    return JsonResponse({'success': False})
+
+
+def my_tasks_inspector_detail(request, task_id):
+    task = get_object_or_404(Task, id=task_id)
+    return render(request, 'home/my_tasks_inspector_detail.html', {'task': task})
+
+
+@csrf_exempt
+def my_tasks_inspector_complete_task(request):
+    if request.method == 'POST':
+        # Update OrderProduct
+        task_id = request.POST.get('task_id')
+        task = Task.objects.get(id=task_id)
+        task.inspected = 1
+        task.save()
+
+        return JsonResponse({'success': True,
+                             'product_num': task.product_num, })
     return JsonResponse({'success': False})

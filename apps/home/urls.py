@@ -54,6 +54,10 @@ urlpatterns = [
     path('my_tasks_operator_rework_task/', views.my_tasks_operator_rework_task, name='my_tasks_operator_rework_task'),
     path('my_tasks_operator_scrap_task/', views.my_tasks_operator_scrap_task, name='my_tasks_operator_scrap_task'),
 
+    path('my_tasks_inspector_detail/<int:task_id>/', views.my_tasks_inspector_detail, name='my_tasks_inspector_detail'),
+    path('my_tasks_inspector_complete_task/', views.my_tasks_inspector_complete_task,
+         name='my_tasks_inspector_complete_task'),
+
 
     path('tasks/add-urgent/', views.add_urgent_task, name='add_urgent_task'),
 ]
