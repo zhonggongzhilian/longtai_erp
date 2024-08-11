@@ -5,6 +5,13 @@ from django.utils import timezone
 from .models import Device, Order, Process, Task, Product
 
 
+def update_progress(progress):
+    """
+    用于更新进度的辅助函数。
+    """
+    with open('./progress.txt', 'w') as f:
+        f.write(str(progress))
+
 def is_max_process(order_product):
     """
     判断当前工序是否是订单产品的最大工序。
@@ -111,6 +118,8 @@ def schedule_production(start_date_str='2024-01-01'):
         key=lambda p: p.order.order_end_date
     )
 
+    # remove_order_products_with_outside_process(order_products)
+
     # 字典缓存所有工序
     process_cache = {}
     for order in orders:
@@ -130,18 +139,73 @@ def schedule_production(start_date_str='2024-01-01'):
 
     devices = Device.objects.all()
 
+    processed_products = 0
+    total_products = len(order_products)
+
     while order_products:
+        print(f"{len(order_products)}")
         for device in devices:
             # 如果当前时间在设备的使用时间范围内，则跳过
             if device.start_time <= current_time < device.end_time:
                 continue
+            has_no_changeover = False
+            for order_product in order_products:
+                if current_time < order_product.end_time:
+                    continue
+                try:
+                    raw_code = Product.objects.get(product_code=order_product.product_code).raw_code
+                except Exception as e:
+                    raw_code = "Null"
+                if device.raw == raw_code:
+                    processes = process_cache.get(order_product.id, {})
+                    next_process_i = min((pi for pi in processes.keys() if pi > order_product.cur_process_i),
+                                         default=None)
+                    process = processes.get(next_process_i)
 
+                    if process:
+                        # 进行排产
+                        duration = process['process_duration']
+
+                        device.start_time = add_working_time(current_time)
+                        device.end_time = add_working_time(current_time, duration)
+
+                        # 更新产品的当前工序索引
+                        order_product.cur_process_i = process['process_i']
+                        order_product.end_time = device.end_time
+
+                        # 处理 process_capacity 为空的情况
+                        product_num = process.get('process_capacity')
+                        if product_num is None:
+                            product_num = 1  # 设置默认值
+
+                        Task.objects.create(
+                            task_start_time=device.start_time,
+                            task_end_time=device.end_time,
+                            order_code=order_product.order.order_code,
+                            product_code=order_product.product_code,
+                            process_i=process['process_i'],
+                            process_name=process['process_name'],
+                            device_name=device.device_name,
+                            product_num=product_num,
+                            is_changeover=0
+                        )
+                        # 移除已处理的订单产品，如果当前工序是最大序号工序
+                        if is_max_process(order_product):
+                            order_products.remove(order_product)
+                            processed_products += 1
+                            progress = (processed_products / total_products) * 100
+                            update_progress(progress)
+
+                        has_no_changeover = True
+                        break
+            if has_no_changeover:
+                continue
             for order_product in order_products:
 
                 # debug
-                if order_product.product_code != "MMA-511-11001" or order_product.order.order_code != "587011":
-                    order_products.remove(order_product)
-                    continue
+                # if order_product.product_code != "MMA-511-11001" or order_product.order.order_code != "587011":
+                #     order_products.remove(order_product)
+                #     continue
                 # print(
                 #     f"{order_product.order.order_code}\t{order_product.product_code}\t{device.device_name}\t{current_time}\t{order_product.end_time}")
 
@@ -157,13 +221,16 @@ def schedule_production(start_date_str='2024-01-01'):
                     duration = process['process_duration']
 
                     # 更新设备换型信息
-                    raw_code = Product.objects.get(product_code=order_product.product_code).raw_code
+                    try:
+                        raw_code = Product.objects.get(product_code=order_product.product_code).raw_code
+                    except Exception as e:
+                        raw_code = "Null"
                     is_changeover = 0
-                    if not device.raw or device.raw != raw_code:
-                        print(f"{device.raw}, {raw_code}")
+                    if device.raw != raw_code:
+                        # print(f"{device.raw}, {raw_code}")
                         duration += float(device.changeover_time)
                         is_changeover = 1
-                    device.raw = raw_code
+                    device.raw = raw_code if raw_code != "Null" else None
 
                     device.start_time = add_working_time(current_time)
                     device.end_time = add_working_time(current_time, duration)
@@ -192,6 +259,11 @@ def schedule_production(start_date_str='2024-01-01'):
                     # 移除已处理的订单产品，如果当前工序是最大序号工序
                     if is_max_process(order_product):
                         order_products.remove(order_product)
+
+                        processed_products += 1
+                        progress = (processed_products / total_products) * 100
+                        update_progress(progress)
+
                     break
         # 更新当前时间
         current_time += timedelta(minutes=1)

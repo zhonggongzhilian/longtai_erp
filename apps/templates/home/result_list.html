@@ -29,6 +29,12 @@
             <div class="modal-body" id="processingModalBody">
                 正在排产...
             </div>
+            <div class="modal-body">
+                <div id="progressBar" class="progress">
+                    <div id="progressBarFill" class="progress-bar"></div>
+                </div>
+                <p id="progressText">排产进度：</p>
+            </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-dismiss="modal">关闭</button>
             </div>
@@ -42,12 +48,6 @@
             <div class="card">
                 <div class="card-body">
                     <div class="form-row align-items-center">
-                        <div class="col-auto">
-                            <label for="datePicker" class="col-form-label">选择执行日期:</label>
-                        </div>
-                        <div class="col-auto">
-                            <input type="date" id="datePicker" class="form-control" value="2023-05-01">
-                        </div>
                         <div class="col-auto ml-auto">
                             <button class="btn btn-danger" id="scheduleButton">
                                 排产
@@ -126,73 +126,24 @@
                 }
             });
         });
-
-        $('#datePicker').on('change', function () {
-            const selectedDate = $(this).val();
-            const selectedDateTime = new Date(selectedDate + 'T00:00:00'); // Assuming start of the day in local time
-
-            // Convert to UTC
-            const utcDateTime = new Date(selectedDateTime.getTime() - selectedDateTime.getTimezoneOffset() * 60000);
-
-            // Format UTC date as YYYY-MM-DD
-            const formattedDate = utcDateTime.toISOString().split('T')[0];
-
-            $.ajax({
-                url: "{% url 'filter_by_date' %}",
-                method: 'GET',
-                data: {
-                    date: formattedDate
-                },
-                success: function (response) {
-                    // Clear existing table body
-                    $('#resultTableBody').empty();
-
-                    // Append new rows
-                    response.results.forEach(function(result) {
-                        $('#resultTableBody').append(
-                            `<tr id="result-${result.id}">
-                                <td>${result.execution_time}</td>
-                                <td>${result.completion_time}</td>
-                                <td>${result.changeover}</td>
-                                <td>${result.order}</td>
-                                <td>${result.product}</td>
-                                <td>${result.process_sequence}</td>
-                                <td>${result.process_name}</td>
-                                <td>${result.device}</td>
-                                <td>${result.completed ? '是' : '否'}</td>
-                                <td>${result.inspected ? '是' : '否'}</td>
-                            </tr>`
-                        );
-                    });
-                },
-                error: function (xhr, status, error) {
-                    alert('加载数据失败: ' + xhr.responseText);
-                }
-            });
-        });
-
-        $('.delete-result').on('click', function () {
-            const resultId = $(this).data('id');
-            const row = $('#result-' + resultId);
-
-            $.ajax({
-                url: `/results/${resultId}/delete/`,
-                method: 'POST',
-                data: {
-                    csrfmiddlewaretoken: '{{ csrf_token }}'
-                },
-                success: function (response) {
-                    if (response.success) {
-                        row.remove();
-                    } else {
-                        alert('删除失败');
-                    }
-                },
-                error: function (xhr, status, error) {
-                    alert('删除失败: ' + xhr.responseText);
-                }
-            });
-        });
     });
+
+    function updateProgressBar() {
+    fetch('/get_progress/')
+        .then(response => response.json())
+        .then(data => {
+            const progress = parseFloat(data.progress);
+            const progressBarFill = document.getElementById('progressBarFill');
+            const progressText = document.getElementById('progressText');
+            if (!isNaN(progress)) {
+                progressBarFill.style.width = progress + '%';
+                progressText.textContent = `排产进度： ${Math.round(progress)}%`;
+            }
+        })
+        .catch(error => console.error('Error fetching progress:', error));
+}
+
+// 更新进度条每秒
+setInterval(updateProgressBar, 1000);
 </script>
 {% endblock content %}

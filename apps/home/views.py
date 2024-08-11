@@ -449,6 +449,15 @@ def result_list(request):
     return render(request, 'home/result_list.html', {'results': results})
 
 
+def get_progress(request):
+    try:
+        with open('./progress.txt', 'r') as f:
+            progress = f.read()
+    except FileNotFoundError:
+        progress = '0'
+    return JsonResponse({'progress': progress})
+
+
 def delete_result(request, result_id):
     if request.method == 'POST':
         result = Task.objects.get(id=result_id)

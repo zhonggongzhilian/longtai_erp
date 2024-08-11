@@ -36,8 +36,8 @@ urlpatterns = [
     path('raws/<int:pk>/delete/', views.raw_delete, name='raw_delete'),
 
     path('results/', views.result_list, name='result_list'),
-    path('results/<int:result_id>/delete/', views.delete_result, name='delete_result'),
     path('results/process_schedule/', views.process_schedule, name='process_orders'),
+    path('get_progress/', views.get_progress, name='get_progress'),
 
     path('users/', views.user_list_list, name='user_list_list'),
     path('users/<int:user_id>/get/', views.user_list_get, name='user_list_get'),
@@ -50,14 +50,14 @@ urlpatterns = [
     path('my-tasks/', views.my_tasks, name='my_tasks'),
     path('tasks/filter_by_date/', views.filter_by_date, name='filter_by_date'),
     path('my_tasks_operator_detail/<int:task_id>/', views.my_tasks_operator_detail, name='my_tasks_operator_detail'),
-    path('my_tasks_operator_complete_task/', views.my_tasks_operator_complete_task, name='my_tasks_operator_complete_task'),
+    path('my_tasks_operator_complete_task/', views.my_tasks_operator_complete_task,
+         name='my_tasks_operator_complete_task'),
     path('my_tasks_operator_rework_task/', views.my_tasks_operator_rework_task, name='my_tasks_operator_rework_task'),
     path('my_tasks_operator_scrap_task/', views.my_tasks_operator_scrap_task, name='my_tasks_operator_scrap_task'),
 
     path('my_tasks_inspector_detail/<int:task_id>/', views.my_tasks_inspector_detail, name='my_tasks_inspector_detail'),
     path('my_tasks_inspector_complete_task/', views.my_tasks_inspector_complete_task,
          name='my_tasks_inspector_complete_task'),
-
 
     path('tasks/add-urgent/', views.add_urgent_task, name='add_urgent_task'),
 ]
