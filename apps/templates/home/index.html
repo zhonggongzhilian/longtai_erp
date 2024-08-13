@@ -17,78 +17,108 @@
         margin-top: 1rem;
         font-size: 1.2rem;
     }
+
     .progress-circle {
+        position: relative;
+        width: 100px;
+        height: 100px;
+    }
+
+    .circle-background,
+    .circle-progress {
+        position: absolute;
+        border-radius: 50%;
+        width: 100px;
+        height: 100px;
+        top: 0;
+        left: 0;
+    }
+
+    .circle-background {
+        background-color: #e9ecef; /* Background color of the circle */
+        z-index: 1;
+    }
+
+    .circle-progress {
+        background: conic-gradient(
+            blue 0%,
+            blue var(--progress),
+            #e9ecef var(--progress),
+            #e9ecef 100%
+        );
+        z-index: 2;
+        clip-path: circle(50% at 50% 50%);
+    }
+
+    .car-img {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        width: 50%;
+        height: auto;
+        z-index: 3;
+    }
+
+    .progress-bar-container {
+    margin-bottom: 20px; /* Space between progress bars */
+}
+
+.progress-bar-wrapper {
+    display: flex;
+    align-items: center; /* Vertically center items */
+    justify-content: space-between; /* Space out items */
+}
+
+.car-icon {
+    width: 100px; /* Adjust icon size */
+    height: 100px; /* Adjust icon size */
+    background: white; /* White background */
+    border-radius: 50%; /* Make background circular */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-right: 10px; /* Space between icon and progress bar */
+    box-shadow: 0 0 3px rgba(0, 0, 0, 0.2); /* Optional: add shadow for better visibility */
+}
+
+.car-icon img {
+    width: 80px; /* Adjust icon size inside the circle */
+    height: 80px; /* Adjust icon size inside the circle */
+}
+
+.progress-bar {
+    width: 80%;
+    height: 30px;
+    background-color: #e9ecef;
+    border-radius: 15px;
+    overflow: hidden;
     position: relative;
-    width: 100px;
-    height: 100px;
+    flex: 1; /* Allow progress bar to take available space */
 }
 
-.circle-background,
-.circle-progress {
-    position: absolute;
-    border-radius: 50%;
-    width: 100px;
-    height: 100px;
-    top: 0;
-    left: 0;
+.progress-bar-fill {
+    height: 100%;
+    background-color: #007bff;
+    width: 0; /* Set the width dynamically */
+    transition: width 0.5s ease-in-out;
 }
 
-.circle-background {
-    background-color: #e9ecef; /* Background color of the circle */
-    z-index: 1;
-}
-
-.circle-progress {
-    background: conic-gradient(
-        blue 0%,
-        blue var(--progress),
-        #e9ecef var(--progress),
-        #e9ecef 100%
-    );
-    z-index: 2;
-    clip-path: circle(50% at 50% 50%);
-}
-
-.car-img {
+.progress-bar-text {
     position: absolute;
     top: 50%;
     left: 50%;
     transform: translate(-50%, -50%);
-    width: 50%;
-    height: auto;
-    z-index: 3;
+    color: white;
+    font-weight: bold;
 }
 
-#progress-container {
-    display: flex;
-    justify-content: space-between;
-}
-
-    .car {
-    position: relative;
-    width: 100px;
-    height: 60px;
-}
-
-.car-img {
-    width: 100%;
-    height: auto;
-}
-
-.car-overlay {
-    position: absolute;
-    bottom: 0;
-    left: 0;
-    width: 100%;
-    background-color: blue;
-    transition: height 0.3s;
-}
-
-#car-container {
-    position: relative;
-    height: 60px;
+.btn-start {
+    margin-left: 10px; /* Space between progress bar and button */
 }
 </style>
+
+
 {% endblock stylesheets %}
 
 {% block content %}
@@ -100,11 +130,11 @@
             <div class="row align-items-center py-4">
                 <div class="col-lg-6 col-7">
                     <nav aria-label="breadcrumb" class="d-none d-md-inline-block ml-md-4">
-<!--                        <ol class="breadcrumb breadcrumb-links breadcrumb-dark">-->
-<!--                            <li class="breadcrumb-item"><a href="#"><i class="fas fa-home"></i></a></li>-->
-<!--                            <li class="breadcrumb-item"><a href="#">数据看板</a></li>-->
-<!--                            <li class="breadcrumb-item active" aria-current="page">大盘数据</li>-->
-<!--                        </ol>-->
+                        <!--                        <ol class="breadcrumb breadcrumb-links breadcrumb-dark">-->
+                        <!--                            <li class="breadcrumb-item"><a href="#"><i class="fas fa-home"></i></a></li>-->
+                        <!--                            <li class="breadcrumb-item"><a href="#">数据看板</a></li>-->
+                        <!--                            <li class="breadcrumb-item active" aria-current="page">大盘数据</li>-->
+                        <!--                        </ol>-->
                     </nav>
                 </div>
                 <div class="col-lg-6 col-5 text-right">
@@ -251,35 +281,53 @@
     <div class="row">
         <div class="col-xl-8">
             <div class="card bg-default">
-    <div class="card-header bg-transparent">
-        <div class="row align-items-center">
-            <div class="col">
-                <h6 class="text-light text-uppercase ls-1 mb-1">生产情况</h6>
-                <h5 class="h3 text-white mb-0">模型重量</h5>
+                <div class="card-header bg-transparent">
+                    <div class="row align-items-center">
+                        <div class="col">
+                            <h6 class="text-light text-uppercase ls-1 mb-1">生产情况</h6>
+                            <h5 class="h3 text-white mb-0">已生产重量：{{ weight }}</h5>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="progress-bar-container">
+                        <div class="progress-bar-wrapper">
+                            <div class="car-icon">
+                                <img src="{% static 'assets/img/car.svg' %}" alt="Car Icon">
+                            </div>
+                            <div class="progress-bar" id="progress-bar-1">
+                                <div class="progress-bar-fill" id="fill-1"></div>
+                                <div class="progress-bar-text" id="text-1">0%</div>
+                            </div>
+                            <button class="btn btn-primary btn-start" id="start-1">发车</button>
+                        </div>
+                    </div>
+                    <div class="progress-bar-container">
+                        <div class="progress-bar-wrapper">
+                            <div class="car-icon">
+                                <img src="{% static 'assets/img/car.svg' %}" alt="Car Icon">
+                            </div>
+                            <div class="progress-bar" id="progress-bar-2">
+                                <div class="progress-bar-fill" id="fill-2"></div>
+                                <div class="progress-bar-text" id="text-2">0%</div>
+                            </div>
+                            <button class="btn btn-primary btn-start" id="start-2">发车</button>
+                        </div>
+                    </div>
+                    <div class="progress-bar-container">
+                        <div class="progress-bar-wrapper">
+                            <div class="car-icon">
+                                <img src="{% static 'assets/img/car.svg' %}" alt="Car Icon">
+                            </div>
+                            <div class="progress-bar" id="progress-bar-3">
+                                <div class="progress-bar-fill" id="fill-3"></div>
+                                <div class="progress-bar-text" id="text-3">0%</div>
+                            </div>
+                            <button class="btn btn-primary btn-start" id="start-3">发车</button>
+                        </div>
+                    </div>
+                </div>
             </div>
-        </div>
-    </div>
-    <div class="card-body">
-        <div id="progress-container" class="d-flex justify-content-between">
-            <!-- Progress Circles -->
-            <div class="progress-circle" data-index="0">
-                <div class="circle-background"></div>
-                <div class="circle-progress"></div>
-                <img src="{% static 'assets/img/car.svg' %}" alt="Car" class="car-img">
-            </div>
-            <div class="progress-circle" data-index="1">
-                <div class="circle-background"></div>
-                <div class="circle-progress"></div>
-                <img src="{% static 'assets/img/car.svg' %}" alt="Car" class="car-img">
-            </div>
-            <div class="progress-circle" data-index="2">
-                <div class="circle-background"></div>
-                <div class="circle-progress"></div>
-                <img src="{% static 'assets/img/car.svg' %}" alt="Car" class="car-img">
-            </div>
-        </div>
-    </div>
-</div>
         </div>
         <div class="col-xl-4">
             <div class="card">
@@ -300,6 +348,7 @@
             </div>
         </div>
     </div>
+
     <div class="row">
         <div class="col-xl-8">
             <div class="card">
@@ -369,7 +418,7 @@
                         </tr>
                         <tr>
                             <th scope="row">
-                                 摇臂#2
+                                摇臂#2
                             </th>
                             <td>
                                 2,050
@@ -584,28 +633,26 @@
         setupUploadButton('uploadButton_Exchange');
     });
 </script>
-
 <script>
-    document.addEventListener('DOMContentLoaded', function() {
-        // 从 Django 模板中获取 weight 数据
-        const weight = {{ weight|floatformat:2 }};
+    document.addEventListener("DOMContentLoaded", function() {
+        var weight = {{ weight }}; // Use Django template variable for weight
+        var maxWeight = 13.5; // Maximum value for each segment
 
-        // Constants
-        const totalCars = 3;
-        const carCapacity = 13.5;
+        var progressBars = document.querySelectorAll('.progress-bar-fill');
+        var progressTexts = document.querySelectorAll('.progress-bar-text');
 
-        const cars = document.querySelectorAll('.car');
-        cars.forEach((car, index) => {
-            const overlay = car.querySelector('.car-overlay');
-            let fillHeight = 0;
+        // Calculate progress for each bar
+        var progressValues = [
+            Math.min(weight, maxWeight) / maxWeight,
+            Math.max(0, Math.min(weight - maxWeight, maxWeight)) / maxWeight,
+            Math.max(0, Math.min(weight - 2 * maxWeight, maxWeight)) / maxWeight
+        ];
 
-            if (weight > (index + 1) * carCapacity) {
-                fillHeight = 100; // Fully fill the car
-            } else if (weight > index * carCapacity) {
-                fillHeight = ((weight - index * carCapacity) / carCapacity) * 100;
-            }
-
-            overlay.style.height = `${fillHeight}%`;
+        // Update each progress bar and its text
+        progressBars.forEach(function(bar, index) {
+            var percentage = progressValues[index] * 100;
+            bar.style.width = percentage + '%';
+            progressTexts[index].textContent = `${Math.round(percentage)}%`;
         });
     });
 </script>

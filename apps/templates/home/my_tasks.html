@@ -50,6 +50,7 @@
                             <th scope="col">工序号</th>
                             <th scope="col">工序名称</th>
                             <th scope="col">设备</th>
+                            <th scope="col">生产数量</th>
                             <th scope="col">完成状态</th>
                             <th scope="col">检查状态</th>
                             {% if request.user.role == 'operator' or request.user.role == 'admin' %}
@@ -72,6 +73,7 @@
                             <td>{{ task.process_i }}</td>
                             <td>{{ task.process_name }}</td>
                             <td>{{ task.device_name }}</td>
+                            <td>{{ task.product_num }}</td>
                             <td>{{ task.completed|yesno:"是,否" }}</td>
                             <td>{{ task.inspected|yesno:"是,否" }}</td>
                             {% if request.user.role == 'operator' %}

@@ -9,7 +9,6 @@ from datetime import datetime, timedelta
 
 import pytz
 from django import template
-from django.contrib.auth import authenticate, login
 from django.contrib.auth.decorators import login_required
 from django.core.exceptions import ValidationError
 from django.core.files.storage import FileSystemStorage
@@ -31,6 +30,10 @@ from .models import Order, OrderProduct
 from .models import Process, Raw, Product
 from .models import Task, Weight
 from .preprocess import preprocess_order, preprocess_product, preprocess_process, preprocess_device, preprocess_raw
+
+from .views_login import login_view, register_user
+
+__all__ = [login_view, register_user]
 
 # views.py
 
@@ -109,51 +112,9 @@ def user_list_create(request):
         return JsonResponse({'error': 'Invalid request method.'}, status=405)
 
 
-def login_view(request):
-    form = LoginForm(request.POST or None)
-
-    msg = None
-
-    if request.method == "POST":
-
-        if form.is_valid():
-            username = form.cleaned_data.get("username")
-            password = form.cleaned_data.get("password")
-            user = authenticate(username=username, password=password)
-            if user is not None:
-                login(request, user)
-                return redirect("/")
-            else:
-                msg = 'Invalid credentials'
-        else:
-            msg = 'Error validating the form'
-
-    return render(request, "accounts/login.html", {"form": form, "msg": msg})
 
 
-def register_user(request):
-    msg = None
-    success = False
 
-    if request.method == "POST":
-        form = SignUpForm(request.POST)
-        if form.is_valid():
-            form.save()
-            username = form.cleaned_data.get("username")
-            raw_password = form.cleaned_data.get("password1")
-            user = authenticate(username=username, password=raw_password)
-
-            msg = 'User created - please <a href="/login">login</a>.'
-            success = True
-
-            # return redirect("/login/")
-
-        else:
-            msg = 'Form is not valid'
-    else:
-        form = SignUpForm()
-
-    return render(request, "accounts/register.html", {"form": form, "msg": msg, "success": success})
 
 
 @login_required(login_url="/login/")
@@ -451,7 +412,7 @@ def result_list(request):
 
 def get_progress(request):
     try:
-        with open('./progress.txt', 'r') as f:
+        with open('./schedule_productionprogress.txt', 'r') as f:
             progress = f.read()
     except FileNotFoundError:
         progress = '0'
@@ -467,7 +428,7 @@ def delete_result(request, result_id):
 
 
 def process_schedule(request):
-    from .job_scheduler import schedule_production
+    from .job_scheduler_1 import schedule_production
     if request.method == 'POST':
         Task.objects.all().delete()  # 清空 OrderProcessingResult 表
         schedule_production()  # 重新计算排产结果
