@@ -593,11 +593,11 @@ def is_max_process(order_product):
 
 @csrf_exempt
 def my_tasks_operator_complete_task(request):
-    print("my_tasks_operator_complete_task")
     if request.method == 'POST':
         # Update OrderProduct
         task_id = request.POST.get('task_id')
         product_num = request.POST.get('product_num')
+        print(f"{product_num=}")
 
         task = Task.objects.get(id=task_id)
         order_code = task.order_code
@@ -606,9 +606,12 @@ def my_tasks_operator_complete_task(request):
         product_code = task.product_code
         order_product = OrderProduct.objects.get(product_code=product_code,
                                                  order=order)
+        print(f"{task.product_num_completed=}")
         task.product_num_completed += int(product_num)
         if task.product_num_completed >= task.product_num:
             task.completed = 1
+
+        print(f"{task.product_num_completed=}")
         task.save()
 
         if is_max_process(order_product):
@@ -640,10 +643,15 @@ def my_tasks_operator_rework_task(request):
     if request.method == 'POST':
         task_id = request.POST.get('task_id')
 
+        rework_product_num = int(request.POST.get('product_num_2'))
+
         try:
             # Get the OrderProduct instance
             task = Task.objects.get(id=task_id)
-            task.product_num = 0
+            task.product_num_completed -= rework_product_num
+            task.product_num_inspected -= rework_product_num
+            task.completed = 0
+            task.inspected = 0
             task.save()
             order_code = task.order_code
             order = get_object_or_404(Order, order_code=order_code)
@@ -668,14 +676,26 @@ def my_tasks_operator_rework_task(request):
 def my_tasks_operator_scrap_task(request):
     if request.method == 'POST':
         task_id = request.POST.get('task_id')
+        scrap_product_num = int(request.POST.get('product_num_3'))
 
         try:
             # Get the OrderProduct instance
             task = Task.objects.get(id=task_id)
-            task.product_num = 0
-            task.save()
+            task.product_num -= scrap_product_num
+            task.completed = 0
+            task.inspected = 0
             order_code = task.order_code
             order = get_object_or_404(Order, order_code=order_code)
+
+            OrderProduct.objects.create(
+                order=order,
+                product_code=task.product_code+"_"+datetime.now().strftime("%Y-%m-%d %H:%M"),
+                defaults={
+                    'product_num_todo': scrap_product_num,
+                }
+            )
+
+            task.save()
 
             product_code = task.product_code
             order_product = OrderProduct.objects.get(product_code=product_code,
@@ -702,8 +722,11 @@ def my_tasks_inspector_complete_task(request):
     if request.method == 'POST':
         # Update OrderProduct
         task_id = request.POST.get('task_id')
+        num_inspected = int(request.POST.get('product_num'))
         task = Task.objects.get(id=task_id)
-        task.inspected = 1
+        task.product_num_inspected += num_inspected
+        if task.product_num_inspected >= task.product_num:
+            task.inspected = 1
         task.save()
 
         return JsonResponse({'success': True,

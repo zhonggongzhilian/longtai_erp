@@ -60,8 +60,8 @@
                                     <td>{{ task.device_name }}</td>
                                 </tr>
                                 <tr>
-                                    <th scope="row">已完成数量</th>
-                                    <td><span id="task_product_num">{{ task.product_num }}</span></td>
+                                    <th scope="row">已质检数量</th>
+                                    <td><span id="task_product_num">{{ task.product_num_inspected }}</span></td>
                                 </tr>
                             </tbody>
                         </table>
@@ -128,7 +128,7 @@
                     <p><strong>完成时间:</strong> {{ task.task_end_time }}</p>
                     <div class="form-group">
                         <label for="productNum2">返工数量</label>
-                        <input type="number" class="form-control" id="productNum2" name="product_num" required>
+                        <input type="number" class="form-control" id="productNum2" name="product_num_2" required>
                     </div>
                 </div>
                 <div class="modal-footer">
@@ -157,7 +157,7 @@
                     <p><strong>完成时间:</strong> {{ task.task_end_time }}</p>
                     <div class="form-group">
                         <label for="productNum3">报废数量</label>
-                        <input type="number" class="form-control" id="productNum3" name="product_num" required>
+                        <input type="number" class="form-control" id="productNum3" name="product_num_3" required>
                     </div>
                 </div>
                 <div class="modal-footer">

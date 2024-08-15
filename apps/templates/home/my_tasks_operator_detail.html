@@ -61,7 +61,7 @@
                                 </tr>
                                 <tr>
                                     <th scope="row">已完成数量</th>
-                                    <td><span id="task_product_num">{{ task.product_num }}</span></td>
+                                    <td><span id="task_product_num">{{ task.product_num_completed }}</span></td>
                                 </tr>
                             </tbody>
                         </table>
@@ -128,7 +128,7 @@
                     <p><strong>完成时间:</strong> {{ task.task_end_time }}</p>
                     <div class="form-group">
                         <label for="productNum2">返工数量</label>
-                        <input type="number" class="form-control" id="productNum2" name="product_num" required>
+                        <input type="number" class="form-control" id="productNum2" name="product_num_2" required>
                     </div>
                 </div>
                 <div class="modal-footer">
@@ -157,7 +157,7 @@
                     <p><strong>完成时间:</strong> {{ task.task_end_time }}</p>
                     <div class="form-group">
                         <label for="productNum3">报废数量</label>
-                        <input type="number" class="form-control" id="productNum3" name="product_num" required>
+                        <input type="number" class="form-control" id="productNum3" name="product_num_3" required>
                     </div>
                 </div>
                 <div class="modal-footer">
@@ -187,7 +187,7 @@
                     if (response.success) {
                         $('#completeTaskModal').modal('hide');
                         // 刷新页面或更新任务信息
-                        window.location.reload();
+                        location.reload();
                     } else {
                         alert('保存任务完成信息失败');
                     }
@@ -211,7 +211,7 @@
                         alert('任务返工信息已保存');
                         $('#reworkTaskModal').modal('hide');
                         // 这里可以选择刷新页面或更新任务信息
-                        window.location.reload();
+                        location.reload();
                     } else {
                         alert('保存任务返工信息失败: ' + response.error);
                     }
@@ -236,7 +236,7 @@
                         alert('任务报废信息已保存');
                         $('#scrapTaskModal').modal('hide');
                         // 这里可以选择刷新页面或更新任务信息
-                        window.location.reload();
+                        location.reload();
                     } else {
                         alert('保存任务报废信息失败: ' + response.error);
                     }
