@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <style>
+        body { font-family: Arial, sans-serif; }
+        table { width: 100%; border-collapse: collapse; margin: 20px 0; }
+        th, td { padding: 10px; border: 1px solid #ddd; text-align: left; }
+        th { background-color: #f4f4f4; }
+        h1 { text-align: center; }
+        .qr-code { text-align: center; margin: 20px 0; }
+    </style>
+</head>
+<body>
+    <h1>生产作业清单</h1>
+    <p>用户: {{ user.username }}</p>
+    <p>角色: {{ user.role }}</p>
+    <div class="qr-code">
+        <img src="data:image/png;base64,{{ qr_code|safe }}" alt="QR Code">
+    </div>
+    <table>
+        <thead>
+            <tr>
+                <th>执行时间</th>
+                <th>完成时间</th>
+                <th>换型</th>
+                <th>订单</th>
+                <th>产品</th>
+                <th>工序号</th>
+                <th>工序名称</th>
+                <th>设备</th>
+                <th>生产数量</th>
+                <th>完成状态</th>
+                <th>检查状态</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for task in tasks %}
+            <tr>
+                <td>{{ task.task_start_time }}</td>
+                <td>{{ task.task_end_time }}</td>
+                <td>{{ task.is_changeover }}</td>
+                <td>{{ task.order_code }}</td>
+                <td>{{ task.product_code }}</td>
+                <td>{{ task.process_i }}</td>
+                <td>{{ task.process_name }}</td>
+                <td>{{ task.device_name }}</td>
+                <td>{{ task.product_num }}</td>
+                <td>{{ task.completed|yesno:"是,否" }}</td>
+                <td>{{ task.inspected|yesno:"是,否" }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</body>
+</html>

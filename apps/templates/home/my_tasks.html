@@ -2,6 +2,7 @@
 
 {% block title %} 我的生产 {% endblock title %}
 
+{% load static %}
 {% block content %}
 <div class="header bg-primary pb-6">
     <div class="container-fluid">
@@ -25,13 +26,10 @@
             <div class="card">
                 <div class="card-body">
                     <div class="form-row align-items-center">
-                        <div class="col-auto">
-                            <label for="datePicker" class="col-form-label">选择执行日期:</label>
-                        </div>
-                        <div class="col-auto">
-                            <input type="date" id="datePicker" class="form-control" value="2024-01-01">
-                        </div>
                         <div class="col-auto ml-auto">
+                            <button class="btn btn-primary" id="generatePdfBtn">
+                                生产作业清单
+                            </button>
                             <button class="btn btn-danger" data-toggle="modal" data-target="#addUrgentTaskModal">
                                 添加紧急任务
                             </button>
@@ -51,12 +49,12 @@
                             <th scope="col">工序名称</th>
                             <th scope="col">设备</th>
                             <th scope="col">生产数量</th>
-                            <th scope="col">完成状态</th>
-                            <th scope="col">检查状态</th>
                             {% if request.user.role == 'operator' or request.user.role == 'admin' %}
+                            <th scope="col">已完成</th>
                             <th scope="col">生产操作</th>
                             {% endif %}
                             {% if request.user.role == 'inspector' or request.user.role == 'admin' %}
+                            <th scope="col">已检查</th>
                             <th scope="col">质检操作</th>
                             {% endif %}
                         </tr>
@@ -74,15 +72,15 @@
                             <td>{{ task.process_name }}</td>
                             <td>{{ task.device_name }}</td>
                             <td>{{ task.product_num }}</td>
-                            <td>{{ task.completed|yesno:"是,否" }}</td>
-                            <td>{{ task.inspected|yesno:"是,否" }}</td>
                             {% if request.user.role == 'operator' %}
+                            <td>{{ task.product_num_completed }}</td>
                             <td>
                                 <a href="{% url 'my_tasks_operator_detail' task.id %}" class="btn btn-success btn-sm">
                                     报工
                                 </a>
                             </td>
                             {% elif request.user.role == 'inspector' %}
+                            <td>{{ task.product_num_inspected }}</td>
                             <td>
                                 <a href="{% url 'my_tasks_inspector_detail' task.id %}" class="btn btn-info btn-sm">
                                     检查
@@ -195,6 +193,11 @@
     });
 
 
-</script>
 
+</script>
+<script>
+document.getElementById('generatePdfBtn').addEventListener('click', function() {
+    window.location.href = "{% url 'generate_pdf' %}";
+});
+</script>
 {% endblock content %}

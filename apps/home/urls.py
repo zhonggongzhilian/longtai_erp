@@ -36,6 +36,7 @@ urlpatterns = [
     path('raws/<int:pk>/delete/', views.raw_delete, name='raw_delete'),
 
     path('results/', views.result_list, name='result_list'),
+    path('results/process_schedule_fast/', views.process_schedule_fast, name='process_orders_fast'),
     path('results/process_schedule/', views.process_schedule, name='process_orders'),
     path('get_progress/', views.get_progress, name='get_progress'),
 
@@ -60,4 +61,5 @@ urlpatterns = [
          name='my_tasks_inspector_complete_task'),
 
     path('tasks/add-urgent/', views.add_urgent_task, name='add_urgent_task'),
+    path('generate_pdf/', views.generate_pdf, name='generate_pdf'),
 ]

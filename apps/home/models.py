@@ -152,6 +152,8 @@ class Task(models.Model):
     completed = models.BooleanField(default=False)
     inspected = models.BooleanField(default=False)
     product_num = models.IntegerField(default=0, null=True)
+    product_num_completed = models.IntegerField(default=0, null=True)
+    product_num_inspected = models.IntegerField(default=0, null=True)
 
     class Meta:
         verbose_name = 'Order Processing Result'

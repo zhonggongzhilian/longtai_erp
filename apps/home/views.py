@@ -6,6 +6,7 @@ Copyright (c) 2019 - present AppSeed.us
 import logging
 import os
 from datetime import datetime, timedelta
+from io import BytesIO
 
 import pytz
 from django import template
@@ -13,24 +14,30 @@ from django.contrib.auth.decorators import login_required
 from django.core.exceptions import ValidationError
 from django.core.files.storage import FileSystemStorage
 from django.core.paginator import Paginator
-from django.http import HttpResponse, HttpResponseRedirect
+from django.http import HttpResponse
+from django.http import HttpResponseRedirect
 from django.http import JsonResponse
-from django.shortcuts import get_object_or_404, redirect
+from django.shortcuts import get_object_or_404
 from django.shortcuts import render
 from django.template import loader
 from django.urls import reverse
 from django.utils.dateparse import parse_date
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_POST
+from reportlab.lib.pagesizes import landscape, A4
+from reportlab.lib.units import inch
+from reportlab.pdfbase import pdfmetrics
+from reportlab.pdfbase.ttfonts import TTFont
+from reportlab.pdfgen import canvas
+from reportlab.platypus import Table, TableStyle
 
-from .forms import LoginForm
-from .forms import SignUpForm, CustomUserChangeForm
+from .forms import CustomUserChangeForm
 from .models import Device, CustomUser
 from .models import Order, OrderProduct
 from .models import Process, Raw, Product
-from .models import Task, Weight
+from .models import Task  # 确保导入你的 Task 模型
+from .models import Weight
 from .preprocess import preprocess_order, preprocess_product, preprocess_process, preprocess_device, preprocess_raw
-
 from .views_login import login_view, register_user
 
 __all__ = [login_view, register_user]
@@ -110,11 +117,6 @@ def user_list_create(request):
             return JsonResponse({'error': 'An error occurred while creating the user.'}, status=500)
     else:
         return JsonResponse({'error': 'Invalid request method.'}, status=405)
-
-
-
-
-
 
 
 @login_required(login_url="/login/")
@@ -278,7 +280,7 @@ def get_device(request, device_id):
     device = get_object_or_404(Device, id=device_id)
     data = {
         'device_name': device.device_name,
-        'exchange_time': device.exchange_time,
+        'changeover_time': device.changeover_time,
         'operator': device.operator.id if device.operator else None,
         'inspector': device.inspector.id if device.inspector else None,
     }
@@ -412,7 +414,7 @@ def result_list(request):
 
 def get_progress(request):
     try:
-        with open('./schedule_productionprogress.txt', 'r') as f:
+        with open('./progress.txt', 'r') as f:
             progress = f.read()
     except FileNotFoundError:
         progress = '0'
@@ -423,6 +425,15 @@ def delete_result(request, result_id):
     if request.method == 'POST':
         result = Task.objects.get(id=result_id)
         result.delete()
+        return JsonResponse({'success': True})
+    return JsonResponse({'success': False})
+
+
+def process_schedule_fast(request):
+    from .job_scheduler_1 import schedule_production
+    if request.method == 'POST':
+        Task.objects.all().delete()  # 清空 OrderProcessingResult 表
+        schedule_production(fast=True)  # 重新计算排产结果
         return JsonResponse({'success': True})
     return JsonResponse({'success': False})
 
@@ -536,9 +547,31 @@ def my_tasks(request):
         tasks = Task.objects.filter(
             device_name__in=related_device_names
         ).order_by('task_start_time')
+
+    import qrcode  # 用于生成二维码
+    # 获取当前页面的完整 URL
+    current_url = request.build_absolute_uri()
+
+    # 生成二维码
+    qr = qrcode.QRCode(
+        version=1,
+        error_correction=qrcode.constants.ERROR_CORRECT_L,
+        box_size=10,
+        border=4,
+    )
+    qr.add_data(current_url)
+    qr.make(fit=True)
+
+    img = qr.make_image(fill='black', back_color='white')
+
+    # 保存二维码图片到文件系统
+    img_path = 'apps/static/assets/img/qrcode/my_tasks_qr.png'
+    img.save(img_path)
+
     context = {
         'tasks': tasks,
         'user': user,
+        'qr_code_url': img_path,
     }
     return render(request, 'home/my_tasks.html', context)
 
@@ -573,8 +606,9 @@ def my_tasks_operator_complete_task(request):
         product_code = task.product_code
         order_product = OrderProduct.objects.get(product_code=product_code,
                                                  order=order)
-        task.product_num += int(product_num)
-        task.completed = 1
+        task.product_num_completed += int(product_num)
+        if task.product_num_completed >= task.product_num:
+            task.completed = 1
         task.save()
 
         if is_max_process(order_product):
@@ -675,3 +709,94 @@ def my_tasks_inspector_complete_task(request):
         return JsonResponse({'success': True,
                              'product_num': task.product_num, })
     return JsonResponse({'success': False})
+
+
+def generate_pdf(request):
+    # 注册字体
+    font_path = 'apps/static/assets/fonts/SourceHanSansCN-Medium.ttf'
+    pdfmetrics.registerFont(TTFont('SourceHanSansCN', font_path))
+
+    user = request.user
+    if user.role == 'admin':
+        tasks = Task.objects.all().order_by('task_start_time')
+    elif user.role == 'inspector':
+        related_device_names = Device.objects.filter(inspector=user).values_list('device_name', flat=True)
+        tasks = Task.objects.filter(
+            device_name__in=related_device_names,
+            completed=1,
+        ).order_by('task_start_time')
+    else:
+        related_device_names = Device.objects.filter(operator=user).values_list('device_name', flat=True)
+        tasks = Task.objects.filter(device_name__in=related_device_names).order_by('task_start_time')
+
+    buffer = BytesIO()
+    c = canvas.Canvas(buffer, pagesize=landscape(A4))
+    width, height = landscape(A4)
+
+    # 使用 Source Han Sans CN 字体
+    c.setFont("SourceHanSansCN", 13)
+    c.drawString(x=50, y=height - 50, text=f"用户名:{user.username}\t角色:{user.role}")
+
+    # 添加二维码图片
+    qr_code_path = 'apps/static/assets/img/qrcode/my_tasks_qr.png'
+    qr_code_width = 50  # 设置二维码图片宽度
+    qr_code_height = 50  # 设置二维码图片高度
+    qr_code_x = width - 30 - qr_code_width  # 图片X坐标
+    qr_code_y = height - 30 - qr_code_height  # 图片Y坐标
+    c.drawImage(qr_code_path, qr_code_x, qr_code_y, width=qr_code_width, height=qr_code_height)
+
+    # 上海时区
+    shanghai_tz = pytz.timezone('Asia/Shanghai')
+
+    # 定义表格数据
+    data = [['开始时间', '完成时间', '换型', '订单', '产品', '序号', '工序', '设备', '数量', '已完成',
+             '已质检']]
+    for task in tasks:
+        start_time = task.task_start_time.astimezone(shanghai_tz)
+        end_time = task.task_end_time.astimezone(shanghai_tz)
+        data.append([
+            start_time.strftime('%m-%d %H:%M'),
+            end_time.strftime('%m-%d %H:%M'),
+            task.is_changeover,
+            task.order_code,
+            task.product_code,
+            task.process_i,
+            task.process_name,
+            task.device_name,
+            task.product_num,
+            task.product_num_completed,
+            task.product_num_inspected
+        ])
+
+    # 设置表格位置
+    table_x = 50
+    # table_y = height - (len(tasks) + 1) * 35  # 增加间距，使表格不遮挡用户名
+    table_y = 50
+    table_width = width - 100  # 留出边距
+    table_height = height - table_y - 50  # 留出底部边距
+    print(table_x, table_y, table_width, table_height)
+
+    table = Table(data, colWidths=[table_width / len(data[0])] * len(data[0]), rowHeights=0.4 * inch)
+    table.setStyle(TableStyle([
+        ('BACKGROUND', (0, 0), (-1, 0), '#d0e0f0'),
+        ('TEXTCOLOR', (0, 0), (-1, 0), '#000000'),
+        ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+        ('FONTNAME', (0, 0), (-1, -1), 'SourceHanSansCN'),  # 确保所有单元格都使用指定字体
+        ('BOTTOMPADDING', (0, 0), (-1, 0), 10),
+        ('BACKGROUND', (0, 1), (-1, -1), '#f5f5f5'),
+        ('GRID', (0, 0), (-1, -1), 1, '#d0d0d0'),
+    ]))
+    table.wrapOn(c, table_width, table_height)
+    table.drawOn(c, table_x, table_y)
+
+    # 不添加页脚
+    # c.setFont("SourceHanSansCN", 10)
+    # c.drawString(50, 40, "Page 1")
+
+    c.showPage()
+    c.save()
+
+    buffer.seek(0)
+    response = HttpResponse(buffer, content_type='application/pdf')
+    response['Content-Disposition'] = 'attachment; filename="production_task_list.pdf"'
+    return response
