@@ -128,32 +128,30 @@
     <div class="container-fluid">
         <div class="header-body">
             <div class="row align-items-center py-4">
-                <div class="col-lg-6 col-7">
-                    <nav aria-label="breadcrumb" class="d-none d-md-inline-block ml-md-4">
-                        <!--                        <ol class="breadcrumb breadcrumb-links breadcrumb-dark">-->
-                        <!--                            <li class="breadcrumb-item"><a href="#"><i class="fas fa-home"></i></a></li>-->
-                        <!--                            <li class="breadcrumb-item"><a href="#">数据看板</a></li>-->
-                        <!--                            <li class="breadcrumb-item active" aria-current="page">大盘数据</li>-->
-                        <!--                        </ol>-->
-                    </nav>
-                </div>
-                <div class="col-lg-6 col-5 text-right">
-                    <form id="uploadForm" action="{% url 'upload' %}" method="post" enctype="multipart/form-data"
-                          style="display: none;">
-                        {% csrf_token %}
-                        <input type="file" id="fileInput" name="file" accept=".xlsx,.xls,.csv">
-                        <input type="hidden" id="fileTypeInput" name="file_type">
-                    </form>
-                    <a href="#" class="btn btn-sm btn-neutral" id="uploadButton_Orders"
-                       data-file-type="orders">订单表</a>
-                    <a href="#" class="btn btn-sm btn-neutral" id="uploadButton_Raw"
-                       data-file-type="raw">毛坯表</a>
-                    <a href="#" class="btn btn-sm btn-neutral" id="uploadButton_Process"
-                       data-file-type="process">工序表</a>
-                    <a href="#" class="btn btn-sm btn-neutral" id="uploadButton_Product"
-                       data-file-type="product">产品表</a>
-                    <a href="#" class="btn btn-sm btn-neutral" id="uploadButton_Exchange"
-                       data-file-type="exchange">换型表</a>
+                <div class="row">
+                    <div class="col-xl-12" style="margin-left: 20px">
+                        <form id="uploadForm" action="{% url 'upload' %}" method="post" enctype="multipart/form-data"
+                              style="display: none;">
+                            {% csrf_token %}
+                            <input type="file" id="fileInput" name="file" accept=".xlsx,.xls,.csv">
+                            <input type="hidden" id="fileTypeInput" name="file_type">
+                        </form>
+                        <a href="#" class="btn btn-sm btn-neutral" id="uploadButton_Orders" data-file-type="orders">
+                            <i class="fas fa-upload"></i> 订单表
+                        </a>
+                        <a href="#" class="btn btn-sm btn-neutral" id="uploadButton_Raw" data-file-type="raw">
+                            <i class="fas fa-upload"></i> 毛坯表
+                        </a>
+                        <a href="#" class="btn btn-sm btn-neutral" id="uploadButton_Process" data-file-type="process">
+                            <i class="fas fa-upload"></i> 工序表
+                        </a>
+                        <a href="#" class="btn btn-sm btn-neutral" id="uploadButton_Product" data-file-type="product">
+                            <i class="fas fa-upload"></i> 产品表
+                        </a>
+                        <a href="#" class="btn btn-sm btn-neutral" id="uploadButton_Exchange" data-file-type="exchange">
+                            <i class="fas fa-upload"></i> 设备表
+                        </a>
+                    </div>
                 </div>
 
                 <!-- Status Modal -->
@@ -179,7 +177,6 @@
                         </div>
                     </div>
                 </div>
-
             </div>
             <!-- Card stats -->
             <div class="row">
@@ -198,10 +195,6 @@
                                     </div>
                                 </div>
                             </div>
-                            <p class="mt-3 mb-0 text-sm">
-                                <span class="text-success mr-2"><i class="fa fa-arrow-up"></i> 5.48%</span>
-                                <span class="text-nowrap">相较于上月</span>
-                            </p>
                         </div>
                     </div>
                 </div>
@@ -220,10 +213,6 @@
                                     </div>
                                 </div>
                             </div>
-                            <p class="mt-3 mb-0 text-sm">
-                                <span class="text-success mr-2"><i class="fa fa-arrow-up"></i> 1.8%</span>
-                                <span class="text-nowrap">相较于上月</span>
-                            </p>
                         </div>
                     </div>
                 </div>
@@ -242,10 +231,6 @@
                                     </div>
                                 </div>
                             </div>
-                            <p class="mt-3 mb-0 text-sm">
-                                <span class="text-success mr-2"><i class="fa fa-arrow-up"></i> 2.58%</span>
-                                <span class="text-nowrap">相较于上月</span>
-                            </p>
                         </div>
                     </div>
                 </div>
@@ -255,7 +240,7 @@
                         <div class="card-body">
                             <div class="row">
                                 <div class="col">
-                                    <h5 class="card-title text-uppercase text-muted mb-0">换型统计</h5>
+                                    <h5 class="card-title text-uppercase text-muted mb-0">设备数量</h5>
                                     <span class="h2 font-weight-bold mb-0">{{ exchange_count }}</span>
                                 </div>
                                 <div class="col-auto">
@@ -264,10 +249,6 @@
                                     </div>
                                 </div>
                             </div>
-                            <p class="mt-3 mb-0 text-sm">
-                                <span class="text-success mr-2"><i class="fa fa-arrow-up"></i> 3.48%</span>
-                                <span class="text-nowrap">相较于上月</span>
-                            </p>
                         </div>
                     </div>
                 </div>
@@ -335,7 +316,7 @@
                     <div class="row align-items-center">
                         <div class="col">
                             <h6 class="text-uppercase text-muted ls-1 mb-1">订单信息</h6>
-                            <h5 class="h3 mb-0">订单总数</h5>
+                            <h5 class="h3 mb-0">订单日期统计</h5>
                         </div>
                     </div>
                 </div>
@@ -662,9 +643,52 @@
 <!-- Specific JS goes HERE -->
 {% block javascripts %}
 
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script src="/static/assets/vendor/chart.js/dist/Chart.min.js"></script>
 <script src="/static/assets/vendor/chart.js/dist/Chart.extension.js"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const ctx = document.getElementById('chart-bars').getContext('2d');
 
+        new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: {{ start_dates|safe }}, // 使用 Django 模板标签传递数据
+                datasets: [{
+                    label: '开始日期数量',
+                    data: {{ start_date_counts|safe }},
+                    backgroundColor: 'rgba(75, 192, 192, 0.2)',
+                    borderColor: 'rgba(75, 192, 192, 1)',
+                    borderWidth: 1
+                }, {
+                    label: '交付日期数量',
+                    data: {{ end_date_counts|safe }},
+                    backgroundColor: 'rgba(153, 102, 255, 0.2)',
+                    borderColor: 'rgba(153, 102, 255, 1)',
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    x: {
+                        title: {
+                            display: true,
+                            text: '日期'
+                        }
+                    },
+                    y: {
+                        title: {
+                            display: true,
+                            text: '数量'
+                        }
+                    }
+                }
+            }
+        });
+    });
+</script>
 {% endblock javascripts %}
 
 

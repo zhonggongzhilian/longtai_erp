@@ -1,41 +1,70 @@
 <nav class="navbar navbar-top navbar-expand navbar-dark bg-primary border-bottom">
     <div class="container-fluid">
         <div class="collapse navbar-collapse" id="navbarSupportedContent">
-            <!-- Search form -->
-            <form class="navbar-search navbar-search-light form-inline mr-sm-3" id="navbar-search-main">
-                <div class="form-group mb-0">
-                    <div class="input-group input-group-alternative input-group-merge">
-                        <div class="input-group-prepend">
-                            <span class="input-group-text"><i class="fas fa-search"></i></span>
-                        </div>
-                        <input class="form-control" placeholder="Search" type="text">
-                    </div>
-                </div>
-                <button type="button" class="close" data-action="search-close" data-target="#navbar-search-main"
-                        aria-label="Close">
-                    <span aria-hidden="true">×</span>
-                </button>
-            </form>
+
             <!-- Navbar links -->
-            <ul class="navbar-nav align-items-center  ml-md-auto ">
-            </ul>
-            <ul class="navbar-nav align-items-center  ml-auto ml-md-0 ">
-                <li class="nav-item dropdown">
-                    <a class="nav-link pr-0" href="#" role="button" data-toggle="dropdown" aria-haspopup="true"
-                       aria-expanded="false">
-                        <div class="media align-items-center">
-                            <span class="avatar avatar-sm rounded-circle d-flex justify-content-center align-items-center" style="font-size: 2rem; background-color: #f5f5f5; width: 45px; height: 45px;">
-                                <i class="ni ni-single-02 text-primary"></i>
-                            </span>
-                            <div class="media-body ml-2 d-none d-lg-block">
-                                <span class="mb-0 text-sm font-weight-bold">
-                                    {{ request.user.username }}
-                                </span>
-                            </div>
-                        </div>
+            <ul class="navbar-nav align-items-center ml-md-auto">
+                <!-- Button to toggle sidebar -->
+                <li class="nav-item">
+                    <a class="nav-link text-light" href="#" data-toggle="collapse" data-target="#sidenav-main" aria-expanded="false">
                     </a>
+                </li>
+
+                <!-- Hamburger Button -->
+                <li class="nav-item ml-auto">
+                    <button class="btn btn-secondary" type="button" data-toggle="modal" data-target="#moreModal">
+                        <i class="fas fa-bars"></i> <!-- 汉堡图标 -->
+                    </button>
                 </li>
             </ul>
         </div>
     </div>
 </nav>
+
+<!-- Modal -->
+<div class="modal fade" id="moreModal" tabindex="-1" role="dialog" aria-labelledby="moreModalLabel" aria-hidden="true">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="moreModalLabel">更多选项</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <!-- Navigation items in list-group -->
+                <div class="list-group">
+                    <a href="/" class="list-group-item list-group-item-action {% if request.resolver_match.url_name == 'index' %} active {% endif %}">
+                        <i class="ni ni-tv-2 text-primary"></i> 数据看板
+                    </a>
+
+                    {% if request.user.role == 'operator' or request.user.role == 'inspector'%}
+                    <a href="{% url 'my_tasks' %}" class="list-group-item list-group-item-action {% if request.resolver_match.url_name == 'my_tasks' %} active {% endif %}">
+                        <i class="ni ni-single-02 text-pink"></i> 我的生产
+                    </a>
+                    {% endif %}
+
+                    {% if request.user.role == 'admin' %}
+                    <a href="{% url 'result_list' %}" class="list-group-item list-group-item-action {% if request.resolver_match.url_name == 'result_list' %} active {% endif %}">
+                        <i class="ni ni-calendar-grid-58 text-orange"></i> 排产计划
+                    </a>
+                    <a href="{% url 'order_list' %}" class="list-group-item list-group-item-action {% if request.resolver_match.url_name == 'order_list' %} active {% endif %}">
+                        <i class="ni ni-bullet-list-67 text-orange"></i> 订单信息
+                    </a>
+                    <a href="{% url 'product_list' %}" class="list-group-item list-group-item-action {% if request.resolver_match.url_name == 'product_list' %} active {% endif %}">
+                        <i class="ni ni-world-2 text-yellow"></i> 产品信息
+                    </a>
+                    <a href="{% url 'raw_list' %}" class="list-group-item list-group-item-action {% if request.resolver_match.url_name == 'raw_list' %} active {% endif %}">
+                        <i class="ni ni-basket text-green"></i> 毛坯信息
+                    </a>
+                    <a href="{% url 'device_list' %}" class="list-group-item list-group-item-action {% if request.resolver_match.url_name == 'device_list' %} active {% endif %}">
+                        <i class="ni ni-time-alarm text-red"></i> 设备信息
+                    </a>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% include "includes/sidenav.html" %}

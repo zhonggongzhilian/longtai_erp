@@ -121,13 +121,37 @@ def user_list_create(request):
 
 @login_required(login_url="/login/")
 def index(request):
+    from collections import Counter
+    # 获取各个模型的数量
     orders_count = Order.objects.count()
     products_count = Product.objects.count()
     raw_count = Raw.objects.count()
     exchange_count = Device.objects.count()
     process_count = Process.objects.count()
+
     # 获取最新的 weight 数据
-    weight = Weight.objects.latest('id').weight  # 根据你的模型字段名获取 weight
+    weight = Weight.objects.latest('id').weight
+
+    # 统计订单的开始日期和交付日期
+    orders = Order.objects.all()
+
+    start_date_counts = Counter()
+    end_date_counts = Counter()
+
+    for order in orders:
+        start_date = parse_date(order.order_start_date)
+        end_date = parse_date(order.order_end_date)
+
+        if start_date:
+            start_date_counts[start_date] += 1
+        if end_date:
+            end_date_counts[end_date] += 1
+
+    # 准备数据用于传递给模板
+    start_dates = list(start_date_counts.keys())
+    start_date_counts_list = list(start_date_counts.values())
+    end_dates = list(end_date_counts.keys())
+    end_date_counts_list = list(end_date_counts.values())
 
     context = {
         'segment': 'index',
@@ -137,6 +161,10 @@ def index(request):
         'exchange_count': exchange_count,
         'process_count': process_count,
         'weight': weight,
+        'start_dates': start_dates,
+        'start_date_counts': start_date_counts_list,
+        'end_dates': end_dates,
+        'end_date_counts': end_date_counts_list,
     }
 
     html_template = loader.get_template('home/index.html')
