@@ -1,22 +1,85 @@
 {% extends 'layouts/base.html' %}
 
-{% block title %} Orders {% endblock title %}
+{% block title %}Orders{% endblock title %}
 
 {% block content %}
 
+<!-- Header -->
 <div class="header bg-primary pb-6">
     <div class="container-fluid">
         <div class="header-body">
             <div class="row align-items-center py-4">
                 <div class="col-lg-6 col-7">
+                    <!-- Title -->
+                    <h6 class="h2 text-white d-inline-block mb-0">订单列表</h6>
                 </div>
                 <div class="col-lg-6 col-5 text-right">
-                    <a href="#" class="btn btn-sm btn-neutral">新建</a>
+                    <!-- New Order Button -->
+                    <button type="button" class="btn btn-sm btn-neutral" data-toggle="modal" data-target="#newOrderModal">
+                        新建
+                    </button>
                 </div>
             </div>
         </div>
     </div>
 </div>
+
+<!-- New Order Modal -->
+<div class="modal fade" id="newOrderModal" tabindex="-1" role="dialog" aria-labelledby="newOrderModalLabel" aria-hidden="true">
+  <div class="modal-dialog" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="newOrderModalLabel">新建订单</h5>
+        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body">
+        <form id="newOrderForm">
+          <!-- 订单编号 -->
+            {% csrf_token %}
+          <div class="form-group">
+            <label for="orderCode">订单编号</label>
+            <input type="text" class="form-control" id="orderCode" name="orderCode" required>
+          </div>
+          <!-- 订单开始日期 -->
+          <div class="form-group">
+            <label for="orderStartDate">订单开始日期</label>
+            <input type="date" class="form-control" id="orderStartDate" name="orderStartDate" required>
+          </div>
+          <!-- 订单结束日期 -->
+          <div class="form-group">
+            <label for="orderEndDate">订单结束日期</label>
+            <input type="date" class="form-control" id="orderEndDate" name="orderEndDate" required>
+          </div>
+          <!-- 产品编码 -->
+          <div class="form-group">
+            <label for="productCode">产品编码</label>
+            <input type="text" class="form-control" id="productCode" name="productCode" required>
+          </div>
+          <!-- 待处理数量 -->
+          <div class="form-group">
+            <label for="productNumTodo">待处理数量</label>
+            <input type="number" class="form-control" id="productNumTodo" name="productNumTodo" required>
+          </div>
+          <!-- 已完成数量 -->
+          <div class="form-group">
+            <label for="productNumDone">已完成数量</label>
+            <input type="number" class="form-control" id="productNumDone" name="productNumDone" required>
+          </div>
+          <!-- 是否完成 -->
+          <div class="form-group form-check">
+            <input type="checkbox" class="form-check-input" id="isDone" name="isDone">
+            <label class="form-check-label" for="isDone">是否完成</label>
+          </div>
+          <button type="submit" class="btn btn-primary">提交</button>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+
+
 <!-- Page content -->
 <div class="container-fluid mt--6">
     <div class="row">
@@ -41,15 +104,15 @@
                             </tr>
                         </thead>
                         <tbody>
-                            {% for product in order_products %}
+                            {% for product in orders_content %}
                             <tr>
-                                <td>{{ product.order.order_code }}</td>
-                                <td>{{ product.order.order_start_date }}</td>
-                                <td>{{ product.order.order_end_date }}</td>
+                                <td>{{ product.order_code }}</td>
+                                <td>{{ product.order_start_date }}</td>
+                                <td>{{ product.order_end_date }}</td>
                                 <td>{{ product.product_code }}</td>
                                 <td>{{ product.product_num_todo }}</td>
                                 <td>{{ product.product_num_done }}</td>
-                                <td>{% if product.is_done %} 是 {% else %} 否 {% endif %}</td>
+                                <td>{% if product.is_done %}是{% else %}否{% endif %}</td>
                             </tr>
                             {% empty %}
                             <tr>
@@ -59,6 +122,85 @@
                         </tbody>
                     </table>
                 </div>
+                <div class="card-footer py-4">
+                    <nav aria-label="...">
+                        <ul class="pagination justify-content-end mb-0">
+                            {% if page_obj.has_previous %}
+                            <li class="page-item">
+                                <a class="page-link" href="?page=1&per_page={{ per_page }}" tabindex="-1">
+                                    <i class="fas fa-angle-double-left"></i>
+                                    <span class="sr-only">First</span>
+                                </a>
+                            </li>
+                            <li class="page-item">
+                                <a class="page-link"
+                                   href="?page={{ page_obj.previous_page_number }}&per_page={{ per_page }}"
+                                   tabindex="-1">
+                                    <i class="fas fa-angle-left"></i>
+                                    <span class="sr-only">Previous</span>
+                                </a>
+                            </li>
+                            {% else %}
+                            <li class="page-item disabled">
+                                <a class="page-link" href="#" tabindex="-1">
+                                    <i class="fas fa-angle-double-left"></i>
+                                    <span class="sr-only">First</span>
+                                </a>
+                            </li>
+                            <li class="page-item disabled">
+                                <a class="page-link" href="#" tabindex="-1">
+                                    <i class="fas fa-angle-left"></i>
+                                    <span class="sr-only">Previous</span>
+                                </a>
+                            </li>
+                            {% endif %}
+
+                            {% for num in page_obj.paginator.page_range %}
+                            {% if num > page_obj.number|add:-3 and num < page_obj.number|add:3 %}
+                            {% ifequal page_obj.number num %}
+                            <li class="page-item active">
+                                <a class="page-link" href="?page={{ num }}&per_page={{ per_page }}">{{ num }}</a>
+                            </li>
+                            {% else %}
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ num }}&per_page={{ per_page }}">{{ num }}</a>
+                            </li>
+                            {% endifequal %}
+                            {% endif %}
+                            {% endfor %}
+
+                            {% if page_obj.has_next %}
+                            <li class="page-item">
+                                <a class="page-link"
+                                   href="?page={{ page_obj.next_page_number }}&per_page={{ per_page }}">
+                                    <i class="fas fa-angle-right"></i>
+                                    <span class="sr-only">Next</span>
+                                </a>
+                            </li>
+                            <li class="page-item">
+                                <a class="page-link"
+                                   href="?page={{ page_obj.paginator.num_pages }}&per_page={{ per_page }}">
+                                    <i class="fas fa-angle-double-right"></i>
+                                    <span class="sr-only">Last</span>
+                                </a>
+                            </li>
+                            {% else %}
+                            <li class="page-item disabled">
+                                <a class="page-link" href="#">
+                                    <i class="fas fa-angle-right"></i>
+                                    <span class="sr-only">Next</span>
+                                </a>
+                            </li>
+                            <li class="page-item disabled">
+                                <a class="page-link" href="#">
+                                    <i class="fas fa-angle-double-right"></i>
+                                    <span class="sr-only">Last</span>
+                                </a>
+                            </li>
+                            {% endif %}
+                        </ul>
+                    </nav>
+                </div>
             </div>
         </div>
     </div>
@@ -67,5 +209,72 @@
 {% endblock content %}
 
 {% block javascripts %}
-<!-- 在这里加入你需要的特定JS -->
+<script>
+    // JavaScript to handle the new order form submission
+    function getCookie(name) {
+    var cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        var cookies = document.cookie.split(';');
+        for (var i = 0; i < cookies.length; i++) {
+            var cookie = jQuery.trim(cookies[i]);
+            // Does this cookie string begin with the name we want?
+            if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+            }
+        }
+    }
+    return cookieValue;
+}
+    $(document).ready(function() {
+    $('#newOrderForm').submit(function(e) {
+        e.preventDefault();
+        // 收集表单数据并构造一个新的订单对象
+        var newOrder = {
+            orderCode: $('#orderCode').val().trim(), // 订单编号
+            orderStartDate: $('#orderStartDate').val(), // 订单开始日期
+            orderEndDate: $('#orderEndDate').val(), // 订单结束日期
+            productCode: $('#productCode').val().trim(), // 产品编码
+            productNumTodo: $('#productNumTodo').val(), // 待处理数量
+            productNumDone: $('#productNumDone').val(), // 已完成数量
+            isDone: $('#isDone').is(':checked') ? 'on' : '' // 是否完成，使用 'on' 或空字符串
+        };
+
+        function csrfSafeMethod(method) {
+            return (/^(GET|HEAD|OPTIONS|TRACE)$/.test(method));
+        }
+
+    var csrftoken = Cookies.get('csrftoken'); // 使用 jQuery 的 Cookies 插件或其他方法获取 CSRF 令牌
+
+    $.ajaxSetup({
+        beforeSend: function(xhr, settings) {
+            if (!/^(GET|HEAD|OPTIONS|TRACE)$/.test(settings.type) && !this.crossDomain) {
+                xhr.setRequestHeader("X-CSRFToken", csrftoken);
+            }
+        }
+    });
+
+            // Send a POST request to the server
+            $.ajax({
+                url: '{% url "create_order" %}', // URL for the new order view
+                type: 'POST',
+                data: newOrder,
+                success: function(data) {
+                    if(data.success) {
+                        alert('订单创建成功！');
+                        // Optionally, clear the form or reload the page
+                        $('#newOrderModal').modal('hide');
+                        $('#newOrderForm')[0].reset(); // Reset form fields
+                        // Add code to update the order list if necessary
+                    } else {
+                        alert('创建订单失败：' + data.message);
+                    }
+                },
+                error: function(xhr, status, error) {
+                    alert('创建订单时发生错误：' + error);
+                }
+            });
+        });
+    });
+</script>
 {% endblock javascripts %}
