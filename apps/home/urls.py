@@ -64,4 +64,6 @@ urlpatterns = [
     path('generate_pdf/', views.generate_pdf, name='generate_pdf'),
 
     path('create-order/', views.create_order, name='create_order'),
+
+    path('schedule-by-date/', views.schedule_by_date, name='schedule_by_date'),
 ]

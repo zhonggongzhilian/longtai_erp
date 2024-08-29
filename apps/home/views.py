@@ -947,3 +947,47 @@ def generate_pdf(request):
     response = HttpResponse(buffer, content_type='application/pdf')
     response['Content-Disposition'] = 'attachment; filename="production_task_list.pdf"'
     return response
+
+
+def schedule_by_date(request):
+    # 获取查询参数 'date'
+    date_str = request.GET.get('date')
+    if not date_str:
+        return JsonResponse({
+            'success': False,
+            'message': 'Missing date parameter'
+        }, status=400)
+
+    try:
+        # 将字符串转换为日期对象
+        selected_date = datetime.strptime(date_str, '%Y-%m-%d').date()
+        # 设置时区（根据需要设置为您的本地时区）
+        local_tz = timezone.get_default_timezone()
+        # 创建开始时间和结束时间
+        start_datetime = timezone.make_aware(datetime.combine(selected_date, datetime.min.time()), local_tz)
+        end_datetime = start_datetime + timedelta(days=1)
+
+        # 查询数据库，获取指定日期的任务
+        results = Task.objects.filter(
+            task_start_time__range=(start_datetime, end_datetime)
+        ).values('id', 'task_start_time', 'task_end_time','is_changeover', 'order_code', 'product_code', 'process_i', 'process_name', 'device_name', 'product_num', 'product_num_completed', 'product_num_inspected')
+
+        # 检查是否有结果
+        if results:
+            return JsonResponse({
+                'success': True,
+                'results': list(results)  # 将查询结果转换为列表
+            })
+        else:
+            return JsonResponse({
+                'success': True,
+                'message': 'No results found for the specified date',
+                'results': []
+            })
+
+    except ValueError:
+        # 日期格式错误
+        return JsonResponse({
+            'success': False,
+            'message': 'Invalid date format, please use YYYY-MM-DD'
+        }, status=400)
