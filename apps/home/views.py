@@ -40,6 +40,8 @@ from .models import Weight
 from .preprocess import preprocess_order, preprocess_product, preprocess_process, preprocess_device, preprocess_raw
 from .views_login import login_view, register_user
 
+from django.core.serializers import serialize
+
 __all__ = [login_view, register_user]
 
 # views.py
@@ -891,3 +893,35 @@ def generate_pdf(request):
     response = HttpResponse(buffer, content_type='application/pdf')
     response['Content-Disposition'] = 'attachment; filename="production_task_list.pdf"'
     return response
+
+
+def get_all_data(request):
+    if request.method == 'GET':
+        # 获取所有模型的数据
+        users = serialize('json', CustomUser.objects.all())
+        raws = serialize('json', Raw.objects.all())
+        products = serialize('json', Product.objects.all())
+        devices = serialize('json', Device.objects.all())
+        orders = serialize('json', Order.objects.all())
+        order_products = serialize('json', OrderProduct.objects.all())
+        processes = serialize('json', Process.objects.all())
+        tasks = serialize('json', Task.objects.all())
+        weights = serialize('json', Weight.objects.all())
+
+        # 将所有数据组合成一个字典
+        data = {
+            'users': users,
+            'raws': raws,
+            'products': products,
+            'devices': devices,
+            'orders': orders,
+            'order_products': order_products,
+            'processes': processes,
+            'tasks': tasks,
+            'weights': weights,
+        }
+
+        # 返回 JSON 响应
+        return JsonResponse(data, safe=False)
+
+    return JsonResponse({'error': 'Invalid request method'}, status=405)
