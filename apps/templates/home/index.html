@@ -339,7 +339,7 @@
                             <h3 class="mb-0">设备详情</h3>
                         </div>
                         <div class="col text-right">
-                            <a href="#!" class="btn btn-sm btn-primary">查看全部</a>
+                            <a href="{% url 'device_list' %}" class="btn btn-sm btn-primary">查看全部</a>
                         </div>
                     </div>
                 </div>
@@ -616,7 +616,7 @@
 </script>
 <script>
     document.addEventListener("DOMContentLoaded", function() {
-        var weight = {{ weight }}; // Use Django template variable for weight
+        var weight = 10; // Use Django template variable for weight
         var maxWeight = 13.5; // Maximum value for each segment
 
         var progressBars = document.querySelectorAll('.progress-bar-fill');

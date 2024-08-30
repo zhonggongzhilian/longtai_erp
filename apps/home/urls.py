@@ -7,7 +7,7 @@ from django.contrib.auth.views import LogoutView
 from django.urls import path
 
 from apps.home import views
-
+from .views import device_list
 urlpatterns = [
 
     path('login/', views.login_view, name="login"),
@@ -20,7 +20,7 @@ urlpatterns = [
 
     path('orders/', views.order_list, name='order_list'),
 
-    path('device/', views.device_list, name='device_list'),
+    path('device/', device_list, name='device_list'),
     path('device/<int:device_id>/get/', views.get_device, name='get_device'),
     path('device/<int:device_id>/update/', views.update_device, name='update_device'),
     path('device/<int:device_id>/delete/', views.delete_device, name='delete_device'),
@@ -62,6 +62,8 @@ urlpatterns = [
 
     path('tasks/add-urgent/', views.add_urgent_task, name='add_urgent_task'),
     path('generate_pdf/', views.generate_pdf, name='generate_pdf'),
+    path('create-order/', views.create_order, name='create_order'),
 
+    path('schedule-by-date/', views.schedule_by_date, name='schedule_by_date'),
     path('get_all_data/', views.get_all_data, name='get_all_data')
 ]

@@ -7,7 +7,9 @@ import logging
 import os
 from datetime import datetime, timedelta
 from io import BytesIO
-
+from django.utils import timezone
+from django.http import JsonResponse
+from django.views.decorators.http import require_POST
 import pytz
 from django import template
 from django.contrib.auth.decorators import login_required
@@ -136,7 +138,7 @@ def index(request):
     process_count = Process.objects.count()
 
     # 获取最新的 weight 数据
-    weight = Weight.objects.latest('id').weight
+    # weight = Weight.objects.latest('id').weight
 
     # 统计订单的开始日期和交付日期
     orders = Order.objects.all()
@@ -166,7 +168,7 @@ def index(request):
         'raw_count': raw_count,
         'exchange_count': exchange_count,
         'process_count': process_count,
-        'weight': weight,
+        'weight': 10,
         'start_dates': start_dates,
         'start_date_counts': start_date_counts_list,
         'end_dates': end_dates,
@@ -268,9 +270,30 @@ def upload(request):
 
 @login_required(login_url="/login/")
 def order_list(request):
-    order_products = OrderProduct.objects.select_related('order').all()
+    order_products = OrderProduct.objects.select_related('order').all()  # 您的查询集
+    per_page = request.GET.get('per_page', 50)  # 获取用户自定义的每页数量，默认为20
+    paginator = Paginator(order_products, per_page)
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+
+    # 处理产品列表，添加原料代码
+    orders_content = []
+    for product in page_obj:
+        orders_content.append({
+            'order_code': product.order.order_code,
+            'order_start_date': product.order.order_start_date,
+            'order_end_date': product.order.order_end_date,
+            'product_code': product.product_code,
+            'product_num_todo': product.product_num_todo,
+            'product_num_done': product.product_num_done,
+            'is_done': product.is_done
+        })
+    print(len(orders_content))
+
     context = {
-        'order_products': order_products,
+        'orders_content': orders_content,
+        'page_obj': page_obj,
+        'per_page': per_page
     }
     return render(request, 'home/order_list.html', context)
 
@@ -299,6 +322,79 @@ def update_order(request, order_id):
         order.save()
         return HttpResponse(status=200)
     return HttpResponse(status=400)
+
+@csrf_exempt
+def create_order(request):
+    order_data = request.POST
+    print(order_data)
+    order_code = order_data.get('orderCode').strip()
+    order_start_date = request.POST.get('orderStartDate', None)
+    order_end_date = request.POST.get('orderEndDate', None)
+    product_code = request.POST.get('productCode', '').strip()
+    product_num_todo = request.POST.get('productNumTodo', 0)
+    product_num_done = request.POST.get('productNumDone', 0)
+    is_done = request.POST.get('isDone') == 'on'
+    print(f"{order_code=}, {order_start_date=}, {order_end_date=}, "
+          f"{product_code=}, {product_num_todo=},{product_num_done=}.{is_done=}")
+    # 检查所有必要的字段是否都存在
+    required_fields = ['orderCode', 'orderStartDate', 'orderEndDate', 'productCode', 'productNumTodo', 'productNumDone',
+                       'isDone']
+    print("222")
+    # if not all(field in order_data for field in required_fields):
+    #     return JsonResponse({
+    #         'success': False,
+    #         'message': '请求缺少必要的字段。'
+    #     }, status=400)
+    print("aaa")
+    try:
+        # 检查日期字符串是否为 None 或空字符串
+        if order_start_date is None or order_start_date.strip() == '':
+            return JsonResponse({
+                'success': False,
+                'message': '订单开始日期是必填项。'
+            }, status=400)
+
+        if order_end_date is None or order_end_date.strip() == '':
+            return JsonResponse({
+                'success': False,
+                'message': '订单结束日期是必填项。'
+            }, status=400)
+
+        # 现在可以安全地解析日期字符串，因为已经检查过它们不为 None 且不为空
+        order_start_date = datetime.strptime(order_start_date, '%Y-%m-%d').date()
+        order_end_date = datetime.strptime(order_end_date, '%Y-%m-%d').date()
+
+        # 确保 product_num_todo 和 product_num_done 是整数
+        product_num_todo = int(product_num_todo)
+        product_num_done = int(product_num_done)
+
+    except Exception as e:
+        print("adasfd")
+        raise(e)
+
+    # 创建订单对象
+    order = Order.objects.create(
+        order_code=order_code,
+        order_start_date=order_start_date,
+        order_end_date=order_end_date
+        # 假设 Order 模型还有其它字段，也在这里设置
+    )
+
+    # 创建订单产品对象
+    order_product = OrderProduct.objects.create(
+        order=order,
+        product_code=product_code,
+        product_num_todo=product_num_todo,
+        product_num_done=product_num_done,
+        is_done=is_done
+    )
+
+    # 返回成功的响应
+    return JsonResponse({
+        'success': True,
+        'message': '订单创建成功。',
+    }
+)
 
 
 @login_required(login_url="/login/")
@@ -895,6 +991,49 @@ def generate_pdf(request):
     return response
 
 
+def schedule_by_date(request):
+    # 获取查询参数 'date'
+    date_str = request.GET.get('date')
+    if not date_str:
+        return JsonResponse({
+            'success': False,
+            'message': 'Missing date parameter'
+        }, status=400)
+
+    try:
+        # 将字符串转换为日期对象
+        selected_date = datetime.strptime(date_str, '%Y-%m-%d').date()
+        # 设置时区（根据需要设置为您的本地时区）
+        local_tz = timezone.get_default_timezone()
+        # 创建开始时间和结束时间
+        start_datetime = timezone.make_aware(datetime.combine(selected_date, datetime.min.time()), local_tz)
+        end_datetime = start_datetime + timedelta(days=1)
+
+        # 查询数据库，获取指定日期的任务
+        results = Task.objects.filter(
+            task_start_time__range=(start_datetime, end_datetime)
+        ).values('id', 'task_start_time', 'task_end_time','is_changeover', 'order_code', 'product_code', 'process_i', 'process_name', 'device_name', 'product_num', 'product_num_completed', 'product_num_inspected')
+
+        # 检查是否有结果
+        if results:
+            return JsonResponse({
+                'success': True,
+                'results': list(results)  # 将查询结果转换为列表
+            })
+        else:
+            return JsonResponse({
+                'success': True,
+                'message': 'No results found for the specified date',
+                'results': []
+            })
+
+    except ValueError:
+        # 日期格式错误
+        return JsonResponse({
+            'success': False,
+            'message': 'Invalid date format, please use YYYY-MM-DD'
+        }, status=400)
+      
 def get_all_data(request):
     if request.method == 'GET':
         # 获取所有模型的数据
