@@ -42,6 +42,8 @@ from .models import Weight
 from .preprocess import preprocess_order, preprocess_product, preprocess_process, preprocess_device, preprocess_raw
 from .views_login import login_view, register_user
 
+from django.core.serializers import serialize
+
 __all__ = [login_view, register_user]
 
 # views.py
@@ -49,11 +51,13 @@ __all__ = [login_view, register_user]
 logger = logging.getLogger(__name__)
 
 
+@login_required(login_url="/login/")
 def user_list_list(request):
     users = CustomUser.objects.all()
     return render(request, 'home/user_list.html', {'users': users})
 
 
+@login_required(login_url="/login/")
 def user_list_get(request, user_id):
     user = get_object_or_404(CustomUser, id=user_id)
     data = {
@@ -65,6 +69,7 @@ def user_list_get(request, user_id):
 
 
 @csrf_exempt
+@login_required(login_url="/login/")
 def user_list_update(request, user_id):
     print(f"user list update !")
     if request.method == 'POST':
@@ -80,6 +85,7 @@ def user_list_update(request, user_id):
 
 
 @csrf_exempt
+@login_required(login_url="/login/")
 def user_list_delete(request, user_id):
     if request.method == 'POST':
         user = get_object_or_404(CustomUser, id=user_id)
@@ -88,7 +94,7 @@ def user_list_delete(request, user_id):
 
 
 @csrf_exempt
-@login_required
+@login_required(login_url="/login/")
 def user_list_create(request):
     if request.method == 'POST':
         username = request.POST.get('username')
@@ -199,6 +205,7 @@ def pages(request):
         return HttpResponse(html_template.render(context, request))
 
 
+@login_required(login_url="/login/")
 def _upload(request):
     if request.method == 'POST' and request.FILES.get('file'):
         uploaded_file = request.FILES['file']
@@ -230,6 +237,7 @@ def _upload(request):
 
 
 @csrf_exempt
+@login_required(login_url="/login/")
 def upload(request):
     if request.method == 'POST':
         try:
@@ -260,6 +268,7 @@ def upload(request):
     return JsonResponse({'status': 'error', 'message': 'Invalid request method'})
 
 
+@login_required(login_url="/login/")
 def order_list(request):
     order_products = OrderProduct.objects.select_related('order').all()  # 您的查询集
     per_page = request.GET.get('per_page', 50)  # 获取用户自定义的每页数量，默认为20
@@ -289,6 +298,7 @@ def order_list(request):
     return render(request, 'home/order_list.html', context)
 
 
+@login_required(login_url="/login/")
 def get_order(request, order_id):
     order = get_object_or_404(Order, order_id=order_id)
     data = {
@@ -301,6 +311,7 @@ def get_order(request, order_id):
     return JsonResponse(data)
 
 
+@login_required(login_url="/login/")
 def update_order(request, order_id):
     if request.method == 'POST':
         order = get_object_or_404(Order, order_id=order_id)
@@ -386,6 +397,7 @@ def create_order(request):
 )
 
 
+@login_required(login_url="/login/")
 def delete_order(request, order_id):
     if request.method == 'POST':
         order = get_object_or_404(Order, order_id=order_id)
@@ -395,11 +407,13 @@ def delete_order(request, order_id):
     return HttpResponse(status=400)
 
 
+@login_required(login_url="/login/")
 def device_list(request):
     devices = Device.objects.all()
     return render(request, 'home/device_list.html', {'devices': devices})
 
 
+@login_required(login_url="/login/")
 def get_device(request, device_id):
     device = get_object_or_404(Device, id=device_id)
     data = {
@@ -411,6 +425,7 @@ def get_device(request, device_id):
     return JsonResponse(data)
 
 
+@login_required(login_url="/login/")
 def update_device(request, device_id):
     if request.method == 'POST':
         device = get_object_or_404(Device, id=device_id)
@@ -424,6 +439,7 @@ def update_device(request, device_id):
     return HttpResponse(status=400)
 
 
+@login_required(login_url="/login/")
 def delete_device(request, device_id):
     if request.method == 'POST':
         device = get_object_or_404(Device, id=device_id)
@@ -432,6 +448,7 @@ def delete_device(request, device_id):
     return HttpResponse(status=400)
 
 
+@login_required(login_url="/login/")
 def product_list(request):
     products = Product.objects.all()
     per_page = request.GET.get('per_page', 20)  # 获取用户自定义的每页数量，默认为20
@@ -459,6 +476,7 @@ def product_list(request):
     return render(request, 'home/product_list.html', context)
 
 
+@login_required(login_url="/login/")
 def get_product(request, product_id):
     product = get_object_or_404(Product, id=product_id)
     data = {
@@ -469,6 +487,7 @@ def get_product(request, product_id):
     return JsonResponse(data)
 
 
+@login_required(login_url="/login/")
 def update_product(request, product_id):
     if request.method == 'POST':
         product = get_object_or_404(Product, id=product_id)
@@ -484,6 +503,7 @@ def update_product(request, product_id):
     return HttpResponse(status=400)
 
 
+@login_required(login_url="/login/")
 def delete_product(request, product_id):
     if request.method == 'POST':
         product = get_object_or_404(Product, id=product_id)
@@ -492,6 +512,7 @@ def delete_product(request, product_id):
     return HttpResponse(status=400)
 
 
+@login_required(login_url="/login/")
 def raw_list(request):
     raws = Raw.objects.all()
     paginator = Paginator(raws, request.GET.get('per_page', 20))
@@ -506,6 +527,7 @@ def raw_list(request):
     return render(request, 'home/raw_list.html', context)
 
 
+@login_required(login_url="/login/")
 def raw_get(request, pk):
     raw = get_object_or_404(Raw, pk=pk)
     data = {
@@ -515,6 +537,7 @@ def raw_get(request, pk):
     return JsonResponse(data)
 
 
+@login_required(login_url="/login/")
 def raw_update(request, pk):
     raw = get_object_or_404(Raw, pk=pk)
     if request.method == 'POST':
@@ -524,6 +547,7 @@ def raw_update(request, pk):
         return JsonResponse({'success': True})
 
 
+@login_required(login_url="/login/")
 def raw_delete(request, pk):
     raw = get_object_or_404(Raw, pk=pk)
     if request.method == 'POST':
@@ -531,11 +555,13 @@ def raw_delete(request, pk):
         return JsonResponse({'success': True})
 
 
+@login_required(login_url="/login/")
 def result_list(request):
     results = Task.objects.all()
     return render(request, 'home/result_list.html', {'results': results})
 
 
+@login_required(login_url="/login/")
 def get_progress(request):
     try:
         with open('./progress.txt', 'r') as f:
@@ -545,6 +571,7 @@ def get_progress(request):
     return JsonResponse({'progress': progress})
 
 
+@login_required(login_url="/login/")
 def delete_result(request, result_id):
     if request.method == 'POST':
         result = Task.objects.get(id=result_id)
@@ -553,6 +580,7 @@ def delete_result(request, result_id):
     return JsonResponse({'success': False})
 
 
+@login_required(login_url="/login/")
 def process_schedule_fast(request):
     from .job_scheduler_1 import schedule_production
     if request.method == 'POST':
@@ -562,6 +590,7 @@ def process_schedule_fast(request):
     return JsonResponse({'success': False})
 
 
+@login_required(login_url="/login/")
 def process_schedule(request):
     from .job_scheduler_1 import schedule_production
     if request.method == 'POST':
@@ -571,6 +600,7 @@ def process_schedule(request):
     return JsonResponse({'success': False})
 
 
+@login_required(login_url="/login/")
 @csrf_exempt
 def filter_by_date(request):
     if request.method == 'GET':
@@ -591,6 +621,7 @@ def filter_by_date(request):
         return JsonResponse({'results': []})
 
 
+@login_required(login_url="/login/")
 def mark_complete(request, id):
     task = Task.objects.get(pk=id)
     task.completed = True
@@ -598,6 +629,7 @@ def mark_complete(request, id):
     return JsonResponse({'success': True})
 
 
+@login_required(login_url="/login/")
 def mark_not_complete(request, id):
     task = Task.objects.get(pk=id)
     if task:
@@ -607,6 +639,7 @@ def mark_not_complete(request, id):
     return JsonResponse({'success': False}, status=400)
 
 
+@login_required(login_url="/login/")
 def mark_inspected(request, id):
     task = Task.objects.get(pk=id)
     task.inspected = True
@@ -614,6 +647,7 @@ def mark_inspected(request, id):
     return JsonResponse({'success': True})
 
 
+@login_required(login_url="/login/")
 def mark_not_inspected(request, id):
     task = Task.objects.get(pk=id)
     if task:
@@ -625,6 +659,7 @@ def mark_not_inspected(request, id):
 
 @require_POST
 @csrf_exempt
+@login_required(login_url="/login/")
 def add_urgent_task(request):
     task_start_time = request.POST.get('task_start_time')
     task_end_time = request.POST.get('task_end_time')
@@ -651,7 +686,8 @@ def add_urgent_task(request):
 
 # My tasks
 
-@login_required
+
+@login_required(login_url="/login/")
 def my_tasks(request):
     user = request.user
     if user.role == 'admin':
@@ -700,6 +736,7 @@ def my_tasks(request):
     return render(request, 'home/my_tasks.html', context)
 
 
+@login_required(login_url="/login/")
 def my_tasks_operator_detail(request, task_id):
     task = get_object_or_404(Task, id=task_id)
     return render(request, 'home/my_tasks_operator_detail.html', {'task': task})
@@ -716,6 +753,7 @@ def is_max_process(order_product):
 
 
 @csrf_exempt
+@login_required(login_url="/login/")
 def my_tasks_operator_complete_task(request):
     if request.method == 'POST':
         # Update OrderProduct
@@ -763,6 +801,7 @@ def my_tasks_operator_complete_task(request):
 
 
 @csrf_exempt
+@login_required(login_url="/login/")
 def my_tasks_operator_rework_task(request):
     if request.method == 'POST':
         task_id = request.POST.get('task_id')
@@ -797,6 +836,7 @@ def my_tasks_operator_rework_task(request):
 
 
 @csrf_exempt
+@login_required(login_url="/login/")
 def my_tasks_operator_scrap_task(request):
     if request.method == 'POST':
         task_id = request.POST.get('task_id')
@@ -813,7 +853,7 @@ def my_tasks_operator_scrap_task(request):
 
             OrderProduct.objects.create(
                 order=order,
-                product_code=task.product_code+"_"+datetime.now().strftime("%Y-%m-%d %H:%M"),
+                product_code=task.product_code + "_" + datetime.now().strftime("%Y-%m-%d %H:%M"),
                 defaults={
                     'product_num_todo': scrap_product_num,
                 }
@@ -836,6 +876,7 @@ def my_tasks_operator_scrap_task(request):
     return JsonResponse({'success': False})
 
 
+@login_required(login_url="/login/")
 def my_tasks_inspector_detail(request, task_id):
     task = get_object_or_404(Task, id=task_id)
     return render(request, 'home/my_tasks_inspector_detail.html', {'task': task})
@@ -858,6 +899,7 @@ def my_tasks_inspector_complete_task(request):
     return JsonResponse({'success': False})
 
 
+@login_required(login_url="/login/")
 def generate_pdf(request):
     # 注册字体
     font_path = 'apps/static/assets/fonts/SourceHanSansCN-Medium.ttf'
@@ -991,3 +1033,34 @@ def schedule_by_date(request):
             'success': False,
             'message': 'Invalid date format, please use YYYY-MM-DD'
         }, status=400)
+      
+def get_all_data(request):
+    if request.method == 'GET':
+        # 获取所有模型的数据
+        users = serialize('json', CustomUser.objects.all())
+        raws = serialize('json', Raw.objects.all())
+        products = serialize('json', Product.objects.all())
+        devices = serialize('json', Device.objects.all())
+        orders = serialize('json', Order.objects.all())
+        order_products = serialize('json', OrderProduct.objects.all())
+        processes = serialize('json', Process.objects.all())
+        tasks = serialize('json', Task.objects.all())
+        weights = serialize('json', Weight.objects.all())
+
+        # 将所有数据组合成一个字典
+        data = {
+            'users': users,
+            'raws': raws,
+            'products': products,
+            'devices': devices,
+            'orders': orders,
+            'order_products': order_products,
+            'processes': processes,
+            'tasks': tasks,
+            'weights': weights,
+        }
+
+        # 返回 JSON 响应
+        return JsonResponse(data, safe=False)
+
+    return JsonResponse({'error': 'Invalid request method'}, status=405)
