@@ -558,6 +558,10 @@ def raw_delete(request, pk):
 @login_required(login_url="/login/")
 def result_list(request):
     results = Task.objects.all()
+    # 为每个 task 对象添加对应的 product_name
+    for result in results:
+        product = Product.objects.filter(product_code=result.product_code).first()
+        result.product_name = product.product_name if product else '⚠️ 未知产品'
     return render(request, 'home/result_list.html', {'results': results})
 
 
@@ -566,6 +570,7 @@ def get_progress(request):
     try:
         with open('./progress.txt', 'r') as f:
             progress = f.read()
+            progress = "{:.1f}".format(float(progress))
     except FileNotFoundError:
         progress = '0'
     return JsonResponse({'progress': progress})

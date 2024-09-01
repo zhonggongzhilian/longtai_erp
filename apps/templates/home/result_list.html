@@ -15,34 +15,6 @@
     </div>
 </div>
 
-
-<!-- Add the modal HTML at the end of the body or a suitable place in the template -->
-<div class="modal fade" id="processingModal" tabindex="-1" role="dialog" aria-labelledby="processingModalLabel"
-     aria-hidden="true">
-    <div class="modal-dialog" role="document">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title" id="processingModalLabel">状态</h5>
-                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                    <span aria-hidden="true">&times;</span>
-                </button>
-            </div>
-            <div class="modal-body" id="processingModalBody">
-                正在排产...
-            </div>
-            <div class="modal-body">
-                <div id="progressBar" class="progress">
-                    <div id="progressBarFill" class="progress-bar"></div>
-                </div>
-                <p id="progressText">排产进度：</p>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-dismiss="modal">关闭</button>
-            </div>
-        </div>
-    </div>
-</div>
-
 <div class="container-fluid mt--6">
     <div class="row">
         <div class="col">
@@ -63,25 +35,30 @@
                         </div>
                     </form>
                     <!-- 快速排产和全量排产按钮 -->
-                    <div class="col-auto ml-auto">
-                        <button class="btn btn-success" id="fastScheduleButton" title="排产当日订单（速度较快）">
+                    <div class="col-auto ml-auto d-flex align-items-center">
+                        <div id="progressBar" class="progress mr-3" style="display: none; width: 200px;">
+                            <div id="progressBarFill" class="progress-bar"></div>
+                        </div>
+                        <span id="progressPercentage" style="width: 50px; text-align: right;"></span> <!-- 进度百分比显示 -->
+                        <button class="btn btn-success ml-3" id="fastScheduleButton" title="排产当日订单（速度较快）">
                             <i class="fas fa-fast-forward"></i> 快速排产
                         </button>
-                        <button class="btn btn-danger" id="scheduleButton" title="排产全量订单（速度较慢）">
+                        <button class="btn btn-danger ml-2" id="scheduleButton" title="排产全量订单（速度较慢）">
                             <i class="fas fa-calendar-check"></i> 全量排产
                         </button>
                     </div>
                 </div>
             </div>
-                <div class="table-responsive">
-                    <table class="table align-items-center table-flush">
-                        <thead class="thead-light">
+            <div class="table-responsive">
+                <table class="table align-items-center table-flush">
+                    <thead class="thead-light">
                         <tr>
                             <th scope="col">执行时间</th>
                             <th scope="col">完成时间</th>
                             <th scope="col">换型</th>
                             <th scope="col">订单</th>
-                            <th scope="col">产品</th>
+                            <th scope="col">产品编码</th>
+                            <th scope="col">产品名称</th>
                             <th scope="col">工序号</th>
                             <th scope="col">工序名称</th>
                             <th scope="col">设备</th>
@@ -89,8 +66,8 @@
                             <th scope="col">已完成</th>
                             <th scope="col">已检查</th>
                         </tr>
-                        </thead>
-                        <tbody id="resultTableBody">
+                    </thead>
+                    <tbody id="resultTableBody">
                         {% for result in results %}
                         <tr id="result-{{ result.id }}">
                             <td>{{ result.task_start_time }}</td>
@@ -98,6 +75,7 @@
                             <td>{{ result.is_changeover }}</td>
                             <td>{{ result.order_code }}</td>
                             <td>{{ result.product_code }}</td>
+                            <td>{{ result.product_name }}</td>
                             <td>{{ result.process_i }}</td>
                             <td>{{ result.process_name }}</td>
                             <td>{{ result.device_name }}</td>
@@ -106,9 +84,8 @@
                             <td>{{ result.product_num_inspected}}</td>
                         </tr>
                         {% endfor %}
-                        </tbody>
-                    </table>
-                </div>
+                    </tbody>
+                </table>
             </div>
         </div>
     </div>
@@ -118,129 +95,84 @@
 <script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
 <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
 
-<!-- Add the script to handle the scheduling and modal updates -->
+<!-- Add the script to handle the scheduling and progress bar updates -->
 <script>
-    $(document).ready(function () {
-        // Trigger the date picker change event on page load to show the default date results
-        $('#datePicker').trigger('change');
+    let progressInterval;
 
+    $(document).ready(function () {
         // 绑定快速排产按钮的点击事件
         $('#fastScheduleButton').on('click', function () {
-            $('#processingModalBody').text('正在排产...');
-            $('#processingModal').modal('show');
-
-            $.ajax({
-                url: "{% url 'process_orders_fast' %}",
-                method: 'POST',
-                data: {
-                    csrfmiddlewaretoken: '{{ csrf_token }}'
-                },
-                success: function (response) {
-                    $('#processingModalBody').text('排产成功！');
-                    setTimeout(function() {
-                        $('#processingModal').modal('hide');
-                        location.reload();  // Reload the page to see the updated results
-                    }, 2000); // Hide modal after 2 seconds
-                },
-                error: function (xhr, status, error) {
-                    $('#processingModalBody').text('排产失败! 请检查数据是否完整！');
-                }
-            });
+            startScheduling("{% url 'process_orders_fast' %}");
         });
 
         // 绑定全量排产按钮的点击事件
         $('#scheduleButton').on('click', function () {
-            $('#processingModalBody').text('正在排产...');
-            $('#processingModal').modal('show');
+            startScheduling("{% url 'process_orders' %}");
+        });
+
+        function startScheduling(url) {
+            // 禁用按钮并变灰
+            $('#fastScheduleButton, #scheduleButton').prop('disabled', true).addClass('disabled');
+
+            // 显示进度条
+            $('#progressBar').show();
+            $('#progressPercentage').text('0%'); // 初始化进度百分比显示
+            updateProgressBar(0); // 初始化进度条
+
+            // 开始定期获取进度
+            progressInterval = setInterval(getProgress, 1000);
 
             $.ajax({
-                url: "{% url 'process_orders' %}",
+                url: url,
                 method: 'POST',
                 data: {
                     csrfmiddlewaretoken: '{{ csrf_token }}'
                 },
                 success: function (response) {
-                    $('#processingModalBody').text('排产成功！');
+                    clearInterval(progressInterval); // 停止进度更新
+                    updateProgressBar(100); // 假设成功后直接显示100%
+                    $('#progressBarFill').addClass('bg-success'); // 绿色显示成功
                     setTimeout(function() {
-                        $('#processingModal').modal('hide');
-                        location.reload();  // Reload the page to see the updated results
-                    }, 2000); // Hide modal after 2 seconds
+                        location.reload();  // 重新加载页面以查看更新的结果
+                    }, 2000); // 延迟2秒后刷新页面
                 },
                 error: function (xhr, status, error) {
-                    $('#processingModalBody').text('排产失败! 请检查数据是否完整！');
+                    clearInterval(progressInterval); // 停止进度更新
+                    updateProgressBar(0); // 显示为0%
+                    $('#progressBarFill').addClass('bg-danger'); // 红色显示失败
+                    console.error("Scheduling failed:", error);
+                },
+                complete: function() {
+                    // 恢复按钮
+                    setTimeout(function() {
+                        $('#fastScheduleButton, #scheduleButton').prop('disabled', false).removeClass('disabled');
+                        $('#progressBar').hide(); // 隐藏进度条
+                        $('#progressPercentage').text(''); // 清空进度百分比显示
+                    }, 2000); // 等待2秒再恢复按钮
                 }
             });
-        });
-    });
-
-         $('#searchButton').on('click', function(e) {
-                e.preventDefault();
-                var searchDate = $('#searchDate').val();
-
-                $.ajax({
-                    url: "{% url 'schedule_by_date' %}",
-                    method: 'GET',
-                    data: {
-                        'date': searchDate
-                    },
-                    dataType: 'json',
-                    success: function(response) {
-                        if (response.success) {
-                            var tableBody = document.getElementById('resultTableBody');
-                            tableBody.innerHTML = ''; // 清空现有结果
-
-                            if (response.results.length > 0) {
-                                // 存在结果，填充表格
-                                response.results.forEach(function(result) {
-                                    var row = document.createElement('tr');
-                                    row.innerHTML = `
-                                        <td>${result.task_start_time}</td>  <!-- 开始时间 -->
-                                        <td>${result.task_end_time}</td>    <!-- 结束时间 -->
-                                        <td>${result.is_changeover}</td>    <!-- 是否换型 -->
-                                        <td>${result.order_code}</td>      <!-- 订单编号 -->
-                                        <td>${result.product_code}</td>    <!-- 产品编码 -->
-                                        <td>${result.process_i}</td>       <!-- 工序号 -->
-                                        <td>${result.process_name}</td>    <!-- 工序名称 -->
-                                        <td>${result.device_name}</td>     <!-- 设备名称 -->
-                                        <td>${result.product_num}</td>     <!-- 生产数量 -->
-                                        <td>${result.product_num_completed}</td> <!-- 已完成数量 -->
-                                        <td>${result.product_num_inspected}</td> <!-- 已检查数量 -->
-                                    `;
-                                    tableBody.appendChild(row);
-                                });
-                            } else {
-                                // 没有结果
-                                console.log(response.message);
-                            }
-                        } else {
-                            // 服务器返回失败消息
-                            console.error(response.message);
-                        }
-                    },
-                    error: function(xhr, status, error) {
-                        // 错误处理
-                        console.error("Error fetching schedule:", error);
-                    }
-                });
-        });
-
-        function updateProgressBar() {
-            fetch('/get_progress/')
-                .then(response => response.json())
-                .then(data => {
-                    const progress = parseFloat(data.progress);
-                    const progressBarFill = document.getElementById('progressBarFill');
-                    const progressText = document.getElementById('progressText');
-                    if (!isNaN(progress)) {
-                        progressBarFill.style.width = progress + '%';
-                        progressText.textContent = `排产进度： ${Math.round(progress)}%`;
-                    }
-                })
-                .catch(error => console.error('Error fetching progress:', error));
         }
 
-        // 更新进度条每秒
-        setInterval(updateProgressBar, 1000); // 每秒更新一次
+        function getProgress() {
+            $.ajax({
+                url: '/get_progress/', // 确保这个URL指向正确的视图
+                method: 'GET',
+                success: function (data) {
+                    const progress = parseFloat(data.progress);
+                    if (!isNaN(progress)) {
+                        updateProgressBar(progress);
+                    }
+                },
+                error: function (xhr, status, error) {
+                    console.error("Error fetching progress:", error);
+                }
+            });
+        }
 
+        function updateProgressBar(progress) {
+            $('#progressBarFill').css('width', progress + '%');
+            $('#progressPercentage').text(progress + '%'); // 更新进度百分比显示
+        }
+    });
 </script>
 {% endblock content %}
