@@ -19,9 +19,9 @@
                         </a>
                     </li>
 
-                    {% if request.user.role == 'operator' or request.user.role == 'inspector'%}
+                    {% if request.user.role == 'operator' or request.user.role == 'inspector' or request.user.role == 'admin' %}
                     <li class="nav-item">
-                        <a class="nav-link {% if request.resolver_match.url_name == 'my_tasks' %} active {% endif %}"
+                        <a class="nav-link"
                            href="{% url 'my_tasks' %}">
                             <i class="ni ni-single-02 text-pink"></i>
                             <span class="nav-link-text">我的生产</span>

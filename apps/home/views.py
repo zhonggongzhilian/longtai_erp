@@ -7,15 +7,15 @@ import logging
 import os
 from datetime import datetime, timedelta
 from io import BytesIO
-from django.utils import timezone
-from django.http import JsonResponse
-from django.views.decorators.http import require_POST
+
 import pytz
+import qrcode
 from django import template
 from django.contrib.auth.decorators import login_required
 from django.core.exceptions import ValidationError
 from django.core.files.storage import FileSystemStorage
 from django.core.paginator import Paginator
+from django.core.serializers import serialize
 from django.http import HttpResponse
 from django.http import HttpResponseRedirect
 from django.http import JsonResponse
@@ -23,6 +23,7 @@ from django.shortcuts import get_object_or_404
 from django.shortcuts import render
 from django.template import loader
 from django.urls import reverse
+from django.utils import timezone
 from django.utils.dateparse import parse_date
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_POST
@@ -41,8 +42,6 @@ from .models import Task  # 确保导入你的 Task 模型
 from .models import Weight
 from .preprocess import preprocess_order, preprocess_product, preprocess_process, preprocess_device, preprocess_raw
 from .views_login import login_view, register_user
-
-from django.core.serializers import serialize
 
 __all__ = [login_view, register_user]
 
@@ -323,6 +322,7 @@ def update_order(request, order_id):
         return HttpResponse(status=200)
     return HttpResponse(status=400)
 
+
 @csrf_exempt
 def create_order(request):
     order_data = request.POST
@@ -370,7 +370,7 @@ def create_order(request):
 
     except Exception as e:
         print("adasfd")
-        raise(e)
+        raise (e)
 
     # 创建订单对象
     order = Order.objects.create(
@@ -394,7 +394,7 @@ def create_order(request):
         'success': True,
         'message': '订单创建成功。',
     }
-)
+    )
 
 
 @login_required(login_url="/login/")
@@ -558,10 +558,29 @@ def raw_delete(request, pk):
 @login_required(login_url="/login/")
 def result_list(request):
     results = Task.objects.all()
-    # 为每个 task 对象添加对应的 product_name
+
+    # 为每个 task 对象添加对应的 product_name, customer_name 和 product_kind
     for result in results:
+        # 获取 Product 对象，添加 product_name
         product = Product.objects.filter(product_code=result.product_code).first()
         result.product_name = product.product_name if product else '⚠️ 未知产品'
+
+        # 获取 OrderProduct 对象
+        order = Order.objects.filter()
+        order_product = OrderProduct.objects.filter(product_code=result.product_code).first()
+        if order_product:
+            # 添加 customer_name 和 product_kind
+            if order_product.order:
+                result.customer_name = order_product.order.order_custom_name
+                result.product_kind = order_product.product_kind
+                print(f"{order_product.order.order_custom_name=}, {order_product.product_kind=}")
+            else:
+                result.customer_name = '⚠️ 未知客户 2'
+                result.product_kind = '⚠️ 未知类别 2'
+        else:
+            result.customer_name = '⚠️ 未知客户 1 '
+            result.product_kind = '⚠️ 未知类别 1 '
+
     return render(request, 'home/result_list.html', {'results': results})
 
 
@@ -695,29 +714,32 @@ def add_urgent_task(request):
 @login_required(login_url="/login/")
 def my_tasks(request):
     user = request.user
+
+    # 获取用户关联的设备列表
     if user.role == 'admin':
-        # Admins see all results
+        devices = Device.objects.all()
         tasks = Task.objects.all().order_by('task_start_time')
     elif user.role == 'inspector':
-        related_device_names = Device.objects.filter(inspector=user).values_list('device_name', flat=True)
+        devices = Device.objects.filter(inspector=user)
+        related_device_names = devices.values_list('device_name', flat=True)
         tasks = Task.objects.filter(
             device_name__in=related_device_names,
             completed=1,
         ).order_by('task_start_time')
     else:
-        # Operators and Inspectors see only related tasks
-        related_device_names = Device.objects.filter(
-            operator=user
-        ).values_list('device_name', flat=True)
+        devices = Device.objects.filter(operator=user)
+        related_device_names = devices.values_list('device_name', flat=True)
         tasks = Task.objects.filter(
             device_name__in=related_device_names
         ).order_by('task_start_time')
 
-    import qrcode  # 用于生成二维码
-    # 获取当前页面的完整 URL
-    current_url = request.build_absolute_uri()
+    # 筛选任务
+    selected_device = request.GET.get('device')
+    if selected_device:
+        tasks = tasks.filter(device_name=selected_device)
 
     # 生成二维码
+    current_url = request.build_absolute_uri()
     qr = qrcode.QRCode(
         version=1,
         error_correction=qrcode.constants.ERROR_CORRECT_L,
@@ -726,15 +748,16 @@ def my_tasks(request):
     )
     qr.add_data(current_url)
     qr.make(fit=True)
-
     img = qr.make_image(fill='black', back_color='white')
 
-    # 保存二维码图片到文件系统
     img_path = 'apps/static/assets/img/qrcode/my_tasks_qr.png'
+    os.makedirs(os.path.dirname(img_path), exist_ok=True)
     img.save(img_path)
 
     context = {
         'tasks': tasks,
+        'devices': devices,
+        'selected_device': selected_device,
         'user': user,
         'qr_code_url': img_path,
     }
@@ -1017,7 +1040,8 @@ def schedule_by_date(request):
         # 查询数据库，获取指定日期的任务
         results = Task.objects.filter(
             task_start_time__range=(start_datetime, end_datetime)
-        ).values('id', 'task_start_time', 'task_end_time','is_changeover', 'order_code', 'product_code', 'process_i', 'process_name', 'device_name', 'product_num', 'product_num_completed', 'product_num_inspected')
+        ).values('id', 'task_start_time', 'task_end_time', 'is_changeover', 'order_code', 'product_code', 'process_i',
+                 'process_name', 'device_name', 'product_num', 'product_num_completed', 'product_num_inspected')
 
         # 检查是否有结果
         if results:
@@ -1038,7 +1062,8 @@ def schedule_by_date(request):
             'success': False,
             'message': 'Invalid date format, please use YYYY-MM-DD'
         }, status=400)
-      
+
+
 def get_all_data(request):
     if request.method == 'GET':
         # 获取所有模型的数据

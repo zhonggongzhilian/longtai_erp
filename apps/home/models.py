@@ -81,6 +81,7 @@ class Order(models.Model):
     order_start_date = models.CharField(max_length=255, blank=True)
     order_end_date = models.CharField(max_length=255, blank=True)
     is_done = models.BooleanField(default=False)
+    order_custom_name = models.CharField(max_length=255, blank=True, null=True)
 
     def __str__(self):
         return self.order_code
@@ -90,7 +91,8 @@ class Order(models.Model):
         order = cls(
             order_code=order_row['订单编号'],
             order_start_date=order_row['订单日期'],
-            order_end_date=order_row['交货日期']
+            order_end_date=order_row['交货日期'],
+            order_custom_name=order_row['客户']
         )
         order.save()  # 保存订单
         products = [OrderProduct.from_dataframe_row(row, order) for _, row in products_rows.iterrows()]
@@ -108,6 +110,7 @@ class OrderProduct(models.Model):
     cur_process_i = models.IntegerField(default=0)
     is_done = models.BooleanField(default=False)
     end_time = models.DateTimeField(default=timezone.make_aware(datetime(1970, 1, 1)))
+    product_kind = models.CharField(max_length=255, blank=True, null=True)
 
     def __str__(self):
         return f"{self.order.order_code} - {self.product_code}"
@@ -117,7 +120,8 @@ class OrderProduct(models.Model):
         product = cls(
             order=order,
             product_code=row['商品编码'],
-            product_num_todo=row['数量']
+            product_num_todo=row['数量'],
+            product_kind=row['商品类别']
         )
         product.save()  # 保存产品
         return product

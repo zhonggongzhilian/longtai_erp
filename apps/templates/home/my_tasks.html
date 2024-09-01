@@ -25,76 +25,89 @@
         <div class="col">
             <div class="card">
                 <div class="card-body">
-                    <div class="form-row align-items-center">
-                        <div class="col-auto ml-auto">
-                            <button class="btn btn-primary" id="generatePdfBtn">
-                                生产作业清单
-                            </button>
-                            <button class="btn btn-danger" data-toggle="modal" data-target="#addUrgentTaskModal">
-                                添加紧急任务
-                            </button>
-                        </div>
-                    </div>
-                </div>
-                <div class="table-responsive">
-                    <table class="table align-items-center table-flush">
-                        <thead class="thead-light">
-                        <tr>
-                            <th scope="col">执行时间</th>
-                            <th scope="col">完成时间</th>
-                            <th scope="col">换型</th>
-                            <th scope="col">订单</th>
-                            <th scope="col">产品</th>
-                            <th scope="col">工序号</th>
-                            <th scope="col">工序名称</th>
-                            <th scope="col">设备</th>
-                            <th scope="col">生产数量</th>
-                            {% if request.user.role == 'operator' or request.user.role == 'admin' %}
-                            <th scope="col">已完成</th>
-                            <th scope="col">生产操作</th>
-                            {% endif %}
-                            {% if request.user.role == 'inspector' or request.user.role == 'admin' %}
-                            <th scope="col">已检查</th>
-                            <th scope="col">质检操作</th>
-                            {% endif %}
-                        </tr>
-                        </thead>
-                        <tbody id="resultTableBody">
-                        {% for task in tasks %}
-                        <tr class="task-row {% if task.completed and task.inspected %}completed-and-inspected-task{% elif task.completed %}completed-task{% elif task.inspected %}inspected-task{% endif %}"
-                            data-id="{{ task.id }}" data-execution-time="{{ task.execution_time }}">
-                            <td>{{ task.task_start_time }}</td>
-                            <td>{{ task.task_end_time }}</td>
-                            <td>{{ task.is_changeover }}</td>
-                            <td>{{ task.order_code }}</td>
-                            <td>{{ task.product_code }}</td>
-                            <td>{{ task.process_i }}</td>
-                            <td>{{ task.process_name }}</td>
-                            <td>{{ task.device_name }}</td>
-                            <td>{{ task.product_num }}</td>
-                            {% if request.user.role == 'operator' %}
-                            <td>{{ task.product_num_completed }}</td>
-                            <td>
-                                <a href="{% url 'my_tasks_operator_detail' task.id %}" class="btn btn-success btn-sm">
-                                    报工
-                                </a>
-                            </td>
-                            {% elif request.user.role == 'inspector' %}
-                            <td>{{ task.product_num_inspected }}</td>
-                            <td>
-                                <a href="{% url 'my_tasks_inspector_detail' task.id %}" class="btn btn-info btn-sm">
-                                    检查
-                                </a>
-                            </td>
-                            {% endif %}
-                        </tr>
-                        {% endfor %}
-                        </tbody>
-                    </table>
-                </div>
+    <div class="form-row align-items-center">
+        <div class="col-auto">
+            <form method="GET" action="{% url 'my_tasks' %}">
+                <select name="device" class="form-control" onchange="this.form.submit()">
+                    <option value="">全部设备</option>
+                    {% for device in devices %}
+                        <option value="{{ device.device_name }}" {% if device.device_name == selected_device %}selected{% endif %}>
+                            {{ device.device_name }}
+                        </option>
+                    {% endfor %}
+                </select>
+            </form>
+        </div>
+        <div class="col-auto">
+            <button class="btn btn-primary" id="generatePdfBtn">
+                生产作业清单
+            </button>
+            <button class="btn btn-danger" data-toggle="modal" data-target="#addUrgentTaskModal">
+                添加紧急任务
+            </button>
+        </div>
+    </div>
+</div>
+            </div>
+            <div class="table-responsive">
+                <table class="table align-items-center table-flush">
+                    <thead class="thead-light">
+                    <tr>
+                        <th scope="col">执行时间</th>
+                        <th scope="col">完成时间</th>
+                        <th scope="col">换型</th>
+                        <th scope="col">订单</th>
+                        <th scope="col">产品</th>
+                        <th scope="col">工序号</th>
+                        <th scope="col">工序名称</th>
+                        <th scope="col">设备</th>
+                        <th scope="col">生产数量</th>
+                        {% if request.user.role == 'operator' %}
+                        <th scope="col">已完成</th>
+                        <th scope="col">生产操作</th>
+                        {% endif %}
+                        {% if request.user.role == 'inspector' %}
+                        <th scope="col">已检查</th>
+                        <th scope="col">质检操作</th>
+                        {% endif %}
+                    </tr>
+                    </thead>
+                    <tbody id="resultTableBody">
+                    {% for task in tasks %}
+                    <tr class="task-row {% if task.completed and task.inspected %}completed-and-inspected-task{% elif task.completed %}completed-task{% elif task.inspected %}inspected-task{% endif %}"
+                        data-id="{{ task.id }}" data-execution-time="{{ task.execution_time }}">
+                        <td>{{ task.task_start_time }}</td>
+                        <td>{{ task.task_end_time }}</td>
+                        <td>{{ task.is_changeover }}</td>
+                        <td>{{ task.order_code }}</td>
+                        <td>{{ task.product_code }}</td>
+                        <td>{{ task.process_i }}</td>
+                        <td>{{ task.process_name }}</td>
+                        <td>{{ task.device_name }}</td>
+                        <td>{{ task.product_num }}</td>
+                        {% if request.user.role == 'operator' %}
+                        <td>{{ task.product_num_completed }}</td>
+                        <td>
+                            <a href="{% url 'my_tasks_operator_detail' task.id %}" class="btn btn-success btn-sm">
+                                报工
+                            </a>
+                        </td>
+                        {% elif request.user.role == 'inspector' %}
+                        <td>{{ task.product_num_inspected }}</td>
+                        <td>
+                            <a href="{% url 'my_tasks_inspector_detail' task.id %}" class="btn btn-info btn-sm">
+                                检查
+                            </a>
+                        </td>
+                        {% endif %}
+                    </tr>
+                    {% endfor %}
+                    </tbody>
+                </table>
             </div>
         </div>
     </div>
+</div>
 </div>
 
 
@@ -193,11 +206,10 @@
     });
 
 
-
 </script>
 <script>
-document.getElementById('generatePdfBtn').addEventListener('click', function() {
-    window.location.href = "{% url 'generate_pdf' %}";
-});
+    document.getElementById('generatePdfBtn').addEventListener('click', function() {
+        window.location.href = "{% url 'generate_pdf' %}";
+    });
 </script>
 {% endblock content %}

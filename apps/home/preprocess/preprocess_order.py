@@ -14,6 +14,7 @@ def insert_order(order):
         defaults={
             'order_date': order.order_start_date,
             'delivery_date': order.order_end_date,
+            'order_custom_name': order.order_custom_name,
         }
     )
 
@@ -26,6 +27,7 @@ def insert_product(product, order_code):
             'product_name': product.product_name,
             'product_kind': product.product_kind,
             'product_num_todo': product.product_num_todo,
+            'product_kind': product.product_kind,
         }
     )
 
