@@ -63,10 +63,10 @@ urlpatterns = [
 
     path('tasks/add-urgent/', views.add_urgent_task, name='add_urgent_task'),
     path('generate_pdf/', views.generate_pdf, name='generate_pdf'),
-
     path('create-order/', views.create_order, name='create_order'),
 
 
     path('processes/', ProcessListView.as_view(), name='process-list'),
     path('schedule-by-date/', views.schedule_by_date, name='schedule_by_date'),
+    path('get_all_data/', views.get_all_data, name='get_all_data')
 ]
