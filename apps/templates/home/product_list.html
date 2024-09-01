@@ -14,7 +14,7 @@
                     <a href="#" class="btn btn-sm btn-neutral">新建</a>
                     <a href="#" class="btn btn-sm btn-neutral">筛选</a>
                 </div>
-            </div>
+            </div>zz
         </div>
     </div>
 </div>
@@ -29,40 +29,43 @@
                 <div class="table-responsive">
                     <table class="table align-items-center table-flush">
                         <thead class="thead-light">
-                            <tr>
-                                <th scope="col">产品编码</th>
-                                <th scope="col">产品名称</th>
-                                <th scope="col">产品类别</th>
-                                <th scope="col">毛坯</th>
-                                <th scope="col">重量</th>
-                                <th scope="col"></th>
-                            </tr>
+                        <tr>
+                            <th scope="col">产品编码</th>
+                            <th scope="col">产品名称</th>
+                            <th scope="col">产品类别</th>
+                            <th scope="col">毛坯</th>
+                            <th scope="col">重量</th>
+                            <th scope="col"></th>
+                        </tr>
                         </thead>
                         <tbody class="list">
-                            {% for product in products %}
-                            <tr>
-                                <td>
-                                    <a href="#" class="edit-product" data-product-id="{{ product.id }}">
-                                        {{ product.product_code }}
+                        {% for product in products %}
+                        <tr>
+                            <td>
+                                <a href="#" class="edit-product" data-product-id="{{ product.id }}">
+                                    {{ product.product_code }}
+                                </a>
+                            </td>
+                            <td>{{ product.product_name }}</td>
+                            <td>{{ product.product_kind }}</td>
+                            <td>{{ product.raw_code }}</td>
+                            <td>{{ product.weight }}</td>
+                            <td class="text-right">
+                                <div class="dropdown">
+                                    <a class="btn btn-sm btn-icon-only text-light" href="#" role="button"
+                                       data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                                        <i class="fas fa-ellipsis-v"></i>
                                     </a>
-                                </td>
-                                <td>{{ product.product_name }}</td>
-                                <td>{{ product.product_kind }}</td>
-                                <td>{{ product.raw_code }}</td>
-                                <td>{{ product.weight }}</td>
-                                <td class="text-right">
-                                    <div class="dropdown">
-                                        <a class="btn btn-sm btn-icon-only text-light" href="#" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-                                            <i class="fas fa-ellipsis-v"></i>
-                                        </a>
-                                        <div class="dropdown-menu dropdown-menu-right dropdown-menu-arrow">
-                                            <a class="dropdown-item edit-product" href="#" data-product-id="{{ product.id }}">编辑</a>
-                                            <a class="dropdown-item delete-product" href="#" data-product-id="{{ product.id }}">删除</a>
-                                        </div>
+                                    <div class="dropdown-menu dropdown-menu-right dropdown-menu-arrow">
+                                        <a class="dropdown-item edit-product" href="#"
+                                           data-product-id="{{ product.id }}">编辑</a>
+                                        <a class="dropdown-item delete-product" href="#"
+                                           data-product-id="{{ product.id }}">删除</a>
                                     </div>
-                                </td>
-                            </tr>
-                            {% endfor %}
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
                         </tbody>
                     </table>
                 </div>
@@ -77,7 +80,9 @@
                                 </a>
                             </li>
                             <li class="page-item">
-                                <a class="page-link" href="?page={{ page_obj.previous_page_number }}&per_page={{ per_page }}" tabindex="-1">
+                                <a class="page-link"
+                                   href="?page={{ page_obj.previous_page_number }}&per_page={{ per_page }}"
+                                   tabindex="-1">
                                     <i class="fas fa-angle-left"></i>
                                     <span class="sr-only">Previous</span>
                                 </a>
@@ -113,13 +118,15 @@
 
                             {% if page_obj.has_next %}
                             <li class="page-item">
-                                <a class="page-link" href="?page={{ page_obj.next_page_number }}&per_page={{ per_page }}">
+                                <a class="page-link"
+                                   href="?page={{ page_obj.next_page_number }}&per_page={{ per_page }}">
                                     <i class="fas fa-angle-right"></i>
                                     <span class="sr-only">Next</span>
                                 </a>
                             </li>
                             <li class="page-item">
-                                <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}&per_page={{ per_page }}">
+                                <a class="page-link"
+                                   href="?page={{ page_obj.paginator.num_pages }}&per_page={{ per_page }}">
                                     <i class="fas fa-angle-double-right"></i>
                                     <span class="sr-only">Last</span>
                                 </a>
@@ -147,7 +154,8 @@
 </div>
 
 <!-- Edit Product Modal -->
-<div class="modal fade" id="editProductModal" tabindex="-1" role="dialog" aria-labelledby="editProductModalLabel" aria-hidden="true">
+<div class="modal fade" id="editProductModal" tabindex="-1" role="dialog" aria-labelledby="editProductModalLabel"
+     aria-hidden="true">
     <div class="modal-dialog" role="document">
         <div class="modal-content">
             <div class="modal-header">
@@ -179,7 +187,8 @@
     </div>
 </div>
 
-<div class="modal fade" id="statusModal" tabindex="-1" role="dialog" aria-labelledby="statusModalLabel" aria-hidden="true">
+<div class="modal fade" id="statusModal" tabindex="-1" role="dialog" aria-labelledby="statusModalLabel"
+     aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered" role="document">
         <div class="modal-content">
             <div class="modal-body text-center">

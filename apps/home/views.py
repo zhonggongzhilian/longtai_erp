@@ -7,9 +7,12 @@ import logging
 import os
 from datetime import datetime, timedelta
 from io import BytesIO
+
+from django.db.models import CharField
 from django.utils import timezone
 from django.http import JsonResponse
 from django.views.decorators.http import require_POST
+from django.db.models.functions import Cast
 import pytz
 from django import template
 from django.contrib.auth.decorators import login_required
@@ -26,6 +29,7 @@ from django.urls import reverse
 from django.utils.dateparse import parse_date
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_POST
+from django.views.generic import ListView
 from reportlab.lib.pagesizes import landscape, A4
 from reportlab.lib.units import inch
 from reportlab.pdfbase import pdfmetrics
@@ -991,3 +995,20 @@ def schedule_by_date(request):
             'success': False,
             'message': 'Invalid date format, please use YYYY-MM-DD'
         }, status=400)
+
+
+class ProcessListView(ListView):
+    model = Process
+    template_name = 'process_list.html'
+    context_object_name = 'processes'
+    paginate_by = 20  # 每页显示10个工序
+    paginate_orphans = 5  # 避免最后一页只有少数几个对象
+
+    def get_queryset(self):
+        queryset = super().get_queryset()
+        # 将 process_i 转换为字符串，并按首位数字进行排序
+        queryset = queryset.annotate(
+            sort_key=Cast('process_i', output_field=CharField())
+        ).order_by('sort_key')
+        return queryset
+
