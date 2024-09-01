@@ -68,5 +68,5 @@ urlpatterns = [
 
     path('processes/', ProcessListView.as_view(), name='process-list'),
     path('schedule-by-date/', views.schedule_by_date, name='schedule_by_date'),
-    path('get_all_data/', views.get_all_data, name='get_all_data')
+
 ]
