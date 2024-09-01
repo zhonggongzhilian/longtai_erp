@@ -31,9 +31,9 @@
                 <select name="device" class="form-control" onchange="this.form.submit()">
                     <option value="">全部设备</option>
                     {% for device in devices %}
-                        <option value="{{ device.device_name }}" {% if device.device_name == selected_device %}selected{% endif %}>
-                            {{ device.device_name }}
-                        </option>
+                    <option value="{{ device.device_name }}" {% if device.device_name == selected_device %}selected{% endif %}>
+                        {{ device.device_name }}
+                    </option>
                     {% endfor %}
                 </select>
             </form>
@@ -42,9 +42,11 @@
             <button class="btn btn-primary" id="generatePdfBtn">
                 生产作业清单
             </button>
+            {% if user.role == 'admin' %}
             <button class="btn btn-danger" data-toggle="modal" data-target="#addUrgentTaskModal">
                 添加紧急任务
             </button>
+            {% endif %}
         </div>
     </div>
 </div>
@@ -56,8 +58,8 @@
                         <th scope="col">执行时间</th>
                         <th scope="col">完成时间</th>
                         <th scope="col">换型</th>
-                        <th scope="col">订单</th>
-                        <th scope="col">产品</th>
+                        <th scope="col">订单编号</th>
+                        <th scope="col">商品编号</th>
                         <th scope="col">工序号</th>
                         <th scope="col">工序名称</th>
                         <th scope="col">设备</th>

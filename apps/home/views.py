@@ -16,6 +16,7 @@ from django.core.exceptions import ValidationError
 from django.core.files.storage import FileSystemStorage
 from django.core.paginator import Paginator
 from django.core.serializers import serialize
+from django.db.models import Q
 from django.http import HttpResponse
 from django.http import HttpResponseRedirect
 from django.http import JsonResponse
@@ -450,8 +451,18 @@ def delete_device(request, device_id):
 
 @login_required(login_url="/login/")
 def product_list(request):
-    products = Product.objects.all()
+    search_query = request.GET.get('search', '')  # 获取用户输入的搜索关键词
     per_page = request.GET.get('per_page', 20)  # 获取用户自定义的每页数量，默认为20
+
+    # 如果存在搜索关键词，过滤产品列表
+    if search_query:
+        products = Product.objects.filter(
+            Q(product_code__icontains=search_query) |
+            Q(product_name__icontains=search_query)
+        )
+    else:
+        products = Product.objects.all()
+
     paginator = Paginator(products, per_page)
 
     page_number = request.GET.get('page')
@@ -737,6 +748,10 @@ def my_tasks(request):
     selected_device = request.GET.get('device')
     if selected_device:
         tasks = tasks.filter(device_name=selected_device)
+
+    for task in tasks:
+        order_product = OrderProduct.objects.filter(product_code=task.product_code).first()
+        task.customer_name = order_product.order.order_custom_name if order_product else '未知客户'
 
     # 生成二维码
     current_url = request.build_absolute_uri()
