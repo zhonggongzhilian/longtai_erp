@@ -28,6 +28,7 @@ class CustomUser(AbstractUser):
         choices=ROLE_CHOICES,
         default=OPERATOR,
     )
+    id = models.AutoField(primary_key=True)  # 默认行为是自动增长
 
     # 其他字段和方法
 
@@ -36,18 +37,21 @@ class Raw(models.Model):
     """
     毛坯模型
     """
-    raw_code = models.CharField(max_length=255, unique=True)
-    raw_name = models.CharField(max_length=255, blank=True)
+    id = models.AutoField(primary_key=True)  # 默认行为是自动增长
+    raw_code = models.CharField(max_length=255, blank=True, null=True)
+    raw_name = models.CharField(max_length=255, blank=True, null=True)
     raw_date_add = models.CharField(max_length=255, blank=True, null=True)
+    raw_num = models.IntegerField(default=0)
 
     def __str__(self):
-        return self.raw_code
+        return f"{self.raw_code} - {self.raw_date_add}"
 
 
 class Product(models.Model):
     """
     产品模型
     """
+    id = models.AutoField(primary_key=True)  # 默认行为是自动增长
     product_code = models.CharField(max_length=255, unique=True)
     product_name = models.CharField(max_length=255, null=True, blank=True)
     product_kind = models.CharField(max_length=255, null=True, blank=True)
@@ -59,6 +63,7 @@ class Device(models.Model):
     """
     设备模型
     """
+    id = models.AutoField(primary_key=True)  # 默认行为是自动增长
     device_name = models.CharField(max_length=255, unique=True)
     changeover_time = models.CharField(max_length=255, default="10")
     raw = models.CharField(max_length=255, blank=True, null=True)
@@ -79,6 +84,7 @@ class Order(models.Model):
     """
     订单模型
     """
+    id = models.AutoField(primary_key=True)  # 默认行为是自动增长
     order_code = models.CharField(max_length=255, blank=True, unique=True)  # 确保 order_code 是唯一的
     order_start_date = models.CharField(max_length=255, blank=True)
     order_end_date = models.CharField(max_length=255, blank=True)
@@ -105,6 +111,7 @@ class OrderProduct(models.Model):
     """
     订单中待产品信息
     """
+    id = models.AutoField(primary_key=True)  # 默认行为是自动增长
     order = models.ForeignKey(Order, on_delete=models.CASCADE, related_name='products', null=True, blank=True)
     product_code = models.CharField(max_length=255, blank=True)
     product_num_todo = models.IntegerField(default=0)
@@ -133,6 +140,7 @@ class Process(models.Model):
     """
     工序模型
     """
+    id = models.AutoField(primary_key=True)  # 默认行为是自动增长
     process_i = models.IntegerField(default=1)
     process_name = models.CharField(max_length=255)
     process_capacity = models.IntegerField(null=True, blank=True, default=0)
@@ -147,6 +155,7 @@ class Process(models.Model):
 
 
 class Task(models.Model):
+    id = models.AutoField(primary_key=True)  # 默认行为是自动增长
     task_start_time = models.DateTimeField(default=timezone.now)  # 使用带时区的时间
     task_end_time = models.DateTimeField(default=timezone.now)  # 使用带时区的时间
     is_changeover = models.CharField(max_length=3, default='No')

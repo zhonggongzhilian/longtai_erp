@@ -41,8 +41,9 @@
                     <table class="table align-items-center table-flush">
                         <thead class="thead-light">
                         <tr>
-                            <th scope="col">毛坯料号</th>
-                            <th scope="col">中文名称</th>
+                            <th scope="col">毛坯编码</th>
+                            <th scope="col">毛坯名称</th>
+                            <th scope="col">毛坯数量</th>
                             <th scope="col" class="text-right">操作</th>
                         </tr>
                         </thead>
@@ -51,6 +52,7 @@
                         <tr>
                             <td>{{ raw.raw_code }}</td>
                             <td>{{ raw.raw_name }}</td>
+                            <td>{{ raw.raw_num }}</td>
                             <td class="text-right">
                                 <div class="dropdown">
                                     <a class="btn btn-sm btn-icon-only text-light" href="#" role="button"
@@ -94,8 +96,8 @@
                             {% if num == page_obj.number %}
                             <li class="page-item active"><span class="page-link">{{ num }}</span></li>
                             {% else %}
-                            <li class="page-item"><a class="page-link" href="?page={{ num }}&per_page={{ per_page }}">{{
-                                num }}</a></li>
+                            <li class="page-item"><a class="page-link" href="?page={{ num }}&per_page={{ per_page }}">
+                                {{num}} </a></li>
                             {% endif %}
                             {% endif %}
                             {% endfor %}
@@ -138,11 +140,11 @@
                         {% csrf_token %}
                         <input type="hidden" id="editRawId" name="raw_id">
                         <div class="form-group">
-                            <label for="editRawCode">毛坯料号</label>
+                            <label for="editRawCode">毛坯编码</label>
                             <input type="text" class="form-control" id="editRawCode" name="raw_code">
                         </div>
                         <div class="form-group">
-                            <label for="editRawName">中文名称</label>
+                            <label for="editRawName">毛坯名称</label>
                             <input type="text" class="form-control" id="editRawName" name="raw_name">
                         </div>
                         <button type="submit" class="btn btn-primary">保存</button>

@@ -17,6 +17,7 @@ from django.core.files.storage import FileSystemStorage
 from django.core.paginator import Paginator
 from django.core.serializers import serialize
 from django.db.models import Q
+from django.db.models import Sum, Min
 from django.http import HttpResponse
 from django.http import HttpResponseRedirect
 from django.http import JsonResponse
@@ -438,6 +439,7 @@ def update_device(request, device_id):
         return HttpResponse(status=200)
     return HttpResponse(status=400)
 
+
 @login_required(login_url="/login/")
 def delete_device(request, device_id):
     if request.method == 'POST':
@@ -450,7 +452,7 @@ def delete_device(request, device_id):
 @login_required(login_url="/login/")
 def product_list(request):
     search_query = request.GET.get('search', '')  # 获取用户输入的搜索关键词
-    per_page = request.GET.get('per_page', 20)  # 获取用户自定义的每页数量，默认为20
+    per_page = request.GET.get('per_page', 50)  # 获取用户自定义的每页数量，默认为20
 
     # 如果存在搜索关键词，过滤产品列表
     if search_query:
@@ -523,15 +525,22 @@ def delete_product(request, product_id):
 
 @login_required(login_url="/login/")
 def raw_list(request):
-    raws = Raw.objects.all()
-    paginator = Paginator(raws, request.GET.get('per_page', 20))
+    # 分组查询，按名称合并毛坯并计算数量总和，同时保留每个名称的第一个raw_code
+    raws = Raw.objects.values('raw_name').annotate(
+        raw_code=Min('raw_code'),  # 取同名毛坯中的最小 raw_code 作为代表
+        raw_num=Sum('raw_num')
+    ).order_by('raw_name')
+
+    # 分页处理
+    paginator = Paginator(raws, request.GET.get('per_page', 50))
     page_number = request.GET.get('page')
     page_obj = paginator.get_page(page_number)
+
     context = {
         'raws': page_obj,
         'paginator': paginator,
         'page_obj': page_obj,
-        'per_page': request.GET.get('per_page', 20)
+        'per_page': request.GET.get('per_page', 50)
     }
     return render(request, 'home/raw_list.html', context)
 
