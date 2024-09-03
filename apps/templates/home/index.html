@@ -136,19 +136,24 @@
                             <input type="file" id="fileInput" name="file" accept=".xlsx,.xls,.csv">
                             <input type="hidden" id="fileTypeInput" name="file_type">
                         </form>
-                        <a href="#" class="btn btn-sm btn-neutral" id="uploadButton_Orders" data-file-type="orders" style="margin-top:5px">
+                        <a href="#" class="btn btn-sm btn-neutral" id="uploadButton_Orders" data-file-type="orders"
+                           style="margin-top:5px">
                             <i class="fas fa-upload"></i> 订单表
                         </a>
-                        <a href="#" class="btn btn-sm btn-neutral" id="uploadButton_Raw" data-file-type="raw" style="margin-top:5px">
+                        <a href="#" class="btn btn-sm btn-neutral" id="uploadButton_Raw" data-file-type="raw"
+                           style="margin-top:5px">
                             <i class="fas fa-upload"></i> 毛坯表
                         </a>
-                        <a href="#" class="btn btn-sm btn-neutral" id="uploadButton_Process" data-file-type="process" style="margin-top:5px">
+                        <a href="#" class="btn btn-sm btn-neutral" id="uploadButton_Process" data-file-type="process"
+                           style="margin-top:5px">
                             <i class="fas fa-upload"></i> 工序表
                         </a>
-                        <a href="#" class="btn btn-sm btn-neutral" id="uploadButton_Product" data-file-type="product" style="margin-top:5px">
+                        <a href="#" class="btn btn-sm btn-neutral" id="uploadButton_Product" data-file-type="product"
+                           style="margin-top:5px">
                             <i class="fas fa-upload"></i> 产品表
                         </a>
-                        <a href="#" class="btn btn-sm btn-neutral" id="uploadButton_Exchange" data-file-type="exchange" style="margin-top:5px">
+                        <a href="#" class="btn btn-sm btn-neutral" id="uploadButton_Exchange" data-file-type="exchange"
+                           style="margin-top:5px">
                             <i class="fas fa-upload"></i> 设备表
                         </a>
                     </div>
@@ -260,13 +265,13 @@
 <!-- Page content -->
 <div class="container-fluid mt--6">
     <div class="row">
-        <div class="col-xl-8">
+        <div class="col-xl-4">
             <div class="card bg-default">
                 <div class="card-header bg-transparent">
                     <div class="row align-items-center">
                         <div class="col">
                             <h6 class="text-light text-uppercase ls-1 mb-1">生产情况</h6>
-                            <h5 class="h3 text-white mb-0">已生产重量：{{ weight }}</h5>
+                            <h5 class="h3 text-white mb-0">本月生产数量： 11500 kg</h5>
                         </div>
                     </div>
                 </div>
@@ -280,7 +285,6 @@
                                 <div class="progress-bar-fill" id="fill-1"></div>
                                 <div class="progress-bar-text" id="text-1">0%</div>
                             </div>
-                            <button class="btn btn-primary btn-start" id="start-1">发车</button>
                         </div>
                     </div>
                     <div class="progress-bar-container">
@@ -292,7 +296,6 @@
                                 <div class="progress-bar-fill" id="fill-2"></div>
                                 <div class="progress-bar-text" id="text-2">0%</div>
                             </div>
-                            <button class="btn btn-primary btn-start" id="start-2">发车</button>
                         </div>
                     </div>
                     <div class="progress-bar-container">
@@ -304,13 +307,12 @@
                                 <div class="progress-bar-fill" id="fill-3"></div>
                                 <div class="progress-bar-text" id="text-3">0%</div>
                             </div>
-                            <button class="btn btn-primary btn-start" id="start-3">发车</button>
                         </div>
                     </div>
                 </div>
             </div>
         </div>
-        <div class="col-xl-4">
+        <div class="col-xl-8">
             <div class="card">
                 <div class="card-header bg-transparent">
                     <div class="row align-items-center">
@@ -323,7 +325,7 @@
                 <div class="card-body">
                     <!-- Chart -->
                     <div class="chart">
-                        <canvas id="chart-bars" class="chart-canvas"></canvas>
+                        <canvas id="order-weight-chart" class="chart-canvas" height="100"></canvas>
                     </div>
                 </div>
             </div>
@@ -349,82 +351,31 @@
                         <thead class="thead-light">
                         <tr>
                             <th scope="col">设备名称</th>
-                            <th scope="col">月生产数</th>
-                            <th scope="col">周生产数</th>
+                            <th scope="col">操作员</th>
+                            <th scope="col">质检员</th>
                             <th scope="col">负载情况</th>
                         </tr>
                         </thead>
                         <tbody>
+                        {% for device in device_details %}
                         <tr>
-                            <th scope="row">
-                                国盛
-                            </th>
+                            <th scope="row">{{ device.device_name }}</th>
+                            <td>{{device.operator}}</td>
+                            <td>{{ device.inspector }}</td>
                             <td>
-                                4,569
-                            </td>
-                            <td>
-                                340
-                            </td>
-                            <td>
-                                <i class="fas fa-arrow-up text-success mr-3"></i> 46,53%
+                                {% if device.load_percentage > 50 %}
+                                <i class="fas fa-arrow-up text-success mr-3"></i>
+                                {{ device.load_percentage|floatformat:2 }}%
+                                {% elif device.load_percentage > 20 %}
+                                <i class="fas fa-arrow-down text-warning mr-3"></i>
+                                {{ device.load_percentage|floatformat:2 }}%
+                                {% else %}
+                                <i class="fas fa-arrow-down text-danger mr-3"></i>
+                                {{ device.load_percentage|floatformat:2 }}%
+                                {% endif %}
                             </td>
                         </tr>
-                        <tr>
-                            <th scope="row">
-                                新浙
-                            </th>
-                            <td>
-                                3,985
-                            </td>
-                            <td>
-                                319
-                            </td>
-                            <td>
-                                <i class="fas fa-arrow-down text-warning mr-3"></i> 46,53%
-                            </td>
-                        </tr>
-                        <tr>
-                            <th scope="row">
-                                摇臂#1
-                            </th>
-                            <td>
-                                3,513
-                            </td>
-                            <td>
-                                294
-                            </td>
-                            <td>
-                                <i class="fas fa-arrow-down text-warning mr-3"></i> 36,49%
-                            </td>
-                        </tr>
-                        <tr>
-                            <th scope="row">
-                                摇臂#2
-                            </th>
-                            <td>
-                                2,050
-                            </td>
-                            <td>
-                                147
-                            </td>
-                            <td>
-                                <i class="fas fa-arrow-up text-success mr-3"></i> 50,87%
-                            </td>
-                        </tr>
-                        <tr>
-                            <th scope="row">
-                                摇臂#3
-                            </th>
-                            <td>
-                                1,795
-                            </td>
-                            <td>
-                                190
-                            </td>
-                            <td>
-                                <i class="fas fa-arrow-down text-danger mr-3"></i> 46,53%
-                            </td>
-                        </tr>
+                        {% endfor %}
                         </tbody>
                     </table>
                 </div>
@@ -564,6 +515,40 @@
 
 </div>
 
+
+{% endblock content %}
+
+<!-- Specific JS goes HERE -->
+{% block javascripts %}
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="/static/assets/vendor/chart.js/dist/Chart.min.js"></script>
+<script src="/static/assets/vendor/chart.js/dist/Chart.extension.js"></script>
+
+<script>
+    var ctx = document.getElementById('order-weight-chart').getContext('2d');
+    var orderWeightChart = new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: {{ months|safe }},
+            datasets: [{
+                label: '订单总重量',
+                data: {{ weights|safe }},
+                backgroundColor: 'rgba(75, 192, 192, 0.2)',
+                borderColor: 'rgba(75, 192, 192, 1)',
+                borderWidth: 1
+            }]
+        },
+        options: {
+            scales: {
+                y: {
+                    beginAtZero: true,
+                }
+            }
+        }
+    });
+</script>
+
 <script>
     $(document).ready(function () {
         function setupUploadButton(buttonId) {
@@ -616,8 +601,8 @@
 </script>
 <script>
     document.addEventListener("DOMContentLoaded", function() {
-        var weight = 10; // Use Django template variable for weight
-        var maxWeight = 13.5; // Maximum value for each segment
+        var weight = 11500; // Use Django template variable for weight
+        var maxWeight = 4500; // Maximum value for each segment
 
         var progressBars = document.querySelectorAll('.progress-bar-fill');
         var progressTexts = document.querySelectorAll('.progress-bar-text');
@@ -637,15 +622,6 @@
         });
     });
 </script>
-
-{% endblock content %}
-
-<!-- Specific JS goes HERE -->
-{% block javascripts %}
-
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-<script src="/static/assets/vendor/chart.js/dist/Chart.min.js"></script>
-<script src="/static/assets/vendor/chart.js/dist/Chart.extension.js"></script>
 <script>
     document.addEventListener('DOMContentLoaded', function () {
         const ctx = document.getElementById('chart-bars').getContext('2d');

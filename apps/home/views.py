@@ -5,7 +5,7 @@ Copyright (c) 2019 - present AppSeed.us
 
 import logging
 import os
-from datetime import datetime, timedelta
+from datetime import datetime, time, timedelta
 from io import BytesIO
 
 import pytz
@@ -161,6 +161,99 @@ def index(request):
     end_dates = list(end_date_counts.keys())
     end_date_counts_list = list(end_date_counts.values())
 
+    # 设定日期和工作时间范围
+    selected_date = timezone.make_aware(datetime(2024, 1, 10))
+    morning_start_time = timezone.make_aware(datetime.combine(selected_date, time(9, 0, 0)))
+    morning_end_time = timezone.make_aware(datetime.combine(selected_date, time(12, 0, 0)))
+    afternoon_start_time = timezone.make_aware(datetime.combine(selected_date, time(13, 0, 0)))
+    afternoon_end_time = timezone.make_aware(datetime.combine(selected_date, time(18, 0, 0)))
+
+    # 计算工作总时长
+    morning_duration = (morning_end_time - morning_start_time).total_seconds()
+    afternoon_duration = (afternoon_end_time - afternoon_start_time).total_seconds()
+    total_work_duration = morning_duration + afternoon_duration
+
+    # 订单重量信息
+    # 获取所有订单
+    orders = Order.objects.all()
+
+    # 创建一个字典来存储每个月的总重量
+    monthly_weights = {}
+
+    for order in orders:
+        # 解析订单的开始日期
+        order_date = datetime.strptime(order.order_start_date, '%Y-%m-%d')
+        month_str = order_date.strftime('%Y-%m')  # 获取订单的年月
+
+        # 初始化该月份的重量为0
+        if month_str not in monthly_weights:
+            monthly_weights[month_str] = 0
+
+        # 获取该订单的所有 OrderProduct 记录
+        order_products = OrderProduct.objects.filter(order=order)
+
+        # 计算该订单的总重量
+        order_weight = 0
+        for order_product in order_products:
+            # 获取产品的重量
+            try:
+                product = Product.objects.get(product_code=order_product.product_code)
+                product_weight = product.weight
+            except Product.DoesNotExist:
+                product_weight = 0  # 如果产品未找到，则重量为 0
+
+            # 计算该产品的总重量并累加
+            order_weight += round(float(product_weight) * int(order_product.product_num_todo), 2)
+
+        # 累加到该月的总重量
+        monthly_weights[month_str] += round(order_weight, 2)
+
+    # 将结果转换为按月份排序的列表
+    months = sorted(monthly_weights.keys())
+    weights = [round(monthly_weights[month], 2) for month in months]
+    print(months, weights)
+
+    # 设备负载信息
+    devices = Device.objects.all()
+    device_details = []
+
+    for device in devices:
+        # 过滤出指定日期和工作时间范围内的任务
+        tasks = Task.objects.filter(
+            device_name=device.device_name,
+            task_start_time__gte=morning_start_time,
+            task_end_time__lte=afternoon_end_time
+        )
+
+        total_task_time = 0
+
+        for task in tasks:
+            # 计算每个任务的有效工作时间（考虑分段工作时间）
+            task_start = max(task.task_start_time, morning_start_time)
+            task_end = min(task.task_end_time, afternoon_end_time)
+
+            if task_start < morning_end_time:
+                morning_task_time = min(task_end, morning_end_time) - task_start
+            else:
+                morning_task_time = timedelta(0)
+
+            if task_end > afternoon_start_time:
+                afternoon_task_time = task_end - max(task_start, afternoon_start_time)
+            else:
+                afternoon_task_time = timedelta(0)
+
+            total_task_time += morning_task_time.total_seconds() + afternoon_task_time.total_seconds()
+
+        # 计算设备负载情况
+        load_percentage = (total_task_time / total_work_duration) * 100 if total_work_duration > 0 else 0
+
+        device_details.append({
+            'device_name': device.device_name,
+            'operator': device.operator.username if device.operator else 'N/A',
+            'inspector': device.inspector.username if device.inspector else 'N/A',
+            'load_percentage': load_percentage
+        })
+
     context = {
         'segment': 'index',
         'orders_count': orders_count,
@@ -173,6 +266,11 @@ def index(request):
         'start_date_counts': start_date_counts_list,
         'end_dates': end_dates,
         'end_date_counts': end_date_counts_list,
+
+        'months': months,
+        'weights': weights,
+
+        'device_details': device_details,
     }
 
     html_template = loader.get_template('home/index.html')
