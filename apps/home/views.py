@@ -269,7 +269,8 @@ def upload(request):
 
 @login_required(login_url="/login/")
 def order_list(request):
-    order_products = OrderProduct.objects.select_related('order').all()  # 您的查询集
+    order_products = OrderProduct.objects.select_related('order').all()
+
     per_page = request.GET.get('per_page', 50)  # 获取用户自定义的每页数量，默认为20
     paginator = Paginator(order_products, per_page)
     page_number = request.GET.get('page')

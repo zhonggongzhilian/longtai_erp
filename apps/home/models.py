@@ -38,6 +38,7 @@ class Raw(models.Model):
     """
     raw_code = models.CharField(max_length=255, unique=True)
     raw_name = models.CharField(max_length=255, blank=True)
+    raw_date_add = models.CharField(max_length=255, blank=True, null=True)
 
     def __str__(self):
         return self.raw_code
