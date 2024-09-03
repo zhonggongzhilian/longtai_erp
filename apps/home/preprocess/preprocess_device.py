@@ -19,7 +19,6 @@ def process_file(file_path):
                 device_names = row['设备名称'].split('/')
                 for device_name in device_names:
                     changeover_time = row['每次平均换型时间（分钟)']
-                    print(f"{device_name=}, {changeover_time=}")
                     if not Device.objects.filter(device_name=device_name).exists():
                         Device.objects.create(
                             device_name=device_name.strip(),

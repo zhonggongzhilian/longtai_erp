@@ -44,10 +44,10 @@
                         </button>
                     </div>
                 </div>
-            </div>
-            <div class="table-responsive">
-                <table class="table align-items-center table-flush">
-                    <thead class="thead-light">
+
+                <div class="table-responsive">
+                    <table class="table align-items-center table-flush">
+                        <thead class="thead-light">
                         <tr>
                             <th scope="col">执行时间</th>
                             <th scope="col">完成时间</th>
@@ -64,8 +64,8 @@
                             <th scope="col">已完成</th>
                             <th scope="col">已检查</th>
                         </tr>
-                    </thead>
-                    <tbody id="resultTableBody">
+                        </thead>
+                        <tbody id="resultTableBody">
                         {% for result in results %}
                         <tr id="result-{{ result.id }}">
                             <td>{{ result.task_start_time }}</td>
@@ -84,8 +84,9 @@
                             <td>{{ result.product_num_inspected}}</td>
                         </tr>
                         {% endfor %}
-                    </tbody>
-                </table>
+                        </tbody>
+                    </table>
+                </div>
             </div>
         </div>
     </div>

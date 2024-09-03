@@ -10,10 +10,6 @@
                 <div class="col-lg-6 col-7">
                     <h6 class="h2 text-white d-inline-block mb-0">商品信息</h6>
                 </div>
-                <div class="col-lg-6 col-5 text-right">
-                    <a href="#" class="btn btn-sm btn-neutral">新建</a>
-                    <a href="#" class="btn btn-sm btn-neutral">筛选</a>
-                </div>
             </div>
         </div>
     </div>
@@ -32,65 +28,43 @@
                 </div>
                 <div class="table-responsive">
                     <table class="table align-items-center table-flush">
-    <thead class="thead-light">
-        <tr>
-            <th scope="col">执行时间</th>
-            <th scope="col">完成时间</th>
-            <th scope="col">换型</th>
-            {% if request.user.role != 'operator' %}
-            <th scope="col">订单编号</th>
-            {% endif %}
-            <th scope="col">客户名称</th>
-            <th scope="col">商品编号</th>
-            <th scope="col">工序号</th>
-            <th scope="col">工序名称</th>
-            <th scope="col">设备</th>
-            <th scope="col">生产数量</th>
-            {% if request.user.role == 'operator' %}
-            <th scope="col">已完成</th>
-            <th scope="col">生产操作</th>
-            {% endif %}
-            {% if request.user.role == 'inspector' %}
-            <th scope="col">已检查</th>
-            <th scope="col">质检操作</th>
-            {% endif %}
-        </tr>
-    </thead>
-    <tbody id="resultTableBody">
-        {% for task in tasks %}
-        <tr class="task-row {% if task.completed and task.inspected %}completed-and-inspected-task{% elif task.completed %}completed-task{% elif task.inspected %}inspected-task{% endif %}"
-            data-id="{{ task.id }}" data-execution-time="{{ task.execution_time }}">
-            <td>{{ task.task_start_time }}</td>
-            <td>{{ task.task_end_time }}</td>
-            <td>{{ task.is_changeover }}</td>
-            {% if request.user.role != 'operator' %}
-            <td>{{ task.order_code }}</td>
-            {% endif %}
-            <td>{{ task.customer_name }}</td>
-            <td>{{ task.product_code }}</td>
-            <td>{{ task.process_i }}</td>
-            <td>{{ task.process_name }}</td>
-            <td>{{ task.device_name }}</td>
-            <td>{{ task.product_num }}</td>
-            {% if request.user.role == 'operator' %}
-            <td>{{ task.product_num_completed }}</td>
-            <td>
-                <a href="{% url 'my_tasks_operator_detail' task.id %}" class="btn btn-success btn-sm">
-                    报工
-                </a>
-            </td>
-            {% elif request.user.role == 'inspector' %}
-            <td>{{ task.product_num_inspected }}</td>
-            <td>
-                <a href="{% url 'my_tasks_inspector_detail' task.id %}" class="btn btn-info btn-sm">
-                    检查
-                </a>
-            </td>
-            {% endif %}
-        </tr>
-        {% endfor %}
-    </tbody>
-</table>
+                        <thead class="thead-light">
+                            <tr>
+                                <th scope="col">产品编码</th>
+                                <th scope="col">产品名称</th>
+                                <th scope="col">产品类别</th>
+                                <th scope="col">毛坯</th>
+                                <th scope="col">重量</th>
+                                <th scope="col"></th>
+                            </tr>
+                        </thead>
+                        <tbody class="list">
+                            {% for product in products %}
+                            <tr>
+                                <td>
+                                    <a href="#" class="edit-product" data-product-id="{{ product.id }}">
+                                        {{ product.product_code }}
+                                    </a>
+                                </td>
+                                <td>{{ product.product_name }}</td>
+                                <td>{{ product.product_kind }}</td>
+                                <td>{{ product.raw_code }}</td>
+                                <td>{{ product.weight }}</td>
+                                <td class="text-right">
+                                    <div class="dropdown">
+                                        <a class="btn btn-sm btn-icon-only text-light" href="#" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                                            <i class="fas fa-ellipsis-v"></i>
+                                        </a>
+                                        <div class="dropdown-menu dropdown-menu-right dropdown-menu-arrow">
+                                            <a class="dropdown-item edit-product" href="#" data-product-id="{{ product.id }}">编辑</a>
+                                            <a class="dropdown-item delete-product" href="#" data-product-id="{{ product.id }}">删除</a>
+                                        </div>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
                 </div>
                 <div class="card-footer py-4">
                     <nav aria-label="...">

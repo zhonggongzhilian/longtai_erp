@@ -8,9 +8,7 @@
         <div class="header-body">
             <div class="row align-items-center py-4">
                 <div class="col-lg-6 col-7">
-                </div>
-                <div class="col-lg-6 col-5 text-right">
-                    <a href="#" class="btn btn-sm btn-neutral" id="add-device-btn">新增</a>
+                    <h6 class="h2 text-white d-inline-block mb-0">设备信息</h6>
                 </div>
             </div>
         </div>
@@ -22,14 +20,14 @@
         <div class="col">
             <div class="card">
                 <div class="card-header border-0">
-                    <h3 class="mb-0">设备信息</h3>
                 </div>
                 <div class="table-responsive">
                     <table class="table align-items-center table-flush">
                         <thead class="thead-light">
                         <tr>
                             <th scope="col">设备名称</th>
-                            <th scope="col">换型时间</th>
+                            <th scope="col">换型时间（分钟）</th>
+                            <th scope="col">设备状态</th>
                             <th scope="col">操作员</th> <!-- Changed to Operator -->
                             <th scope="col">检查员</th> <!-- Changed to Inspector -->
                             <th scope="col"></th>
@@ -45,17 +43,24 @@
                             </td>
                             <td>{{ device.changeover_time }}</td>
                             <td>
-                                {% if device.operator %}
-                                    {{ device.operator.username }}
+                                {% if device.is_fault %}
+                                故障
                                 {% else %}
-                                    N/A
+                                正常
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if device.operator %}
+                                {{ device.operator.username }}
+                                {% else %}
+                                N/A
                                 {% endif %}
                             </td>
                             <td>
                                 {% if device.inspector %}
-                                    {{ device.inspector.username }}
+                                {{ device.inspector.username }}
                                 {% else %}
-                                    N/A
+                                N/A
                                 {% endif %}
                             </td>
                             <td class="text-right">
@@ -82,7 +87,7 @@
     </div>
 </div>
 
-<!-- Edit Exchange Modal -->
+<!-- Edit Device Modal -->
 <div class="modal fade" id="editExchangeModal" tabindex="-1" role="dialog" aria-labelledby="editExchangeModalLabel"
      aria-hidden="true">
     <div class="modal-dialog" role="document">
@@ -106,12 +111,23 @@
                         <input type="text" class="form-control" id="editExchangeTime" name="exchange_time">
                     </div>
                     <div class="form-group">
+                        <label for="editStatus">设备状态</label>
+                        <select class="form-control" id="editStatus" name="status">
+                            <option value="0">正常</option>
+                            <option value="1">故障</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
                         <label for="editOperator">操作员</label>
-                        <input type="text" class="form-control" id="editOperator" name="operator">
+                        <select class="form-control" id="editOperator" name="operator">
+                            <!-- 操作员选项将在JavaScript中填充 -->
+                        </select>
                     </div>
                     <div class="form-group">
                         <label for="editInspector">检查员</label>
-                        <input type="text" class="form-control" id="editInspector" name="inspector">
+                        <select class="form-control" id="editInspector" name="inspector">
+                            <!-- 检查员选项将在JavaScript中填充 -->
+                        </select>
                     </div>
                     <button type="submit" class="btn btn-primary">保存</button>
                 </form>
@@ -119,7 +135,6 @@
         </div>
     </div>
 </div>
-
 {% endblock content %}
 
 {% block javascripts %}
@@ -139,6 +154,7 @@
             }
             return cookieValue;
         }
+
         var csrftoken = getCookie('csrftoken');
 
         function csrfSafeMethod(method) {
@@ -146,7 +162,7 @@
         }
 
         $.ajaxSetup({
-            beforeSend: function(xhr, settings) {
+            beforeSend: function (xhr, settings) {
                 if (!csrfSafeMethod(settings.type) && !this.crossDomain) {
                     xhr.setRequestHeader("X-CSRFToken", csrftoken);
                 }
@@ -163,8 +179,23 @@
                     $('#editDeviceId').val(deviceId);
                     $('#editDeviceName').val(data.device_name);
                     $('#editExchangeTime').val(data.exchange_time);
+                    $('#editStatus').val(data.status ? 1 : 0); // 根据状态设置选择框的值
+
+                    // 填充操作员和检查员下拉菜单
+                    var operatorOptions = '';
+                    data.operators.forEach(function (operator) {
+                        operatorOptions += `<option value="${operator.id}">${operator.name}</option>`;
+                    });
+                    $('#editOperator').html(operatorOptions);
                     $('#editOperator').val(data.operator);
+
+                    var inspectorOptions = '';
+                    data.inspectors.forEach(function (inspector) {
+                        inspectorOptions += `<option value="${inspector.id}">${inspector.name}</option>`;
+                    });
+                    $('#editInspector').html(inspectorOptions);
                     $('#editInspector').val(data.inspector);
+
                     $('#editExchangeModal').modal('show');
                 },
                 error: function () {

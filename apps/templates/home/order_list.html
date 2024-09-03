@@ -11,72 +11,11 @@
             <div class="row align-items-center py-4">
                 <div class="col-lg-6 col-7">
                     <!-- Title -->
-                    <h6 class="h2 text-white d-inline-block mb-0">订单列表</h6>
-                </div>
-                <div class="col-lg-6 col-5 text-right">
-                    <!-- New Order Button -->
-                    <button type="button" class="btn btn-sm btn-neutral" data-toggle="modal" data-target="#newOrderModal">
-                        新建
-                    </button>
+                    <h6 class="h2 text-white d-inline-block mb-0">订单信息</h6>
                 </div>
             </div>
         </div>
     </div>
-</div>
-
-<!-- New Order Modal -->
-<div class="modal fade" id="newOrderModal" tabindex="-1" role="dialog" aria-labelledby="newOrderModalLabel" aria-hidden="true">
-  <div class="modal-dialog" role="document">
-    <div class="modal-content">
-      <div class="modal-header">
-        <h5 class="modal-title" id="newOrderModalLabel">新建订单</h5>
-        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-          <span aria-hidden="true">&times;</span>
-        </button>
-      </div>
-      <div class="modal-body">
-        <form id="newOrderForm">
-          <!-- 订单编号 -->
-            {% csrf_token %}
-          <div class="form-group">
-            <label for="orderCode">订单编号</label>
-            <input type="text" class="form-control" id="orderCode" name="orderCode" required>
-          </div>
-          <!-- 订单开始日期 -->
-          <div class="form-group">
-            <label for="orderStartDate">订单开始日期</label>
-            <input type="date" class="form-control" id="orderStartDate" name="orderStartDate" required>
-          </div>
-          <!-- 订单结束日期 -->
-          <div class="form-group">
-            <label for="orderEndDate">订单结束日期</label>
-            <input type="date" class="form-control" id="orderEndDate" name="orderEndDate" required>
-          </div>
-          <!-- 产品编码 -->
-          <div class="form-group">
-            <label for="productCode">产品编码</label>
-            <input type="text" class="form-control" id="productCode" name="productCode" required>
-          </div>
-          <!-- 待处理数量 -->
-          <div class="form-group">
-            <label for="productNumTodo">待处理数量</label>
-            <input type="number" class="form-control" id="productNumTodo" name="productNumTodo" required>
-          </div>
-          <!-- 已完成数量 -->
-          <div class="form-group">
-            <label for="productNumDone">已完成数量</label>
-            <input type="number" class="form-control" id="productNumDone" name="productNumDone" required>
-          </div>
-          <!-- 是否完成 -->
-          <div class="form-group form-check">
-            <input type="checkbox" class="form-check-input" id="isDone" name="isDone">
-            <label class="form-check-label" for="isDone">是否完成</label>
-          </div>
-          <button type="submit" class="btn btn-primary">提交</button>
-        </form>
-      </div>
-    </div>
-  </div>
 </div>
 
 
@@ -87,38 +26,37 @@
             <div class="card">
                 <!-- Card header -->
                 <div class="card-header border-0">
-                    <h3 class="mb-0">订单表</h3>
                 </div>
                 <!-- Light table -->
                 <div class="table-responsive">
                     <table class="table align-items-center table-flush">
                         <thead>
-                            <tr>
-                                <th>订单编号</th>
-                                <th>订单开始日期</th>
-                                <th>订单结束日期</th>
-                                <th>产品编码</th>
-                                <th>待处理数量</th>
-                                <th>已完成数量</th>
-                                <th>是否完成</th>
-                            </tr>
+                        <tr>
+                            <th>订单编号</th>
+                            <th>订单开始日期</th>
+                            <th>订单结束日期</th>
+                            <th>产品编码</th>
+                            <th>待处理数量</th>
+                            <th>已完成数量</th>
+                            <th>是否完成</th>
+                        </tr>
                         </thead>
                         <tbody>
-                            {% for product in orders_content %}
-                            <tr>
-                                <td>{{ product.order_code }}</td>
-                                <td>{{ product.order_start_date }}</td>
-                                <td>{{ product.order_end_date }}</td>
-                                <td>{{ product.product_code }}</td>
-                                <td>{{ product.product_num_todo }}</td>
-                                <td>{{ product.product_num_done }}</td>
-                                <td>{% if product.is_done %}是{% else %}否{% endif %}</td>
-                            </tr>
-                            {% empty %}
-                            <tr>
-                                <td colspan="7">没有订单产品记录</td>
-                            </tr>
-                            {% endfor %}
+                        {% for product in orders_content %}
+                        <tr>
+                            <td>{{ product.order_code }}</td>
+                            <td>{{ product.order_start_date }}</td>
+                            <td>{{ product.order_end_date }}</td>
+                            <td>{{ product.product_code }}</td>
+                            <td>{{ product.product_num_todo }}</td>
+                            <td>{{ product.product_num_done }}</td>
+                            <td>{% if product.is_done %}是{% else %}否{% endif %}</td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="7">没有订单产品记录</td>
+                        </tr>
+                        {% endfor %}
                         </tbody>
                     </table>
                 </div>
@@ -205,6 +143,63 @@
         </div>
     </div>
 </div>
+
+<!-- New Order Modal -->
+<div class="modal fade" id="newOrderModal" tabindex="-1" role="dialog" aria-labelledby="newOrderModalLabel"
+     aria-hidden="true">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="newOrderModalLabel">新建订单</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <form id="newOrderForm">
+                    <!-- 订单编号 -->
+                    {% csrf_token %}
+                    <div class="form-group">
+                        <label for="orderCode">订单编号</label>
+                        <input type="text" class="form-control" id="orderCode" name="orderCode" required>
+                    </div>
+                    <!-- 订单开始日期 -->
+                    <div class="form-group">
+                        <label for="orderStartDate">订单开始日期</label>
+                        <input type="date" class="form-control" id="orderStartDate" name="orderStartDate" required>
+                    </div>
+                    <!-- 订单结束日期 -->
+                    <div class="form-group">
+                        <label for="orderEndDate">订单结束日期</label>
+                        <input type="date" class="form-control" id="orderEndDate" name="orderEndDate" required>
+                    </div>
+                    <!-- 产品编码 -->
+                    <div class="form-group">
+                        <label for="productCode">产品编码</label>
+                        <input type="text" class="form-control" id="productCode" name="productCode" required>
+                    </div>
+                    <!-- 待处理数量 -->
+                    <div class="form-group">
+                        <label for="productNumTodo">待处理数量</label>
+                        <input type="number" class="form-control" id="productNumTodo" name="productNumTodo" required>
+                    </div>
+                    <!-- 已完成数量 -->
+                    <div class="form-group">
+                        <label for="productNumDone">已完成数量</label>
+                        <input type="number" class="form-control" id="productNumDone" name="productNumDone" required>
+                    </div>
+                    <!-- 是否完成 -->
+                    <div class="form-group form-check">
+                        <input type="checkbox" class="form-check-input" id="isDone" name="isDone">
+                        <label class="form-check-label" for="isDone">是否完成</label>
+                    </div>
+                    <button type="submit" class="btn btn-primary">提交</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
 
 {% endblock content %}
 

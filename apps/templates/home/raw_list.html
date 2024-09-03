@@ -9,17 +9,7 @@
         <div class="header-body">
             <div class="row align-items-center py-4">
                 <div class="col-lg-6 col-7">
-<!--                    <h6 class="h2 text-white d-inline-block mb-0">毛坯列表</h6>-->
-<!--                    <nav aria-label="breadcrumb" class="d-none d-md-inline-block ml-md-4">-->
-<!--                        <ol class="breadcrumb breadcrumb-links breadcrumb-dark">-->
-<!--                            <li class="breadcrumb-item"><a href="#"><i class="fas fa-home"></i></a></li>-->
-<!--                            <li class="breadcrumb-item active" aria-current="page">毛坯列表</li>-->
-<!--                        </ol>-->
-<!--                    </nav>-->
-                </div>
-                <div class="col-lg-6 col-5 text-right">
-                    <a href="#" class="btn btn-sm btn-neutral">新建</a>
-                    <a href="#" class="btn btn-sm btn-neutral">筛选</a>
+                    <h6 class="h2 text-white d-inline-block mb-0">毛坯列表</h6>
                 </div>
             </div>
         </div>
@@ -33,36 +23,36 @@
             <div class="card">
                 <!-- Card header -->
                 <div class="card-header border-0">
-                    <h3 class="mb-0">毛坯列表</h3>
                 </div>
                 <!-- Light table -->
                 <div class="table-responsive">
                     <table class="table align-items-center table-flush">
                         <thead class="thead-light">
-                            <tr>
-                                <th scope="col">毛坯料号</th>
-                                <th scope="col">中文名称</th>
-                                <th scope="col" class="text-right">操作</th>
-                            </tr>
+                        <tr>
+                            <th scope="col">毛坯料号</th>
+                            <th scope="col">中文名称</th>
+                            <th scope="col" class="text-right">操作</th>
+                        </tr>
                         </thead>
                         <tbody>
-                            {% for raw in raws %}
-                            <tr>
-                                <td>{{ raw.raw_code }}</td>
-                                <td>{{ raw.raw_name }}</td>
-                                <td class="text-right">
-                                    <div class="dropdown">
-                                        <a class="btn btn-sm btn-icon-only text-light" href="#" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-                                            <i class="fas fa-ellipsis-v"></i>
-                                        </a>
-                                        <div class="dropdown-menu dropdown-menu-right dropdown-menu-arrow">
-                                            <a class="dropdown-item edit-raw" data-raw-id="{{ raw.id }}" href="#">编辑</a>
-                                            <a class="dropdown-item delete-raw" data-raw-id="{{ raw.id }}" href="#">删除</a>
-                                        </div>
+                        {% for raw in raws %}
+                        <tr>
+                            <td>{{ raw.raw_code }}</td>
+                            <td>{{ raw.raw_name }}</td>
+                            <td class="text-right">
+                                <div class="dropdown">
+                                    <a class="btn btn-sm btn-icon-only text-light" href="#" role="button"
+                                       data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                                        <i class="fas fa-ellipsis-v"></i>
+                                    </a>
+                                    <div class="dropdown-menu dropdown-menu-right dropdown-menu-arrow">
+                                        <a class="dropdown-item edit-raw" data-raw-id="{{ raw.id }}" href="#">编辑</a>
+                                        <a class="dropdown-item delete-raw" data-raw-id="{{ raw.id }}" href="#">删除</a>
                                     </div>
-                                </td>
-                            </tr>
-                            {% endfor %}
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
                         </tbody>
                     </table>
                 </div>
@@ -78,7 +68,9 @@
                                 </a>
                             </li>
                             <li class="page-item">
-                                <a class="page-link" href="?page={{ page_obj.previous_page_number }}&per_page={{ per_page }}" tabindex="-1">
+                                <a class="page-link"
+                                   href="?page={{ page_obj.previous_page_number }}&per_page={{ per_page }}"
+                                   tabindex="-1">
                                     <i class="fas fa-angle-left"></i>
                                     <span class="sr-only">上一页</span>
                                 </a>
@@ -86,18 +78,20 @@
                             {% endif %}
 
                             {% for num in paginator.page_range %}
-                                {% if page_obj.number|add:'-2' <= num <= page_obj.number|add:'2' %}
-                                    {% if num == page_obj.number %}
-                                        <li class="page-item active"><span class="page-link">{{ num }}</span></li>
-                                    {% else %}
-                                        <li class="page-item"><a class="page-link" href="?page={{ num }}&per_page={{ per_page }}">{{ num }}</a></li>
-                                    {% endif %}
-                                {% endif %}
+                            {% if page_obj.number|add:'-2' <= num <= page_obj.number|add:'2' %}
+                            {% if num == page_obj.number %}
+                            <li class="page-item active"><span class="page-link">{{ num }}</span></li>
+                            {% else %}
+                            <li class="page-item"><a class="page-link" href="?page={{ num }}&per_page={{ per_page }}">{{
+                                num }}</a></li>
+                            {% endif %}
+                            {% endif %}
                             {% endfor %}
 
                             {% if page_obj.has_next %}
                             <li class="page-item">
-                                <a class="page-link" href="?page={{ page_obj.next_page_number }}&per_page={{ per_page }}">
+                                <a class="page-link"
+                                   href="?page={{ page_obj.next_page_number }}&per_page={{ per_page }}">
                                     <i class="fas fa-angle-right"></i>
                                     <span class="sr-only">下一页</span>
                                 </a>
@@ -117,7 +111,8 @@
     </div>
 
     <!-- Edit Modal -->
-    <div class="modal fade" id="editRawModal" tabindex="-1" role="dialog" aria-labelledby="editRawModalLabel" aria-hidden="true">
+    <div class="modal fade" id="editRawModal" tabindex="-1" role="dialog" aria-labelledby="editRawModalLabel"
+         aria-hidden="true">
         <div class="modal-dialog" role="document">
             <div class="modal-content">
                 <div class="modal-header">
@@ -146,7 +141,8 @@
     </div>
 
     <!-- Status Modal -->
-    <div class="modal fade" id="statusModal" tabindex="-1" role="dialog" aria-labelledby="statusModalLabel" aria-hidden="true">
+    <div class="modal fade" id="statusModal" tabindex="-1" role="dialog" aria-labelledby="statusModalLabel"
+         aria-hidden="true">
         <div class="modal-dialog" role="document">
             <div class="modal-content">
                 <div class="modal-body text-center">

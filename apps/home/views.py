@@ -28,18 +28,18 @@ from django.utils import timezone
 from django.utils.dateparse import parse_date
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_POST
-from reportlab.lib.pagesizes import landscape, A4
+from reportlab.lib.pagesizes import A4
+from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.lib.units import inch
 from reportlab.pdfbase import pdfmetrics
 from reportlab.pdfbase.ttfonts import TTFont
-from reportlab.pdfgen import canvas
-from reportlab.platypus import Table, TableStyle
+from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer, PageBreak
 
 from .forms import CustomUserChangeForm
-from .models import Device, CustomUser
+from .models import CustomUser
 from .models import Order, OrderProduct
 from .models import Process, Raw, Product
-from .models import Task  # 确保导入你的 Task 模型
+from .models import Task, Device
 from .models import Weight
 from .preprocess import preprocess_order, preprocess_product, preprocess_process, preprocess_device, preprocess_raw
 from .views_login import login_view, register_user
@@ -71,7 +71,6 @@ def user_list_get(request, user_id):
 @csrf_exempt
 @login_required(login_url="/login/")
 def user_list_update(request, user_id):
-    print(f"user list update !")
     if request.method == 'POST':
         user = get_object_or_404(CustomUser, id=user_id)
         form = CustomUserChangeForm(request.POST, instance=user)
@@ -288,7 +287,6 @@ def order_list(request):
             'product_num_done': product.product_num_done,
             'is_done': product.is_done
         })
-    print(len(orders_content))
 
     context = {
         'orders_content': orders_content,
@@ -327,7 +325,6 @@ def update_order(request, order_id):
 @csrf_exempt
 def create_order(request):
     order_data = request.POST
-    print(order_data)
     order_code = order_data.get('orderCode').strip()
     order_start_date = request.POST.get('orderStartDate', None)
     order_end_date = request.POST.get('orderEndDate', None)
@@ -335,18 +332,14 @@ def create_order(request):
     product_num_todo = request.POST.get('productNumTodo', 0)
     product_num_done = request.POST.get('productNumDone', 0)
     is_done = request.POST.get('isDone') == 'on'
-    print(f"{order_code=}, {order_start_date=}, {order_end_date=}, "
-          f"{product_code=}, {product_num_todo=},{product_num_done=}.{is_done=}")
     # 检查所有必要的字段是否都存在
     required_fields = ['orderCode', 'orderStartDate', 'orderEndDate', 'productCode', 'productNumTodo', 'productNumDone',
                        'isDone']
-    print("222")
     # if not all(field in order_data for field in required_fields):
     #     return JsonResponse({
     #         'success': False,
     #         'message': '请求缺少必要的字段。'
     #     }, status=400)
-    print("aaa")
     try:
         # 检查日期字符串是否为 None 或空字符串
         if order_start_date is None or order_start_date.strip() == '':
@@ -370,7 +363,6 @@ def create_order(request):
         product_num_done = int(product_num_done)
 
     except Exception as e:
-        print("adasfd")
         raise (e)
 
     # 创建订单对象
@@ -417,11 +409,17 @@ def device_list(request):
 @login_required(login_url="/login/")
 def get_device(request, device_id):
     device = get_object_or_404(Device, id=device_id)
+    operators = CustomUser.objects.filter(role='operator')  # 假设用户模型有角色字段
+    inspectors = CustomUser.objects.filter(role='inspector')
+
     data = {
         'device_name': device.device_name,
-        'changeover_time': device.changeover_time,
+        'exchange_time': device.changeover_time,
+        'status': device.is_fault,
         'operator': device.operator.id if device.operator else None,
         'inspector': device.inspector.id if device.inspector else None,
+        'operators': [{'id': op.id, 'name': op.username} for op in operators],
+        'inspectors': [{'id': ins.id, 'name': ins.username} for ins in inspectors],
     }
     return JsonResponse(data)
 
@@ -432,13 +430,12 @@ def update_device(request, device_id):
         device = get_object_or_404(Device, id=device_id)
         device.device_name = request.POST.get('device_name')
         device.exchange_time = request.POST.get('exchange_time')
-        # Update operator and inspector fields
+        device.is_fault = request.POST.get('status') == '1'
         device.operator_id = request.POST.get('operator')
         device.inspector_id = request.POST.get('inspector')
         device.save()
         return HttpResponse(status=200)
     return HttpResponse(status=400)
-
 
 @login_required(login_url="/login/")
 def delete_device(request, device_id):
@@ -584,7 +581,6 @@ def result_list(request):
             if order_product.order:
                 result.customer_name = order_product.order.order_custom_name
                 result.product_kind = order_product.product_kind
-                print(f"{order_product.order.order_custom_name=}, {order_product.product_kind=}")
             else:
                 result.customer_name = '⚠️ 未知客户 2'
                 result.product_kind = '⚠️ 未知类别 2'
@@ -802,7 +798,6 @@ def my_tasks_operator_complete_task(request):
         # Update OrderProduct
         task_id = request.POST.get('task_id')
         product_num = request.POST.get('product_num')
-        print(f"{product_num=}")
 
         task = Task.objects.get(id=task_id)
         order_code = task.order_code
@@ -811,12 +806,10 @@ def my_tasks_operator_complete_task(request):
         product_code = task.product_code
         order_product = OrderProduct.objects.get(product_code=product_code,
                                                  order=order)
-        print(f"{task.product_num_completed=}")
         task.product_num_completed += int(product_num)
         if task.product_num_completed >= task.product_num:
             task.completed = 1
 
-        print(f"{task.product_num_completed=}")
         task.save()
 
         if is_max_process(order_product):
@@ -962,76 +955,67 @@ def generate_pdf(request):
         tasks = Task.objects.filter(device_name__in=related_device_names).order_by('task_start_time')
 
     buffer = BytesIO()
-    c = canvas.Canvas(buffer, pagesize=landscape(A4))
-    width, height = landscape(A4)
+    doc = SimpleDocTemplate(buffer, pagesize=A4)
+    elements = []
 
     # 使用 Source Han Sans CN 字体
-    c.setFont("SourceHanSansCN", 13)
-    c.drawString(x=50, y=height - 50, text=f"用户名:{user.username}\t角色:{user.role}")
+    styles = getSampleStyleSheet()
+    normal_style = ParagraphStyle(name='Normal', fontName='SourceHanSansCN', fontSize=13)
+    header = Paragraph(f"用户名: {user.username}  角色: {user.role}", normal_style)
+    elements.append(header)
 
-    # 添加二维码图片
-    qr_code_path = 'apps/static/assets/img/qrcode/my_tasks_qr.png'
-    qr_code_width = 50  # 设置二维码图片宽度
-    qr_code_height = 50  # 设置二维码图片高度
-    qr_code_x = width - 30 - qr_code_width  # 图片X坐标
-    qr_code_y = height - 30 - qr_code_height  # 图片Y坐标
-    c.drawImage(qr_code_path, qr_code_x, qr_code_y, width=qr_code_width, height=qr_code_height)
+    # 在每页表格前留出额外的空间，以确保二维码不会被挡住
+    elements.append(Spacer(1, inch * 0.5))  # 调整此值可以进一步减少每页显示的行数
 
     # 上海时区
     shanghai_tz = pytz.timezone('Asia/Shanghai')
 
     # 定义表格数据
-    data = [['开始时间', '完成时间', '换型', '订单', '产品', '序号', '工序', '设备', '数量', '已完成',
-             '已质检']]
+    data = [['开始时间', '是否换型', '产品', '工序号', '工序名', '设备', '数量']]
     for task in tasks:
         start_time = task.task_start_time.astimezone(shanghai_tz)
-        end_time = task.task_end_time.astimezone(shanghai_tz)
         data.append([
             start_time.strftime('%m-%d %H:%M'),
-            end_time.strftime('%m-%d %H:%M'),
             task.is_changeover,
-            task.order_code,
             task.product_code,
             task.process_i,
             task.process_name,
             task.device_name,
-            task.product_num,
-            task.product_num_completed,
-            task.product_num_inspected
+            task.product_num
         ])
 
-    # 设置表格位置
-    table_x = 50
-    # table_y = height - (len(tasks) + 1) * 35  # 增加间距，使表格不遮挡用户名
-    table_y = 50
-    table_width = width - 100  # 留出边距
-    table_height = height - table_y - 50  # 留出底部边距
-    print(table_x, table_y, table_width, table_height)
-
-    table = Table(data, colWidths=[table_width / len(data[0])] * len(data[0]), rowHeights=0.4 * inch)
+    # 创建表格并减少每页的行数
+    table = Table(data, colWidths=[doc.width / len(data[0])] * len(data[0]), repeatRows=1)
     table.setStyle(TableStyle([
         ('BACKGROUND', (0, 0), (-1, 0), '#d0e0f0'),
         ('TEXTCOLOR', (0, 0), (-1, 0), '#000000'),
         ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
-        ('FONTNAME', (0, 0), (-1, -1), 'SourceHanSansCN'),  # 确保所有单元格都使用指定字体
+        ('FONTNAME', (0, 0), (-1, -1), 'SourceHanSansCN'),
         ('BOTTOMPADDING', (0, 0), (-1, 0), 10),
         ('BACKGROUND', (0, 1), (-1, -1), '#f5f5f5'),
         ('GRID', (0, 0), (-1, -1), 1, '#d0d0d0'),
     ]))
-    table.wrapOn(c, table_width, table_height)
-    table.drawOn(c, table_x, table_y)
 
-    # 不添加页脚
-    # c.setFont("SourceHanSansCN", 10)
-    # c.drawString(50, 40, "Page 1")
+    elements.append(table)
+    elements.append(PageBreak())
 
-    c.showPage()
-    c.save()
+    # 构建文档
+    doc.build(elements, onFirstPage=add_qr_code, onLaterPages=add_qr_code)
 
     buffer.seek(0)
     response = HttpResponse(buffer, content_type='application/pdf')
     response['Content-Disposition'] = 'attachment; filename="production_task_list.pdf"'
     return response
+
+
+def add_qr_code(canvas, doc):
+    # 添加二维码到页面右上角
+    qr_code_path = 'apps/static/assets/img/qrcode/my_tasks_qr.png'
+    qr_code_width = 50  # 设置二维码图片宽度
+    qr_code_height = 50  # 设置二维码图片高度
+    qr_code_x = doc.pagesize[0] - qr_code_width - inch  # 图片X坐标
+    qr_code_y = doc.pagesize[1] - qr_code_height - inch  # 图片Y坐标
+    canvas.drawImage(qr_code_path, qr_code_x, qr_code_y, width=qr_code_width, height=qr_code_height)
 
 
 def schedule_by_date(request):

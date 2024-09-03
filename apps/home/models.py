@@ -68,6 +68,7 @@ class Device(models.Model):
 
     start_time = models.DateTimeField(default=timezone.make_aware(datetime(1970, 1, 1)))
     end_time = models.DateTimeField(default=timezone.make_aware(datetime(1970, 1, 1)))
+    is_fault = models.BooleanField(default=False)
 
     def __str__(self):
         return self.device_name
