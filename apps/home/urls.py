@@ -56,9 +56,14 @@ urlpatterns = [
     path('my_tasks_operator_rework_task/', views.my_tasks_operator_rework_task, name='my_tasks_operator_rework_task'),
     path('my_tasks_operator_scrap_task/', views.my_tasks_operator_scrap_task, name='my_tasks_operator_scrap_task'),
 
+
     path('my_tasks_inspector_detail/<int:task_id>/', views.my_tasks_inspector_detail, name='my_tasks_inspector_detail'),
     path('my_tasks_inspector_complete_task/', views.my_tasks_inspector_complete_task,
          name='my_tasks_inspector_complete_task'),
+    path('my_tasks_inspector_complete_tasks/', views.my_tasks_inspector_complete_tasks,
+         name='my_tasks_inspector_complete_tasks'),
+    path('my_tasks_inspector_scrap_tasks/', views.my_tasks_inspector_scrap_tasks,
+         name='my_tasks_inspector_scrap_tasks'),
 
     path('tasks/add-urgent/', views.add_urgent_task, name='add_urgent_task'),
     path('generate_pdf/', views.generate_pdf, name='generate_pdf'),

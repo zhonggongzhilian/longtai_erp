@@ -17,7 +17,7 @@ from django.core.files.storage import FileSystemStorage
 from django.core.paginator import Paginator
 from django.core.serializers import serialize
 from django.db.models import Q
-from django.db.models import Sum, Min
+from django.db.models import Sum
 from django.http import HttpResponse
 from django.http import HttpResponseRedirect
 from django.http import JsonResponse
@@ -211,7 +211,6 @@ def index(request):
     # 将结果转换为按月份排序的列表
     months = sorted(monthly_weights.keys())
     weights = [round(monthly_weights[month], 2) for month in months]
-    print(months, weights)
 
     # 设备负载信息
     devices = Device.objects.all()
@@ -254,6 +253,92 @@ def index(request):
             'load_percentage': load_percentage
         })
 
+    # 获取当前日期
+    current_date = timezone.now().date()
+
+    # 获取两周后的日期
+    two_weeks_later = current_date + timedelta(weeks=2)
+
+    # 查询所有交付日期在两周之内的订单
+    orders = Order.objects.filter(
+        order_end_date__gte=current_date,
+        order_end_date__lte=two_weeks_later
+    )
+
+    # 计算剩余天数，并排序
+    order_details = []
+    for order in orders:
+        end_date = datetime.strptime(order.order_end_date, '%Y-%m-%d').date()
+        remaining_days = (end_date - current_date).days
+        order_details.append({
+            'order_code': order.order_code,
+            'end_date': order.order_end_date,
+            'remaining_days': remaining_days,
+        })
+
+    # 按剩余天数从低到高排序
+    order_details.sort(key=lambda x: x['remaining_days'])
+
+    # 获取所有订单
+    orders = Order.objects.all()
+
+    # 存储订单和对应的预计交付日期
+    order_delivery_dates = []
+
+    for order in orders:
+        # 查找该订单的所有 task，按 task_end_time 排序并获取最后一个 task
+        tasks = Task.objects.filter(order_code=order.order_code).order_by('-task_end_time')
+
+        if tasks.exists():
+            estimated_delivery_date = tasks.first().task_end_time
+            # 只在有预计交付日期时添加到结果列表中
+            order_delivery_dates.append({
+                'order_code': order.order_code,
+                'order_end_date': order.order_end_date,
+                'estimated_delivery_date': estimated_delivery_date,
+            })
+
+    # 统计每个毛坯编码的总数量
+    raw_quantities = Raw.objects.values('raw_code', 'raw_name').annotate(total_quantity=Sum('raw_num'))
+
+    # 统计所有 process_i 为 1 的任务中对应毛坯的消耗数量
+    task_consumptions = Task.objects.filter(process_i=1).values('product_code').annotate(
+        total_consumption=Sum('product_num')
+    )
+
+    # 创建一个字典来存储每个 raw_code 的消耗数量
+    consumption_dict = {}
+
+    for task in task_consumptions:
+        # 获取对应的产品
+        product_code = task['product_code']
+        product = Product.objects.filter(product_code=product_code).first()
+        if product and product.raw_code:
+            # 将产品的消耗数量加到对应的 raw_code 上
+            raw_code = product.raw_code
+            if raw_code in consumption_dict:
+                consumption_dict[raw_code] += task['total_consumption']
+            else:
+                consumption_dict[raw_code] = task['total_consumption']
+
+    # 计算剩余数量并排序
+    remaining_quantities = []
+    for raw in raw_quantities:
+        raw_code = raw['raw_code']
+        raw_name = raw['raw_name']
+        total_quantity = raw['total_quantity']
+        consumed_quantity = consumption_dict.get(raw_code, 0)
+        remaining_quantity = total_quantity - consumed_quantity
+
+        remaining_quantities.append({
+            'raw_code': raw_code,
+            'raw_name': raw_name,
+            'remaining_quantity': remaining_quantity
+        })
+
+    # 按剩余数量从低到高排序
+    remaining_quantities.sort(key=lambda x: x['remaining_quantity'])
+
     context = {
         'segment': 'index',
         'orders_count': orders_count,
@@ -271,6 +356,12 @@ def index(request):
         'weights': weights,
 
         'device_details': device_details,
+
+        'order_details': order_details,
+
+        'order_delivery_dates': order_delivery_dates,
+
+        'remaining_quantities': remaining_quantities,
     }
 
     html_template = loader.get_template('home/index.html')
@@ -368,30 +459,43 @@ def upload(request):
 
 @login_required(login_url="/login/")
 def order_list(request):
-    order_products = OrderProduct.objects.select_related('order').all()
+    search_query = request.GET.get('search', '')  # 获取用户输入的搜索关键词
 
-    per_page = request.GET.get('per_page', 50)  # 获取用户自定义的每页数量，默认为20
+    # 如果存在搜索关键词，过滤订单产品列表
+    if search_query:
+        order_products = OrderProduct.objects.select_related('order').filter(
+            Q(order__order_code__icontains=search_query) |
+            Q(product_code__icontains=search_query) |
+            Q(product_kind__icontains=search_query)
+        )
+    else:
+        # 如果没有搜索关键词，则获取所有订单产品
+        order_products = OrderProduct.objects.select_related('order').all()
+
+    per_page = request.GET.get('per_page', 50)  # 获取用户自定义的每页数量
     paginator = Paginator(order_products, per_page)
     page_number = request.GET.get('page')
     page_obj = paginator.get_page(page_number)
 
     # 处理产品列表，添加原料代码
     orders_content = []
-    for product in page_obj:
+    for order_product in page_obj:
         orders_content.append({
-            'order_code': product.order.order_code,
-            'order_start_date': product.order.order_start_date,
-            'order_end_date': product.order.order_end_date,
-            'product_code': product.product_code,
-            'product_num_todo': product.product_num_todo,
-            'product_num_done': product.product_num_done,
-            'is_done': product.is_done
+            'order_code': order_product.order.order_code,
+            'order_start_date': order_product.order.order_start_date,
+            'order_end_date': order_product.order.order_end_date,
+            'product_code': order_product.product_code,
+            'product_kind': order_product.product_kind,
+            'product_num_todo': order_product.product_num_todo,
+            'product_num_done': order_product.product_num_done,
+            'is_done': order_product.is_done
         })
 
     context = {
         'orders_content': orders_content,
         'page_obj': page_obj,
-        'per_page': per_page
+        'per_page': per_page,
+        'search_query': search_query
     }
     return render(request, 'home/order_list.html', context)
 
@@ -502,7 +606,17 @@ def delete_order(request, order_id):
 
 @login_required(login_url="/login/")
 def device_list(request):
-    devices = Device.objects.all()
+    search_query = request.GET.get('search', '')  # 获取用户输入的搜索关键词
+
+    # 如果存在搜索关键词，过滤设备列表
+    if search_query:
+        devices = Device.objects.filter(
+            Q(device_name__icontains=search_query)
+        )
+    else:
+        # 如果没有搜索关键词，则获取所有设备
+        devices = Device.objects.all()
+
     return render(request, 'home/device_list.html', {'devices': devices})
 
 
@@ -623,22 +737,25 @@ def delete_product(request, product_id):
 
 @login_required(login_url="/login/")
 def raw_list(request):
-    # 分组查询，按名称合并毛坯并计算数量总和，同时保留每个名称的第一个raw_code
-    raws = Raw.objects.values('raw_name').annotate(
-        raw_code=Min('raw_code'),  # 取同名毛坯中的最小 raw_code 作为代表
-        raw_num=Sum('raw_num')
-    ).order_by('raw_name')
+    search_query = request.GET.get('search', '')  # 获取用户输入的搜索关键词
 
-    # 分页处理
-    paginator = Paginator(raws, request.GET.get('per_page', 50))
-    page_number = request.GET.get('page')
-    page_obj = paginator.get_page(page_number)
+    # 如果存在搜索关键词，过滤毛坯列表
+    if search_query:
+        raws = Raw.objects.filter(
+            Q(raw_code__icontains=search_query) |
+            Q(raw_name__icontains=search_query)
+        ).values('raw_code', 'raw_name').annotate(
+            raw_num=Sum('raw_num')
+        ).order_by('raw_name')
+    else:
+        # 如果没有搜索关键词，则获取所有毛坯，并按名称合并
+        raws = Raw.objects.values('raw_code', 'raw_name').annotate(
+            raw_num=Sum('raw_num')
+        ).order_by('raw_name')
 
+    # 传递数据给模板
     context = {
-        'raws': page_obj,
-        'paginator': paginator,
-        'page_obj': page_obj,
-        'per_page': request.GET.get('per_page', 50)
+        'raws': raws,
     }
     return render(request, 'home/raw_list.html', context)
 
@@ -912,8 +1029,7 @@ def my_tasks_operator_complete_task(request):
         order = get_object_or_404(Order, order_code=order_code)
 
         product_code = task.product_code
-        order_product = OrderProduct.objects.get(product_code=product_code,
-                                                 order=order)
+        order_product = OrderProduct.objects.filter(product_code=product_code, order=order).last()
         task.product_num_completed += int(product_num)
         if task.product_num_completed >= task.product_num:
             task.completed = 1
@@ -964,8 +1080,7 @@ def my_tasks_operator_rework_task(request):
             order = get_object_or_404(Order, order_code=order_code)
 
             product_code = task.product_code
-            order_product = OrderProduct.objects.get(product_code=product_code,
-                                                     order=order)
+            order_product = OrderProduct.objects.filter(product_code=product_code, order=order).last()
 
             # Decrement cur_process_i
             if order_product.cur_process_i > 0:
@@ -997,17 +1112,14 @@ def my_tasks_operator_scrap_task(request):
 
             OrderProduct.objects.create(
                 order=order,
-                product_code=task.product_code + "_" + datetime.now().strftime("%Y-%m-%d %H:%M"),
-                defaults={
-                    'product_num_todo': scrap_product_num,
-                }
+                product_code=task.product_code,
+                product_num_todo=scrap_product_num
             )
 
             task.save()
 
             product_code = task.product_code
-            order_product = OrderProduct.objects.get(product_code=product_code,
-                                                     order=order)
+            order_product = OrderProduct.objects.filter(product_code=product_code, order=order).last()
 
             # Set cur_process_i to 0
             order_product.cur_process_i = 0
@@ -1041,6 +1153,64 @@ def my_tasks_inspector_complete_task(request):
         return JsonResponse({'success': True,
                              'product_num': task.product_num, })
     return JsonResponse({'success': False})
+
+
+@csrf_exempt
+def my_tasks_inspector_complete_tasks(request):
+    if request.method == 'POST':
+        task_ids = request.POST.getlist('tasks[]')
+        action = request.POST.get('action')
+
+        if action == 'complete':
+            tasks = Task.objects.filter(id__in=task_ids)
+            for task in tasks:
+                task.inspected = True
+                task.product_num_inspected = task.product_num_completed
+                task.save()
+            return JsonResponse({'status': 'success', 'message': 'Tasks updated successfully'})
+        else:
+            return JsonResponse({'status': 'error', 'message': 'Invalid action'})
+
+    return JsonResponse({'status': 'error', 'message': 'Invalid request method'})
+
+@csrf_exempt
+@login_required(login_url="/login/")
+def my_tasks_inspector_scrap_tasks(request):
+    if request.method == 'POST':
+        task_ids = request.POST.getlist('tasks[]')
+
+        try:
+            for task_id in task_ids:
+                # Get the Task instance
+                task = Task.objects.get(id=task_id)
+                scrap_product_num = task.product_num_completed
+                task.product_num -= scrap_product_num
+                task.completed = False
+                task.inspected = False
+                order_code = task.order_code
+                order = get_object_or_404(Order, order_code=order_code)
+
+                # Create a new OrderProduct entry for the scrapped items
+                OrderProduct.objects.create(
+                    order=order,
+                    product_code=task.product_code,
+                    product_num_todo=scrap_product_num
+                )
+
+                task.save()
+
+                product_code = task.product_code
+                order_product = OrderProduct.objects.filter(product_code=product_code, order=order).first()
+
+                # Reset cur_process_i to 0
+                order_product.cur_process_i = 0
+                order_product.save()
+
+            return JsonResponse({'success': True})
+        except OrderProduct.DoesNotExist:
+            return JsonResponse({'success': False, 'error': 'OrderProduct not found'})
+
+    return JsonResponse({'success': False, 'error': 'Invalid request method'})
 
 
 @login_required(login_url="/login/")

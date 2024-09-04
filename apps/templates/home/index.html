@@ -318,7 +318,7 @@
                     <div class="row align-items-center">
                         <div class="col">
                             <h6 class="text-uppercase text-muted ls-1 mb-1">订单信息</h6>
-                            <h5 class="h3 mb-0">订单日期统计</h5>
+                            <h5 class="h3 mb-0">每月新增订单重量</h5>
                         </div>
                     </div>
                 </div>
@@ -339,9 +339,6 @@
                     <div class="row align-items-center">
                         <div class="col">
                             <h3 class="mb-0">设备详情</h3>
-                        </div>
-                        <div class="col text-right">
-                            <a href="{% url 'device_list' %}" class="btn btn-sm btn-primary">查看全部</a>
                         </div>
                     </div>
                 </div>
@@ -386,10 +383,7 @@
                 <div class="card-header border-0">
                     <div class="row align-items-center">
                         <div class="col">
-                            <h3 class="mb-0">人员管理</h3>
-                        </div>
-                        <div class="col text-right">
-                            <a href="#!" class="btn btn-sm btn-primary"> 查看全部</a>
+                            <h3 class="mb-0">即将交付的订单</h3>
                         </div>
                     </div>
                 </div>
@@ -398,120 +392,110 @@
                     <table class="table align-items-center table-flush">
                         <thead class="thead-light">
                         <tr>
-                            <th scope="col">操作员</th>
-                            <th scope="col">生产数量</th>
-                            <th scope="col">完成进度</th>
+                            <th scope="col">订单编号</th>
+                            <th scope="col">交付日期</th>
+                            <th scope="col">剩余天数</th>
                         </tr>
                         </thead>
                         <tbody>
+                        {% for order in order_details %}
                         <tr>
                             <th scope="row">
-                                王工
+                                {{ order.order_code }}
                             </th>
                             <td>
-                                1,480
+                                {{ order.end_date }}
                             </td>
                             <td>
-                                <div class="d-flex align-items-center">
-                                    <span class="mr-2">60%</span>
-                                    <div>
-                                        <div class="progress">
-                                            <div class="progress-bar bg-gradient-danger" role="progressbar"
-                                                 aria-valuenow="60" aria-valuemin="0" aria-valuemax="100"
-                                                 style="width: 60%;"></div>
-                                        </div>
-                                    </div>
-                                </div>
+                                {{ order.remaining_days }} 天
                             </td>
                         </tr>
-                        <tr>
-                            <th scope="row">
-                                李工
-                            </th>
-                            <td>
-                                5,480
-                            </td>
-                            <td>
-                                <div class="d-flex align-items-center">
-                                    <span class="mr-2">70%</span>
-                                    <div>
-                                        <div class="progress">
-                                            <div class="progress-bar bg-gradient-success" role="progressbar"
-                                                 aria-valuenow="70" aria-valuemin="0" aria-valuemax="100"
-                                                 style="width: 70%;"></div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </td>
-                        </tr>
-                        <tr>
-                            <th scope="row">
-                                张工
-                            </th>
-                            <td>
-                                4,807
-                            </td>
-                            <td>
-                                <div class="d-flex align-items-center">
-                                    <span class="mr-2">80%</span>
-                                    <div>
-                                        <div class="progress">
-                                            <div class="progress-bar bg-gradient-primary" role="progressbar"
-                                                 aria-valuenow="80" aria-valuemin="0" aria-valuemax="100"
-                                                 style="width: 80%;"></div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </td>
-                        </tr>
-                        <tr>
-                            <th scope="row">
-                                赵工
-                            </th>
-                            <td>
-                                3,678
-                            </td>
-                            <td>
-                                <div class="d-flex align-items-center">
-                                    <span class="mr-2">75%</span>
-                                    <div>
-                                        <div class="progress">
-                                            <div class="progress-bar bg-gradient-info" role="progressbar"
-                                                 aria-valuenow="75" aria-valuemin="0" aria-valuemax="100"
-                                                 style="width: 75%;"></div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </td>
-                        </tr>
-                        <tr>
-                            <th scope="row">
-                                孙工
-                            </th>
-                            <td>
-                                2,645
-                            </td>
-                            <td>
-                                <div class="d-flex align-items-center">
-                                    <span class="mr-2">30%</span>
-                                    <div>
-                                        <div class="progress">
-                                            <div class="progress-bar bg-gradient-warning" role="progressbar"
-                                                 aria-valuenow="30" aria-valuemin="0" aria-valuemax="100"
-                                                 style="width: 30%;"></div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </td>
-                        </tr>
+                        {% endfor %}
                         </tbody>
                     </table>
                 </div>
             </div>
         </div>
+        <div class="col-xl-8">
+            <div class="card">
+                <div class="card-header border-0">
+                    <div class="row align-items-center">
+                        <div class="col">
+                            <h3 class="mb-0">订单预计交付日期（请在全量排产完成后查看）</h3>
+                        </div>
+                    </div>
+                </div>
+                <div class="table-responsive">
+                    <!-- Projects table -->
+                    <table class="table align-items-center table-flush">
+                        <thead class="thead-light">
+                        <tr>
+                            <th scope="col">订单编号</th>
+                            <th scope="col">交付日期</th>
+                            <th scope="col">预计交付日期</th>
+                        </tr>
+                        </thead>
+                        <tbody>
+                        {% for order in order_delivery_dates %}
+                        <tr>
+                            <th scope="row">
+                                {{ order.order_code }}
+                            </th>
+                            <td>
+                                {{ order.order_end_date }}
+                            </td>
+                            <td>
+                                {{ order.estimated_delivery_date|date:"Y-m-d H:i" }}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-4">
+    <div class="card">
+        <div class="card-header border-0">
+            <div class="row align-items-center">
+                <div class="col">
+                    <h3 class="mb-0">剩余毛坯数量</h3>
+                </div>
+            </div>
+        </div>
+        <div class="table-responsive">
+            <!-- Projects table -->
+            <table class="table align-items-center table-flush">
+                <thead class="thead-light">
+                <tr>
+                    <th scope="col">毛坯编码</th>
+                    <th scope="col">毛坯名称</th>
+                    <th scope="col">剩余数量</th>
+                </tr>
+                </thead>
+                <tbody>
+                {% for raw in remaining_quantities %}
+                <tr>
+                    <th scope="row">
+                        {{ raw.raw_code }}
+                    </th>
+                    <td>
+                        {{ raw.raw_name }}
+                    </td>
+                    <td>
+                        {{ raw.remaining_quantity }}
+                    </td>
+                </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+        </div>
     </div>
+</div>
+    </div>
+</div>
 
-    {% include "includes/footer.html" %}
+{% include "includes/footer.html" %}
 
 </div>
 
@@ -532,7 +516,7 @@
         data: {
             labels: {{ months|safe }},
             datasets: [{
-                label: '订单总重量',
+                label: '订单总重量（kg）',
                 data: {{ weights|safe }},
                 backgroundColor: 'rgba(75, 192, 192, 0.2)',
                 borderColor: 'rgba(75, 192, 192, 1)',
@@ -619,49 +603,6 @@
             var percentage = progressValues[index] * 100;
             bar.style.width = percentage + '%';
             progressTexts[index].textContent = `${Math.round(percentage)}%`;
-        });
-    });
-</script>
-<script>
-    document.addEventListener('DOMContentLoaded', function () {
-        const ctx = document.getElementById('chart-bars').getContext('2d');
-
-        new Chart(ctx, {
-            type: 'bar',
-            data: {
-                labels: {{ start_dates|safe }}, // 使用 Django 模板标签传递数据
-                datasets: [{
-                    label: '开始日期数量',
-                    data: {{ start_date_counts|safe }},
-                    backgroundColor: 'rgba(75, 192, 192, 0.2)',
-                    borderColor: 'rgba(75, 192, 192, 1)',
-                    borderWidth: 1
-                }, {
-                    label: '交付日期数量',
-                    data: {{ end_date_counts|safe }},
-                    backgroundColor: 'rgba(153, 102, 255, 0.2)',
-                    borderColor: 'rgba(153, 102, 255, 1)',
-                    borderWidth: 1
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                scales: {
-                    x: {
-                        title: {
-                            display: true,
-                            text: '日期'
-                        }
-                    },
-                    y: {
-                        title: {
-                            display: true,
-                            text: '数量'
-                        }
-                    }
-                }
-            }
         });
     });
 </script>

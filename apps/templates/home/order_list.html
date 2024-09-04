@@ -30,14 +30,14 @@
                                value="{{ search_query }}">
                         <button type="submit" class="btn btn-primary">搜索</button>
                     </form>
-                    <div class="col-auto ml-auto d-flex align-items-center">
-                        <button class="btn btn-success ml-3" id="upload_file" title="上传">
-                            <i class="fas fa-upload"></i> 上传
-                        </button>
-                        <button class="btn btn-danger ml-2" id="new_item" title="新建">
-                            <i class="fas fa-plus"></i> 新建
-                        </button>
-                    </div>
+<!--                    <div class="col-auto ml-auto d-flex align-items-center">-->
+<!--                        <button class="btn btn-success ml-3" id="upload_file" title="上传">-->
+<!--                            <i class="fas fa-upload"></i> 上传-->
+<!--                        </button>-->
+<!--                        <button class="btn btn-danger ml-2" id="new_item" title="新建">-->
+<!--                            <i class="fas fa-plus"></i> 新建-->
+<!--                        </button>-->
+<!--                    </div>-->
                 </div>
                 <!-- Light table -->
                 <div class="table-responsive">
@@ -48,6 +48,7 @@
                             <th>订单开始日期</th>
                             <th>订单结束日期</th>
                             <th>产品编码</th>
+                            <th>产品类别</th>
                             <th>待处理数量</th>
                             <th>已完成数量</th>
                             <th>是否完成</th>
@@ -60,6 +61,7 @@
                             <td>{{ product.order_start_date }}</td>
                             <td>{{ product.order_end_date }}</td>
                             <td>{{ product.product_code }}</td>
+                            <td>{{ product.product_kind }}</td>
                             <td>{{ product.product_num_todo }}</td>
                             <td>{{ product.product_num_done }}</td>
                             <td>{% if product.is_done %}是{% else %}否{% endif %}</td>

@@ -44,7 +44,7 @@
                             </button>
                             {% endif %}
                             {% if user.role == 'inspector' %}
-                            <button class="btn btn-secondary" id="finalInspectionBtn" disabled>
+                            <button class="btn btn-info" id="finalInspectionBtn" disabled>
                                 终检工序
                             </button>
                             {% endif %}
@@ -56,7 +56,9 @@
                 <table class="table align-items-center table-flush">
                     <thead class="thead-light">
                         <tr>
+                            {% if request.user.role == 'inspector' %}
                             <th scope="col"><input type="checkbox" id="selectAll"></th>
+                            {% endif %}
                             <th scope="col">执行时间</th>
                             <th scope="col">完成时间</th>
                             <th scope="col">换型</th>
@@ -80,7 +82,10 @@
                         {% for task in tasks %}
                         <tr class="task-row {% if task.completed and task.inspected %}completed-and-inspected-task{% elif task.completed %}completed-task{% elif task.inspected %}inspected-task{% endif %}"
                             data-id="{{ task.id }}">
+                            {% if request.user.role == 'inspector' %}
                             <td><input type="checkbox" class="select-task" value="{{ task.id }}"></td>
+
+                            {% endif %}
                             <td>{{ task.task_start_time }}</td>
                             <td>{{ task.task_end_time }}</td>
                             <td>{{ task.is_changeover }}</td>
@@ -284,11 +289,33 @@
 
         console.log(`Performing ${action} on tasks:`, selectedTasks);
 
-        // 在这里添加你处理终检工序的逻辑，可能包括发送 AJAX 请求到服务器
-        // 例如：
-        // $.post('/your-api-endpoint/', { tasks: selectedTasks, action: action }, function(response) {
-        //     // 处理响应
-        // });
+        let url = '';
+
+        if (action === 'scrap') {
+            url = '/my_tasks_inspector_scrap_tasks/';
+        } else if (action === 'complete') {
+            url = '/my_tasks_inspector_complete_tasks/';
+        }
+
+        $.ajax({
+            url: url,
+            type: 'POST',
+            data: {
+                tasks: selectedTasks,
+                csrfmiddlewaretoken: '{{ csrf_token }}'
+            },
+            success: function(response) {
+                if (response.success) {
+                    alert('Tasks updated successfully');
+                    // 你可以在这里添加页面刷新或者任务列表更新的逻辑
+                } else {
+                    alert('Error: ' + response.error);
+                }
+            },
+            error: function(xhr, status, error) {
+                alert('An error occurred: ' + error);
+            }
+        });
 
         $('#finalInspectionModal').modal('hide');
     }

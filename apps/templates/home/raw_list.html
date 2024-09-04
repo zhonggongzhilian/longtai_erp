@@ -27,14 +27,14 @@
                                value="{{ search_query }}">
                         <button type="submit" class="btn btn-primary">搜索</button>
                     </form>
-                    <div class="col-auto ml-auto d-flex align-items-center">
-                        <button class="btn btn-success ml-3" id="upload_file" title="上传">
-                            <i class="fas fa-upload"></i> 上传
-                        </button>
-                        <button class="btn btn-danger ml-2" id="new_item" title="新建">
-                            <i class="fas fa-plus"></i> 新建
-                        </button>
-                    </div>
+<!--                    <div class="col-auto ml-auto d-flex align-items-center">-->
+<!--                        <button class="btn btn-success ml-3" id="upload_file" title="上传">-->
+<!--                            <i class="fas fa-upload"></i> 上传-->
+<!--                        </button>-->
+<!--                        <button class="btn btn-danger ml-2" id="new_item" title="新建">-->
+<!--                            <i class="fas fa-plus"></i> 新建-->
+<!--                        </button>-->
+<!--                    </div>-->
                 </div>
                 <!-- Light table -->
                 <div class="table-responsive">
@@ -44,7 +44,6 @@
                             <th scope="col">毛坯编码</th>
                             <th scope="col">毛坯名称</th>
                             <th scope="col">毛坯数量</th>
-                            <th scope="col" class="text-right">操作</th>
                         </tr>
                         </thead>
                         <tbody>
@@ -53,18 +52,6 @@
                             <td>{{ raw.raw_code }}</td>
                             <td>{{ raw.raw_name }}</td>
                             <td>{{ raw.raw_num }}</td>
-                            <td class="text-right">
-                                <div class="dropdown">
-                                    <a class="btn btn-sm btn-icon-only text-light" href="#" role="button"
-                                       data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-                                        <i class="fas fa-ellipsis-v"></i>
-                                    </a>
-                                    <div class="dropdown-menu dropdown-menu-right dropdown-menu-arrow">
-                                        <a class="dropdown-item edit-raw" data-raw-id="{{ raw.id }}" href="#">编辑</a>
-                                        <a class="dropdown-item delete-raw" data-raw-id="{{ raw.id }}" href="#">删除</a>
-                                    </div>
-                                </div>
-                            </td>
                         </tr>
                         {% endfor %}
                         </tbody>
