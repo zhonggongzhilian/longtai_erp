@@ -59,6 +59,13 @@
                         </a>
                     </li>
                     <li class="nav-item">
+                        <a class="nav-link {% if request.resolver_match.url_name == 'process-list' %} active {% endif %}"
+                           href="{% url 'process-list' %}">
+                            <i class="ni ni-basket text-green"></i>
+                            <span class="nav-link-text">工序信息</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
                         <a class="nav-link {% if request.resolver_match.url_name == 'device_list' %} active {% endif %}"
                            href="{% url 'device_list' %}">
                             <i class="ni ni-time-alarm text-red"></i>
