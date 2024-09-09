@@ -1,5 +1,5 @@
 {% extends 'layouts/base.html' %}
-
+{% csrf_token %}
 {% block title %}工序列表{% endblock title %}
 
 {% block content %}
@@ -9,6 +9,11 @@
             <div class="row align-items-center py-4">
                 <div class="col-lg-6 col-7">
                     <h6 class="h2 text-white d-inline-block mb-0">工序列表</h6>
+                </div>
+                <div class="col-lg-6 col-5 text-right">
+                    <button type="button" class="btn btn-sm btn-neutral" data-toggle="modal" data-target="#addProcessModal">
+                        新建工序
+                    </button>
                 </div>
             </div>
         </div>
@@ -91,4 +96,93 @@
         </div>
     </div>
 </div>
+
+<!-- 新建工序模态框 -->
+<div class="modal fade" id="addProcessModal" tabindex="-1" role="dialog" aria-labelledby="addProcessModalLabel" aria-hidden="true">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="addProcessModalLabel">新建工序</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <form id="addProcessForm" method="post" action="{% url 'add_process' %}">
+                    {% csrf_token %}
+                    <div class="form-group">
+                        <label for="processI">工序编号</label>
+                        <input type="text" class="form-control" id="processI" name="process_i" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="processName">工序名称</label>
+                        <input type="text" class="form-control" id="processName" name="process_name" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="processCapacity">容量</label>
+                        <input type="number" class="form-control" id="processCapacity" name="process_capacity" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="processDuration">持续时间</label>
+                        <input type="number" class="form-control" id="processDuration" name="process_duration" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="productCode">产品编码</label>
+                        <input type="text" class="form-control" id="productCode" name="product_code" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="deviceName">设备名称</label>
+                        <input type="text" class="form-control" id="deviceName" name="device_name" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="isOutside">是否外包</label>
+                        <select class="form-control" id="isOutside" name="is_outside">
+                            <option value="True">是</option>
+                            <option value="False">否</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="isLastProcess">是否最后工序</label>
+                        <select class="form-control" id="isLastProcess" name="is_last_process">
+                            <option value="True">是</option>
+                            <option value="False">否</option>
+                        </select>
+                    </div>
+                    <!-- 添加其他需要的字段 -->
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">关闭</button>
+                <button type="button" class="btn btn-primary" onclick="submitProcessForm()">提交</button>
+            </div>
+        </div>
+    </div>
+</div>
+<script>
+// JavaScript 函数用于提交新建工序表单
+function submitProcessForm() {
+    var formData = new FormData(document.getElementById('addProcessForm'));
+    fetch("{% url 'add_process' %}", {
+        method: 'POST',
+        body: formData,
+        headers: {
+            'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // 处理成功的情况，例如刷新页面或显示消息
+            alert('工序创建成功');
+            window.location.reload();
+        } else {
+            // 处理错误的情况
+            alert('工序创建失败: ' + data.error);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+    });
+}
+</script>
 {% endblock %}

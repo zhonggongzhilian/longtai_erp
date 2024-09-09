@@ -28,6 +28,7 @@ from django.template import loader
 from django.urls import reverse
 from django.utils import timezone
 from django.utils.dateparse import parse_date
+from django.views import View
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_POST
 from django.views.generic import ListView
@@ -38,7 +39,7 @@ from reportlab.pdfbase import pdfmetrics
 from reportlab.pdfbase.ttfonts import TTFont
 from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer, PageBreak
 
-from .forms import CustomUserChangeForm
+from .forms import CustomUserChangeForm, ProcessForm
 from .models import CustomUser
 from .models import Order, OrderProduct
 from .models import Process, Raw, Product
@@ -1389,3 +1390,13 @@ class ProcessListView(ListView):
         ).order_by('sort_key')
         return queryset
 
+class AddProcessView(View):
+    def post(self, request):
+        form = ProcessForm(request.POST)
+        if form.is_valid():
+            process = form.save(commit=False)
+            # 这里可以添加额外的逻辑，例如设置用户等
+            process.save()
+            return JsonResponse({'success': True})
+        else:
+            return JsonResponse({'success': False, 'error': form.errors})
