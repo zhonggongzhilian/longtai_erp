@@ -47,8 +47,8 @@
                             <th>订单编号</th>
                             <th>订单开始日期</th>
                             <th>订单结束日期</th>
-                            <th>产品编码</th>
-                            <th>产品类别</th>
+                            <th>商品编码</th>
+                            <th>商品类别</th>
                             <th>待处理数量</th>
                             <th>已完成数量</th>
                             <th>是否完成</th>
@@ -68,7 +68,7 @@
                         </tr>
                         {% empty %}
                         <tr>
-                            <td colspan="7">没有订单产品记录</td>
+                            <td colspan="7">没有订单商品记录</td>
                         </tr>
                         {% endfor %}
                         </tbody>
@@ -189,7 +189,7 @@
                     </div>
                     <!-- 产品编码 -->
                     <div class="form-group">
-                        <label for="productCode">产品编码</label>
+                        <label for="productCode">商品编码</label>
                         <input type="text" class="form-control" id="productCode" name="productCode" required>
                     </div>
                     <!-- 待处理数量 -->
