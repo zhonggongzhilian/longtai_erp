@@ -7,7 +7,7 @@ from django.contrib.auth.views import LogoutView
 from django.urls import path
 
 from apps.home import views
-from .views import device_list, ProcessListView, AddProcessView
+from .views import device_list, ProcessListView, AddProcessView, clear_schedule
 
 urlpatterns = [
 
@@ -75,4 +75,6 @@ urlpatterns = [
 
     path('processes/', ProcessListView.as_view(), name='process-list'),
     path('processes/add/', AddProcessView.as_view(), name='add_process'),
+
+    path('clear_schedule/', clear_schedule, name='clear_schedule'),
 ]

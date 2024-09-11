@@ -858,6 +858,12 @@ def process_schedule(request):
         return JsonResponse({'success': True})
     return JsonResponse({'success': False})
 
+@login_required(login_url="/login/")
+def clear_schedule(request):
+    if request.method == 'POST':
+        Task.objects.all().delete()  # 清空 Task 表
+        return JsonResponse({'success': True})
+    return JsonResponse({'success': False})
 
 @login_required(login_url="/login/")
 @csrf_exempt
