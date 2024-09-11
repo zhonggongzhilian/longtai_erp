@@ -976,6 +976,8 @@ def my_tasks(request):
     for task in tasks:
         order_product = OrderProduct.objects.filter(product_code=task.product_code).first()
         task.customer_name = order_product.order.order_custom_name if order_product else '未知客户'
+        product = Product.objects.filter(product_code=task.product_code).first()
+        task.product_name = product.product_name if product else '⚠️ 未知产品'
 
     # 生成二维码
     current_url = request.build_absolute_uri()
