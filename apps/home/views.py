@@ -1386,11 +1386,27 @@ class ProcessListView(ListView):
 
     def get_queryset(self):
         queryset = super().get_queryset()
-        # 将 process_i 转换为字符串，并按首位数字进行排序
         queryset = queryset.annotate(
             sort_key=Cast('process_i', output_field=CharField())
         ).order_by('sort_key')
+
+        # 获取搜索查询参数
+        search_query = self.request.GET.get('search', None)
+
+        if search_query:
+            # 如果提供了搜索查询，则过滤工序列表
+            queryset = queryset.filter(
+                Q(process_name__icontains=search_query) |
+                Q(product_code__icontains=search_query)
+            )
+
         return queryset
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['search_query'] = self.request.GET.get('search', '')
+        return context
+
 
 class AddProcessView(View):
     def post(self, request):
