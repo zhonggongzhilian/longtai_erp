@@ -43,13 +43,10 @@
                         <button class="btn btn-danger ml-2" id="scheduleButton" title="排产全量订单（速度较慢）">
                             <i class="fas fa-calendar-check"></i> 全量排产
                         </button>
-                    </div>
-                    <form id="clearScheduleForm" method="post" action="{% url 'clear_schedule' %}">
-                        {% csrf_token %}
                         <button type="submit" class="btn btn-warning ml-2" id="clearScheduleButton" title="清空排产计划">
                             <i class="fas fa-eraser"></i> 清空排产
                         </button>
-                    </form>
+                    </div>
                 </div>
 
                 <div class="table-responsive">

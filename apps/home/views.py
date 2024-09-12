@@ -7,8 +7,8 @@ import logging
 import os
 from datetime import datetime, time, timedelta
 from io import BytesIO
-from django.db.models.functions import Cast
-from django.db.models import CharField
+import time as tt
+
 import pytz
 import qrcode
 from django import template
@@ -17,8 +17,10 @@ from django.core.exceptions import ValidationError
 from django.core.files.storage import FileSystemStorage
 from django.core.paginator import Paginator
 from django.core.serializers import serialize
+from django.db.models import CharField
 from django.db.models import Q
 from django.db.models import Sum
+from django.db.models.functions import Cast
 from django.http import HttpResponse
 from django.http import HttpResponseRedirect
 from django.http import JsonResponse
@@ -53,6 +55,8 @@ __all__ = [login_view, register_user]
 # views.py
 
 logger = logging.getLogger(__name__)
+font_path = 'apps/static/assets/fonts/SourceHanSansCN-Medium.ttf'
+pdfmetrics.registerFont(TTFont('SourceHanSansCN', font_path))
 
 
 @login_required(login_url="/login/")
@@ -858,12 +862,14 @@ def process_schedule(request):
         return JsonResponse({'success': True})
     return JsonResponse({'success': False})
 
+
 @login_required(login_url="/login/")
 def clear_schedule(request):
     if request.method == 'POST':
-        Task.objects.all().delete()  # 清空 Task 表
+        Task.objects.all().delete()
         return JsonResponse({'success': True})
     return JsonResponse({'success': False})
+
 
 @login_required(login_url="/login/")
 @csrf_exempt
@@ -1184,6 +1190,7 @@ def my_tasks_inspector_complete_tasks(request):
 
     return JsonResponse({'status': 'error', 'message': 'Invalid request method'})
 
+
 @csrf_exempt
 @login_required(login_url="/login/")
 def my_tasks_inspector_scrap_tasks(request):
@@ -1226,10 +1233,10 @@ def my_tasks_inspector_scrap_tasks(request):
 
 @login_required(login_url="/login/")
 def generate_pdf(request):
-    # 注册字体
-    font_path = 'apps/static/assets/fonts/SourceHanSansCN-Medium.ttf'
-    pdfmetrics.registerFont(TTFont('SourceHanSansCN', font_path))
+    # 上海时区
+    shanghai_tz = pytz.timezone('Asia/Shanghai')
 
+    # 获取当前用户及其角色
     user = request.user
     if user.role == 'admin':
         tasks = Task.objects.all().order_by('task_start_time')
@@ -1243,6 +1250,7 @@ def generate_pdf(request):
         related_device_names = Device.objects.filter(operator=user).values_list('device_name', flat=True)
         tasks = Task.objects.filter(device_name__in=related_device_names).order_by('task_start_time')
 
+    # 创建PDF缓冲区
     buffer = BytesIO()
     doc = SimpleDocTemplate(buffer, pagesize=A4)
     elements = []
@@ -1253,47 +1261,56 @@ def generate_pdf(request):
     header = Paragraph(f"用户名: {user.username}  角色: {user.role}", normal_style)
     elements.append(header)
 
-    # 在每页表格前留出额外的空间，以确保二维码不会被挡住
-    elements.append(Spacer(1, inch * 0.5))  # 调整此值可以进一步减少每页显示的行数
-
-    # 上海时区
-    shanghai_tz = pytz.timezone('Asia/Shanghai')
-
-    # 定义表格数据
-    data = [['开始时间', '是否换型', '产品', '工序号', '工序名', '设备', '数量']]
+    # 按设备名称对任务进行分组
+    tasks_by_device = {}
     for task in tasks:
-        start_time = task.task_start_time.astimezone(shanghai_tz)
-        data.append([
-            start_time.strftime('%m-%d %H:%M'),
-            task.is_changeover,
-            task.product_code,
-            task.process_i,
-            task.process_name,
-            task.device_name,
-            task.product_num
-        ])
+        device_name = task.device_name
+        if device_name not in tasks_by_device:
+            tasks_by_device[device_name] = []
+        tasks_by_device[device_name].append(task)
 
-    # 创建表格并减少每页的行数
-    table = Table(data, colWidths=[doc.width / len(data[0])] * len(data[0]), repeatRows=1)
-    table.setStyle(TableStyle([
-        ('BACKGROUND', (0, 0), (-1, 0), '#d0e0f0'),
-        ('TEXTCOLOR', (0, 0), (-1, 0), '#000000'),
-        ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
-        ('FONTNAME', (0, 0), (-1, -1), 'SourceHanSansCN'),
-        ('BOTTOMPADDING', (0, 0), (-1, 0), 10),
-        ('BACKGROUND', (0, 1), (-1, -1), '#f5f5f5'),
-        ('GRID', (0, 0), (-1, -1), 1, '#d0d0d0'),
-    ]))
+    # 为每个设备创建一个表格
+    for device_name, device_tasks in tasks_by_device.items():
+        # 表格数据
+        data = [['开始时间', '是否换型', '产品', '工序号', '工序名', '数量']]
+        for task in device_tasks:
+            start_time = task.task_start_time.astimezone(shanghai_tz)
+            data.append([
+                start_time.strftime('%m-%d %H:%M'),
+                task.is_changeover,
+                task.product_code,
+                task.process_i,
+                task.process_name,
+                task.product_num
+            ])
 
-    elements.append(table)
-    elements.append(PageBreak())
+        # 创建表格并设置样式
+        table = Table(data, colWidths=[doc.width / len(data[0])] * len(data[0]), repeatRows=1)
+        table.setStyle(TableStyle([
+            ('BACKGROUND', (0, 0), (-1, 0), '#d0e0f0'),
+            ('TEXTCOLOR', (0, 0), (-1, 0), '#000000'),
+            ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+            ('FONTNAME', (0, 0), (-1, -1), 'SourceHanSansCN'),
+            ('BOTTOMPADDING', (0, 0), (-1, 0), 10),
+            ('BACKGROUND', (0, 1), (-1, -1), '#f5f5f5'),
+            ('GRID', (0, 0), (-1, -1), 1, '#d0d0d0'),
+        ]))
+
+        # 添加设备名称作为标题
+        device_header = Paragraph(f"设备: {device_name}", normal_style)
+        elements.append(device_header)
+        elements.append(table)
+        elements.append(Spacer(1, 20))  # 在标题和表格之间添加20个点的垂直间距
+        elements.append(PageBreak())  # 每个设备的表格后添加分页
 
     # 构建文档
-    doc.build(elements, onFirstPage=add_qr_code, onLaterPages=add_qr_code)
+    doc.build(elements)
 
+    # 设置响应内容类型为PDF
     buffer.seek(0)
     response = HttpResponse(buffer, content_type='application/pdf')
     response['Content-Disposition'] = 'attachment; filename="production_task_list.pdf"'
+
     return response
 
 
@@ -1382,6 +1399,7 @@ def get_all_data(request):
         return JsonResponse(data, safe=False)
 
     return JsonResponse({'error': 'Invalid request method'}, status=405)
+
 
 class ProcessListView(ListView):
     model = Process
