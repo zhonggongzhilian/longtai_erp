@@ -109,16 +109,17 @@ def remove_order_products_with_outside_process(order_products):
     for order_product in to_remove:
         order_products.remove(order_product)
 
-
 def add_working_time(start_time, duration=0):
     """增加工作时间，跳过非工作时间"""
     end_time = start_time
 
     while duration >= 0:
-        work_start_morning = end_time.replace(hour=9, minute=0, second=0, microsecond=0)
-        work_end_morning = end_time.replace(hour=12, minute=0, second=0, microsecond=0)
-        work_start_afternoon = end_time.replace(hour=13, minute=0, second=0, microsecond=0)
-        work_end_afternoon = end_time.replace(hour=18, minute=0, second=0, microsecond=0)
+        work_start_morning = end_time.replace(hour=7, minute=30, second=0, microsecond=0)
+        work_end_morning = end_time.replace(hour=11, minute=30, second=0, microsecond=0)
+        work_start_afternoon = end_time.replace(hour=12, minute=0, second=0, microsecond=0)
+        work_end_afternoon = end_time.replace(hour=17, minute=0, second=0, microsecond=0)
+        work_start_night = end_time.replace(hour=17, minute=0, second=0, microsecond=0)
+        work_end_night = end_time.replace(hour=2, minute=0, second=0, microsecond=0) + timedelta(days=1)
 
         if end_time < work_start_morning:
             end_time = work_start_morning
@@ -139,9 +140,19 @@ def add_working_time(start_time, duration=0):
                 duration = -1
             else:
                 duration -= available_time
+                end_time = work_start_night
+        elif end_time < work_start_night:
+            end_time = work_start_night
+        elif end_time < work_end_night:
+            available_time = (work_end_night - end_time).seconds / 60
+            if duration <= available_time:
+                end_time += timedelta(minutes=duration)
+                duration = -1
+            else:
+                duration -= available_time
                 end_time = work_start_morning + timedelta(days=1)
         else:
-            # 处理结束时间在下午工作结束后的情况
+            # 处理结束时间在夜班工作结束后的情况
             end_time = work_start_morning + timedelta(days=1)
 
     return end_time
