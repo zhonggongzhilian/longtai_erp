@@ -1442,3 +1442,43 @@ class AddProcessView(View):
             return JsonResponse({'success': True})
         else:
             return JsonResponse({'success': False, 'error': form.errors})
+
+@login_required(login_url="/login/")
+def get_process(request, process_id):
+    process = get_object_or_404(Process, id=process_id)
+
+    data = {
+        'process_name': process.process_name,
+        'process_capacity': process.process_capacity,
+        'process_duration': process.process_duration,
+        'product_code': process.product_code,
+        'device_name': process.device_name,
+        'is_outside': process.is_outside,
+        'is_last_process': process.is_last_process,
+    }
+    return JsonResponse(data)
+
+@login_required(login_url="/login/")
+def update_process(request, process_id):
+    if request.method == 'POST':
+        process = get_object_or_404(Process, id=process_id)
+        process.process_name = request.POST.get('process_name')
+        process.process_capacity = request.POST.get('process_capacity')
+        process.process_duration = request.POST.get('process_duration')
+        process.product_code = request.POST.get('product_code')
+        process.device_name = request.POST.get('device_name')
+        process.is_outside = request.POST.get('is_outside') == 'True'
+        process.is_last_process = request.POST.get('is_last_process') == 'True'
+        process.save()
+        return HttpResponse(status=200)
+    return HttpResponse(status=400)
+
+
+def delete_process(request, process_id):
+    if request.method == 'POST':
+        process = get_object_or_404(Process, pk=process_id)
+        process.delete()
+        return JsonResponse({'success': True})
+    else:
+        # 如果不是POST请求，返回错误信息
+        return JsonResponse({'success': False, 'error': 'Invalid request'}, status=405)

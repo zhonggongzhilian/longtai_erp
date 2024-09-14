@@ -77,4 +77,7 @@ urlpatterns = [
     path('processes/add/', AddProcessView.as_view(), name='add_process'),
 
     path('clear_schedule/', clear_schedule, name='clear_schedule'),
+    path('process/<int:process_id>/get/', views.get_process, name='get_process'),
+    path('process/<int:process_id>/update/', views.update_process, name='update_process'),
+    path('process/<int:process_id>/delete/', views.delete_process, name='delete_process'),
 ]
