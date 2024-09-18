@@ -17,10 +17,10 @@ from django.core.exceptions import ValidationError
 from django.core.files.storage import FileSystemStorage
 from django.core.paginator import Paginator
 from django.core.serializers import serialize
-from django.db.models import CharField
-from django.db.models import Q
+from django.db.models import CharField, When
+from django.db.models import Q,Case
 from django.db.models import Sum
-from django.db.models.functions import Cast
+from django.db.models.functions import Cast, Coalesce
 from django.http import HttpResponse
 from django.http import HttpResponseRedirect
 from django.http import JsonResponse
@@ -1410,9 +1410,10 @@ class ProcessListView(ListView):
 
     def get_queryset(self):
         queryset = super().get_queryset()
-        queryset = queryset.annotate(
-            sort_key=Cast('process_i', output_field=CharField())
-        ).order_by('sort_key')
+        # 首先按商品编码进行排序
+        queryset = queryset.order_by('product_code')
+        # 然后按工序编号进行排序（如果商品编码相同）
+        queryset = queryset.order_by('process_i')
 
         # 获取搜索查询参数
         search_query = self.request.GET.get('search', None)
