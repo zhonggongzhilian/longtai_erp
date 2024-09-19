@@ -30,6 +30,7 @@
                             <button type="submit" class="btn btn-primary" id="searchButton">按日期搜索</button>
                         </div>
                     </form>
+
                     <!-- 快速排产和全量排产按钮 -->
                     <div class="col-auto ml-auto d-flex align-items-center">
                         <div id="progressBar" class="progress mr-3" style="display: none; width: 200px;">
@@ -41,6 +42,9 @@
                         </button>
                         <button class="btn btn-danger ml-2" id="scheduleButton" title="排产全量订单（速度较慢）">
                             <i class="fas fa-calendar-check"></i> 全量排产
+                        </button>
+                        <button type="submit" class="btn btn-warning ml-2" id="clearScheduleButton" title="清空排产计划">
+                            <i class="fas fa-eraser"></i> 清空排产
                         </button>
                     </div>
                 </div>
@@ -100,11 +104,59 @@
 <script>
     let progressInterval;
 
+    // 获取 CSRF 令牌并添加到 AJAX 请求头中
+    function getCookie(name) {
+        let cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+            const cookies = document.cookie.split(';');
+            for (let i = 0; i < cookies.length; i++) {
+                const cookie = cookies[i].trim();
+                if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
+                }
+            }
+        }
+        return cookieValue;
+    }
+
+    const csrftoken = getCookie('csrftoken');
+
+    // 绑定清空排产计划按钮的点击事件
+    $('#clearScheduleButton').on('click', function () {
+        if (confirm('确定要清空所有排产计划吗？')) {
+            clearSchedule(csrftoken);
+        }
+    });
+
+    function clearSchedule(csrftoken) {
+        $.ajax({
+            url: "{% url 'clear_schedule' %}",  // 确保这个URL指向正确的视图
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': csrftoken
+            },
+            success: function (response) {
+                if (response.success) {
+                    alert('排产计划已清空');
+                    location.reload();  // 重新加载页面
+                } else {
+                    alert('清空排产计划失败');
+                }
+            },
+            error: function (xhr, status, error) {
+                console.error("Error clearing schedule:", error);
+                alert('清空排产计划失败');
+            }
+        });
+    }
+
     $(document).ready(function () {
         // 绑定快速排产按钮的点击事件
         $('#fastScheduleButton').on('click', function () {
             startScheduling("{% url 'process_orders_fast' %}");
         });
+
 
         // 绑定全量排产按钮的点击事件
         $('#scheduleButton').on('click', function () {

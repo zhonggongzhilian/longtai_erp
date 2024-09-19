@@ -109,16 +109,17 @@ def remove_order_products_with_outside_process(order_products):
     for order_product in to_remove:
         order_products.remove(order_product)
 
-
 def add_working_time(start_time, duration=0):
     """增加工作时间，跳过非工作时间"""
     end_time = start_time
 
     while duration >= 0:
-        work_start_morning = end_time.replace(hour=9, minute=0, second=0, microsecond=0)
-        work_end_morning = end_time.replace(hour=12, minute=0, second=0, microsecond=0)
-        work_start_afternoon = end_time.replace(hour=13, minute=0, second=0, microsecond=0)
-        work_end_afternoon = end_time.replace(hour=18, minute=0, second=0, microsecond=0)
+        work_start_morning = end_time.replace(hour=7, minute=30, second=0, microsecond=0)
+        work_end_morning = end_time.replace(hour=11, minute=30, second=0, microsecond=0)
+        work_start_afternoon = end_time.replace(hour=12, minute=0, second=0, microsecond=0)
+        work_end_afternoon = end_time.replace(hour=17, minute=0, second=0, microsecond=0)
+        work_start_night = end_time.replace(hour=17, minute=0, second=0, microsecond=0)
+        work_end_night = end_time.replace(hour=2, minute=0, second=0, microsecond=0) + timedelta(days=1)
 
         if end_time < work_start_morning:
             end_time = work_start_morning
@@ -139,9 +140,19 @@ def add_working_time(start_time, duration=0):
                 duration = -1
             else:
                 duration -= available_time
+                end_time = work_start_night
+        elif end_time < work_start_night:
+            end_time = work_start_night
+        elif end_time < work_end_night:
+            available_time = (work_end_night - end_time).seconds / 60
+            if duration <= available_time:
+                end_time += timedelta(minutes=duration)
+                duration = -1
+            else:
+                duration -= available_time
                 end_time = work_start_morning + timedelta(days=1)
         else:
-            # 处理结束时间在下午工作结束后的情况
+            # 处理结束时间在夜班工作结束后的情况
             end_time = work_start_morning + timedelta(days=1)
 
     return end_time
@@ -200,7 +211,6 @@ def schedule_production(start_date_str='2024-01-10', fast=False):
         if fast:
             if current_time.date() != start_date.date():
                 break
-        # print(f"Remain: {len(order_products)}, CT: {current_time}")
 
         for device in devices:
             dv_start = datetime.now()
@@ -258,13 +268,6 @@ def schedule_production(start_date_str='2024-01-10', fast=False):
                         device_current_time = device.end_time
                         order_product.product_num_done += process_capacity
 
-                        print(f"{current_time}\t"
-                              f"{order_product.product_code}\t"
-                              f"{device.device_name}\t"
-                              f"{order_product.cur_process_i}\t"
-                              f"{order_product.product_num_done}\t"
-                              f"{0}")
-                        print(f"{count=}")
                         count = 0
 
                         # 更新产品的当前工序索引
@@ -317,7 +320,6 @@ def schedule_production(start_date_str='2024-01-10', fast=False):
 
                     is_changeover = 0
                     if device.raw != raw_code:
-                        # print(f"{device.raw}, {raw_code}")
                         is_changeover = 1
                     device.raw = raw_code if raw_code != "Null" else None
 
@@ -343,13 +345,6 @@ def schedule_production(start_date_str='2024-01-10', fast=False):
                         product_num=product_num,
                         is_changeover=is_changeover
                     )
-                    print(f"{current_time}\t"
-                          f"{order_product.product_code}\t"
-                          f"{device.device_name}\t"
-                          f"{order_product.cur_process_i}\t"
-                          f"{order_product.product_num_done}\t"
-                          f"1")
-                    print(f"{count=}")
                     count = 0
 
                     # 移除已处理的订单产品，如果当前工序是最大序号工序
@@ -367,7 +362,6 @@ def schedule_production(start_date_str='2024-01-10', fast=False):
                         order_product.cur_process_i = process['process_i']
                     break
             dv_end = datetime.now()
-            print(f"{device.device_name} takes {dv_end - dv_start} s!")
         # 获取所有 order_products 中最早的 end_time
         current_time = get_current_time(order_products, devices, current_time, start_date)
         progress = calculate_workday_ratio(current_time)
@@ -375,7 +369,6 @@ def schedule_production(start_date_str='2024-01-10', fast=False):
         count += 1
 
     sc_end = datetime.now()
-    print(f"Finish scheduling! Takes {sc_end - sc_start} s!")
 
 
 def get_current_time(order_products, devices, current_time, start_date):

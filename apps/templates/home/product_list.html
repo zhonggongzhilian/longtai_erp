@@ -38,11 +38,11 @@
                     <table class="table align-items-center table-flush">
                         <thead class="thead-light">
                             <tr>
-                                <th scope="col">产品编码</th>
-                                <th scope="col">产品名称</th>
-                                <th scope="col">产品类别</th>
-                                <th scope="col">毛坯</th>
-                                <th scope="col">重量</th>
+                                <th scope="col">商品编码</th>
+                                <th scope="col">商品名称</th>
+                                <th scope="col">商品类别</th>
+                                <th scope="col">成品重量(KG)</th>
+                                <th scope="col">毛坯编码</th>
                             </tr>
                         </thead>
                         <tbody class="list">
@@ -55,8 +55,8 @@
                                 </td>
                                 <td>{{ product.product_name }}</td>
                                 <td>{{ product.product_kind }}</td>
-                                <td>{{ product.raw_code }}</td>
                                 <td>{{ product.weight }}</td>
+                                <td>{{ product.raw_code }}</td>
                             </tr>
                             {% endfor %}
                         </tbody>
@@ -152,7 +152,7 @@
     <div class="modal-dialog" role="document">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title" id="editProductModalLabel">编辑产品</h5>
+                <h5 class="modal-title" id="editProductModalLabel">编辑商品</h5>
                 <button type="button" class="close" data-dismiss="modal" aria-label="关闭">
                     <span aria-hidden="true">&times;</span>
                 </button>
@@ -162,11 +162,11 @@
                     {% csrf_token %}
                     <input type="hidden" id="editProductId" name="product_id">
                     <div class="form-group">
-                        <label for="editProductCode">产品编码</label>
+                        <label for="editProductCode">商品编码</label>
                         <input type="text" class="form-control" id="editProductCode" name="product_code">
                     </div>
                     <div class="form-group">
-                        <label for="editProductCategory">产品类别</label>
+                        <label for="editProductCategory">商品类别</label>
                         <input type="text" class="form-control" id="editProductCategory" name="product_category">
                     </div>
                     <div class="form-group">

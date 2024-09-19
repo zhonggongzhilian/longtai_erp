@@ -1,5 +1,5 @@
 {% extends 'layouts/base.html' %}
-
+{% csrf_token %}
 {% block title %}工序列表{% endblock title %}
 
 {% block content %}
@@ -10,6 +10,11 @@
                 <div class="col-lg-6 col-7">
                     <h6 class="h2 text-white d-inline-block mb-0">工序列表</h6>
                 </div>
+                <div class="col-lg-6 col-5 text-right">
+                    <button type="button" class="btn btn-sm btn-neutral" data-toggle="modal" data-target="#addProcessModal">
+                        新建工序
+                    </button>
+                </div>
             </div>
         </div>
     </div>
@@ -19,36 +24,59 @@
     <div class="row">
         <div class="col">
             <div class="card">
-                <div class="card-header border-0">
-                    <h3 class="mb-0">工序表</h3>
+               <div class="card-body d-flex align-items-center">
+                    <form method="GET" action="{% url 'process-list' %}" class="form-inline">
+                        <input type="text" name="search" class="form-control mr-2" placeholder="搜索编码或名称"
+                               value="{{ search_query|default:'' }}">
+                        <button type="submit" class="btn btn-primary">搜索</button>
+                    </form>
                 </div>
                 <div class="table-responsive">
                     <table class="table align-items-center table-flush">
                         <!-- 表格头部 -->
                         <thead class="thead-light">
                         <tr>
+                            <th scope="col">商品编码</th>
                             <th scope="col">工序编号</th>
                             <th scope="col">工序名称</th>
                             <th scope="col">容量</th>
-                            <th scope="col">持续时间</th>
-                            <th scope="col">产品编码</th>
+                            <th scope="col">持续时间(分钟)</th>
                             <th scope="col">设备名称</th>
-                            <th scope="col">是否外包</th>
+                            <th scope="col">是否外协</th>
                             <th scope="col">是否最后工序</th>
+                            <th scope="col"></th>
                         </tr>
                         </thead>
                         <!-- 表格内容 -->
                         <tbody>
                         {% for process in processes %}
                         <tr>
+                            <td>{{ process.product_code }}</td>
                             <td>{{ process.process_i }}</td>
-                            <td>{{ process.process_name }}</td>
+                            <td>
+                                <a href="#" class="edit-process" data-process-id="{{ process.id }}">
+                                    {{ process.process_name }}
+                                </a>
+                            </td>
                             <td>{{ process.process_capacity }}</td>
                             <td>{{ process.process_duration }}</td>
-                            <td>{{ process.product_code }}</td>
                             <td>{{ process.device_name }}</td>
                             <td>{{ process.is_outside|yesno:"是,否" }}</td>
                             <td>{{ process.is_last_process|yesno:"是,否" }}</td>
+                            <td class="text-right">
+                                <div class="dropdown">
+                                    <a class="btn btn-sm btn-icon-only text-light" href="#" role="button"
+                                       data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                                        <i class="fas fa-ellipsis-v"></i>
+                                    </a>
+                                    <div class="dropdown-menu dropdown-menu-right dropdown-menu-arrow">
+                                        <a class="dropdown-item edit-process" href="#"
+                                           data-process-id="{{ process.id }}">修改</a>
+                                        <a class="dropdown-item delete-process" href="#"
+                                           data-process-id="{{ process.id }}">删除</a>
+                                    </div>
+                                </div>
+                            </td>
                         </tr>
                         {% endfor %}
                         </tbody>
@@ -59,29 +87,75 @@
                         <ul class="pagination justify-content-end mb-0">
                             {% if page_obj.has_previous %}
                             <li class="page-item">
-                                <a class="page-link" href="?page=1">首页</a>
+                                <a class="page-link" href="?page=1&per_page={{ per_page }}" tabindex="-1">
+                                    <i class="fas fa-angle-double-left"></i>
+                                    <span class="sr-only">First</span>
+                                </a>
                             </li>
                             <li class="page-item">
-                                <a class="page-link" href="?page={{ page_obj.previous_page_number }}">上一页</a>
+                                <a class="page-link"
+                                   href="?page={{ page_obj.previous_page_number }}&per_page={{ per_page }}"
+                                   tabindex="-1">
+                                    <i class="fas fa-angle-left"></i>
+                                    <span class="sr-only">Previous</span>
+                                </a>
+                            </li>
+                            {% else %}
+                            <li class="page-item disabled">
+                                <a class="page-link" href="#" tabindex="-1">
+                                    <i class="fas fa-angle-double-left"></i>
+                                    <span class="sr-only">First</span>
+                                </a>
+                            </li>
+                            <li class="page-item disabled">
+                                <a class="page-link" href="#" tabindex="-1">
+                                    <i class="fas fa-angle-left"></i>
+                                    <span class="sr-only">Previous</span>
+                                </a>
                             </li>
                             {% endif %}
+
                             {% for num in page_obj.paginator.page_range %}
-                                {% if num == page_obj.number %}
-                                    <li class="page-item active">
-                                        <a class="page-link" href="?page={{ num }}">{{ num }}</a>
-                                    </li>
-                                {% elif num == page_obj.previous_page_number or num == page_obj.next_page_number or num == page_obj.number|add:'1' or num == page_obj.number|add:'-1' %}
-                                    <li class="page-item">
-                                        <a class="page-link" href="?page={{ num }}">{{ num }}</a>
-                                    </li>
-                                {% endif %}
+                            {% if num > page_obj.number|add:-3 and num < page_obj.number|add:3 %}
+                            {% ifequal page_obj.number num %}
+                            <li class="page-item active">
+                                <a class="page-link" href="?page={{ num }}&per_page={{ per_page }}">{{ num }}</a>
+                            </li>
+                            {% else %}
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ num }}&per_page={{ per_page }}">{{ num }}</a>
+                            </li>
+                            {% endifequal %}
+                            {% endif %}
                             {% endfor %}
+
                             {% if page_obj.has_next %}
                             <li class="page-item">
-                                <a class="page-link" href="?page={{ page_obj.next_page_number }}">下一页</a>
+                                <a class="page-link"
+                                   href="?page={{ page_obj.next_page_number }}&per_page={{ per_page }}">
+                                    <i class="fas fa-angle-right"></i>
+                                    <span class="sr-only">Next</span>
+                                </a>
                             </li>
                             <li class="page-item">
-                                <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}">末页</a>
+                                <a class="page-link"
+                                   href="?page={{ page_obj.paginator.num_pages }}&per_page={{ per_page }}">
+                                    <i class="fas fa-angle-double-right"></i>
+                                    <span class="sr-only">Last</span>
+                                </a>
+                            </li>
+                            {% else %}
+                            <li class="page-item disabled">
+                                <a class="page-link" href="#">
+                                    <i class="fas fa-angle-right"></i>
+                                    <span class="sr-only">Next</span>
+                                </a>
+                            </li>
+                            <li class="page-item disabled">
+                                <a class="page-link" href="#">
+                                    <i class="fas fa-angle-double-right"></i>
+                                    <span class="sr-only">Last</span>
+                                </a>
                             </li>
                             {% endif %}
                         </ul>
@@ -91,4 +165,252 @@
         </div>
     </div>
 </div>
+
+<!-- 新建工序模态框 -->
+<div class="modal fade" id="addProcessModal" tabindex="-1" role="dialog" aria-labelledby="addProcessModalLabel" aria-hidden="true">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="addProcessModalLabel">新建工序</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <form id="addProcessForm" method="post" action="{% url 'add_process' %}">
+                    {% csrf_token %}
+                    <div class="form-group">
+                        <label for="processI">工序编号</label>
+                        <input type="text" class="form-control" id="processI" name="process_i" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="processName">工序名称</label>
+                        <input type="text" class="form-control" id="processName" name="process_name" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="processCapacity">容量</label>
+                        <input type="number" class="form-control" id="processCapacity" name="process_capacity" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="processDuration">持续时间</label>
+                        <input type="number" class="form-control" id="processDuration" name="process_duration" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="productCode">商品编码</label>
+                        <input type="text" class="form-control" id="productCode" name="product_code" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="deviceName">设备名称</label>
+                        <input type="text" class="form-control" id="deviceName" name="device_name" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="isOutside">是否外包</label>
+                        <select class="form-control" id="isOutside" name="is_outside">
+                            <option value="True">是</option>
+                            <option value="False">否</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="isLastProcess">是否最后工序</label>
+                        <select class="form-control" id="isLastProcess" name="is_last_process">
+                            <option value="True">是</option>
+                            <option value="False">否</option>
+                        </select>
+                    </div>
+                    <!-- 添加其他需要的字段 -->
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">关闭</button>
+                <button type="button" class="btn btn-primary" onclick="submitProcessForm()">提交</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+<!-- Edit Process Modal -->
+<div class="modal fade" id="editProcessModal" tabindex="-1" role="dialog" aria-labelledby="editProcessModalLabel" aria-hidden="true">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="editProcessModalLabel">编辑工序</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <form id="editProcessForm">
+                    {% csrf_token %}
+                    <input type="hidden" id="editProcessId" name="process_id">
+                    <div class="form-group">
+                        <label for="editProcessName">工序名称</label>
+                        <input type="text" class="form-control" id="editProcessName" name="process_name">
+                    </div>
+                    <div class="form-group">
+                        <label for="editProcessCapacity">容量</label>
+                        <input type="number" class="form-control" id="editProcessCapacity" name="process_capacity">
+                    </div>
+                    <div class="form-group">
+                        <label for="editProcessDuration">持续时间</label>
+                        <input type="number" class="form-control" id="editProcessDuration" name="process_duration">
+                    </div>
+                    <div class="form-group">
+                        <label for="editProductCode">商品编码</label>
+                        <input type="text" class="form-control" id="editProductCode" name="product_code">
+                    </div>
+                    <div class="form-group">
+                        <label for="editDeviceName">设备名称</label>
+                        <input type="text" class="form-control" id="editDeviceName" name="device_name">
+                    </div>
+                    <div class="form-group">
+                        <label for="editIsOutside">是否外包</label>
+                        <select class="form-control" id="editIsOutside" name="is_outside">
+                            <option value="True">是</option>
+                            <option value="False">否</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="editIsLastProcess">是否最后工序</label>
+                        <select class="form-control" id="editIsLastProcess" name="is_last_process">
+                            <option value="True">是</option>
+                            <option value="False">否</option>
+                        </select>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="submit" class="btn btn-primary">保存</button>
+                        <button type="button" class="btn btn-secondary" data-dismiss="modal">关闭</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+<script>
+// JavaScript 函数用于提交新建工序表单
+function submitProcessForm() {
+    var formData = new FormData(document.getElementById('addProcessForm'));
+    fetch("{% url 'add_process' %}", {
+        method: 'POST',
+        body: formData,
+        headers: {
+            'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // 处理成功的情况，例如刷新页面或显示消息
+            alert('工序创建成功');
+            window.location.reload();
+        } else {
+            // 处理错误的情况
+            alert('工序创建失败: ' + data.error);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+    });
+}
+
+
+$(document).ready(function () {
+    // 函数用于从cookie中获取CSRF token
+    function getCookie(name) {
+        var cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+            var cookies = document.cookie.split(';');
+            for (var i = 0; i < cookies.length; i++) {
+                var cookie = cookies[i].trim();
+                if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
+                }
+            }
+        }
+        return cookieValue;
+    }
+
+    // 定义csrfSafeMethod函数
+    function csrfSafeMethod(method) {
+        // 这些HTTP方法被Django CSRF保护豁免
+        return (/^(GET|HEAD|OPTIONS|TRACE)$/.test(method));
+    }
+
+    // 获取CSRF token
+    var csrftoken = getCookie('csrftoken');
+
+    // 确保CSRF token被包含在AJAX请求中
+    $.ajaxSetup({
+        beforeSend: function (xhr, settings) {
+            if (!csrfSafeMethod(settings.type) && !this.crossDomain) {
+                xhr.setRequestHeader("X-CSRFToken", csrftoken);
+            }
+        }
+    });
+
+    // 处理编辑工序按钮点击事件
+    $('.edit-process').on('click', function () {
+        var processId = $(this).data('process-id');
+        $.ajax({
+            url: '/process/' + processId + '/get/',
+            type: 'GET',
+            success: function (data) {
+                // 使用从后端获取的数据填充表单
+                $('#editProcessId').val(processId);
+                $('#editProcessName').val(data.process_name);
+                $('#editProcessCapacity').val(data.process_capacity);
+                $('#editProcessDuration').val(data.process_duration);
+                $('#editProductCode').val(data.product_code);
+                $('#editDeviceName').val(data.device_name);
+                $('#editIsOutside').val(data.is_outside);
+                $('#editIsLastProcess').val(data.is_last_process);
+
+                // 显示模态框
+                $('#editProcessModal').modal('show');
+            },
+            error: function () {
+                alert('Error retrieving process details.');
+            }
+        });
+    });
+
+    // 处理编辑工序表单提交
+    $('#editProcessForm').on('submit', function (e) {
+        e.preventDefault();
+        var formData = $(this).serialize();
+        $.ajax({
+            url: '/process/' + $('#editProcessId').val() + '/update/',
+            type: 'POST',
+            data: formData,
+            success: function () {
+                location.reload();
+            },
+            error: function () {
+                alert('Error updating process.');
+            }
+        });
+    });
+
+    // 处理删除工序按钮点击事件
+    $('.delete-process').on('click', function () {
+        var processId = $(this).data('process-id');
+        if (confirm('Are you sure you want to delete this process?')) {
+            $.ajax({
+                url: '/process/' + processId + '/delete/',
+                type: 'POST',
+                success: function () {
+                    location.reload();
+                },
+                error: function () {
+                    alert('Error deleting process.');
+                }
+            });
+        }
+    });
+});
+
+</script>
 {% endblock %}

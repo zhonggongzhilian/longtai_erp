@@ -7,8 +7,8 @@ import logging
 import os
 from datetime import datetime, time, timedelta
 from io import BytesIO
-from django.db.models.functions import Cast
-from django.db.models import CharField
+import time as tt
+
 import pytz
 import qrcode
 from django import template
@@ -17,8 +17,10 @@ from django.core.exceptions import ValidationError
 from django.core.files.storage import FileSystemStorage
 from django.core.paginator import Paginator
 from django.core.serializers import serialize
-from django.db.models import Q
+from django.db.models import CharField, When
+from django.db.models import Q,Case
 from django.db.models import Sum
+from django.db.models.functions import Cast, Coalesce
 from django.http import HttpResponse
 from django.http import HttpResponseRedirect
 from django.http import JsonResponse
@@ -28,6 +30,7 @@ from django.template import loader
 from django.urls import reverse
 from django.utils import timezone
 from django.utils.dateparse import parse_date
+from django.views import View
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_POST
 from django.views.generic import ListView
@@ -38,7 +41,7 @@ from reportlab.pdfbase import pdfmetrics
 from reportlab.pdfbase.ttfonts import TTFont
 from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer, PageBreak
 
-from .forms import CustomUserChangeForm
+from .forms import CustomUserChangeForm, ProcessForm
 from .models import CustomUser
 from .models import Order, OrderProduct
 from .models import Process, Raw, Product
@@ -52,6 +55,8 @@ __all__ = [login_view, register_user]
 # views.py
 
 logger = logging.getLogger(__name__)
+font_path = 'apps/static/assets/fonts/SourceHanSansCN-Medium.ttf'
+pdfmetrics.registerFont(TTFont('SourceHanSansCN', font_path))
 
 
 @login_required(login_url="/login/")
@@ -859,6 +864,14 @@ def process_schedule(request):
 
 
 @login_required(login_url="/login/")
+def clear_schedule(request):
+    if request.method == 'POST':
+        Task.objects.all().delete()
+        return JsonResponse({'success': True})
+    return JsonResponse({'success': False})
+
+
+@login_required(login_url="/login/")
 @csrf_exempt
 def filter_by_date(request):
     if request.method == 'GET':
@@ -975,6 +988,8 @@ def my_tasks(request):
     for task in tasks:
         order_product = OrderProduct.objects.filter(product_code=task.product_code).first()
         task.customer_name = order_product.order.order_custom_name if order_product else '未知客户'
+        product = Product.objects.filter(product_code=task.product_code).first()
+        task.product_name = product.product_name if product else '⚠️ 未知产品'
 
     # 生成二维码
     current_url = request.build_absolute_uri()
@@ -1175,6 +1190,7 @@ def my_tasks_inspector_complete_tasks(request):
 
     return JsonResponse({'status': 'error', 'message': 'Invalid request method'})
 
+
 @csrf_exempt
 @login_required(login_url="/login/")
 def my_tasks_inspector_scrap_tasks(request):
@@ -1217,10 +1233,10 @@ def my_tasks_inspector_scrap_tasks(request):
 
 @login_required(login_url="/login/")
 def generate_pdf(request):
-    # 注册字体
-    font_path = 'apps/static/assets/fonts/SourceHanSansCN-Medium.ttf'
-    pdfmetrics.registerFont(TTFont('SourceHanSansCN', font_path))
+    # 上海时区
+    shanghai_tz = pytz.timezone('Asia/Shanghai')
 
+    # 获取当前用户及其角色
     user = request.user
     if user.role == 'admin':
         tasks = Task.objects.all().order_by('task_start_time')
@@ -1234,6 +1250,7 @@ def generate_pdf(request):
         related_device_names = Device.objects.filter(operator=user).values_list('device_name', flat=True)
         tasks = Task.objects.filter(device_name__in=related_device_names).order_by('task_start_time')
 
+    # 创建PDF缓冲区
     buffer = BytesIO()
     doc = SimpleDocTemplate(buffer, pagesize=A4)
     elements = []
@@ -1244,47 +1261,56 @@ def generate_pdf(request):
     header = Paragraph(f"用户名: {user.username}  角色: {user.role}", normal_style)
     elements.append(header)
 
-    # 在每页表格前留出额外的空间，以确保二维码不会被挡住
-    elements.append(Spacer(1, inch * 0.5))  # 调整此值可以进一步减少每页显示的行数
-
-    # 上海时区
-    shanghai_tz = pytz.timezone('Asia/Shanghai')
-
-    # 定义表格数据
-    data = [['开始时间', '是否换型', '产品', '工序号', '工序名', '设备', '数量']]
+    # 按设备名称对任务进行分组
+    tasks_by_device = {}
     for task in tasks:
-        start_time = task.task_start_time.astimezone(shanghai_tz)
-        data.append([
-            start_time.strftime('%m-%d %H:%M'),
-            task.is_changeover,
-            task.product_code,
-            task.process_i,
-            task.process_name,
-            task.device_name,
-            task.product_num
-        ])
+        device_name = task.device_name
+        if device_name not in tasks_by_device:
+            tasks_by_device[device_name] = []
+        tasks_by_device[device_name].append(task)
 
-    # 创建表格并减少每页的行数
-    table = Table(data, colWidths=[doc.width / len(data[0])] * len(data[0]), repeatRows=1)
-    table.setStyle(TableStyle([
-        ('BACKGROUND', (0, 0), (-1, 0), '#d0e0f0'),
-        ('TEXTCOLOR', (0, 0), (-1, 0), '#000000'),
-        ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
-        ('FONTNAME', (0, 0), (-1, -1), 'SourceHanSansCN'),
-        ('BOTTOMPADDING', (0, 0), (-1, 0), 10),
-        ('BACKGROUND', (0, 1), (-1, -1), '#f5f5f5'),
-        ('GRID', (0, 0), (-1, -1), 1, '#d0d0d0'),
-    ]))
+    # 为每个设备创建一个表格
+    for device_name, device_tasks in tasks_by_device.items():
+        # 表格数据
+        data = [['开始时间', '是否换型', '产品', '工序号', '工序名', '数量']]
+        for task in device_tasks:
+            start_time = task.task_start_time.astimezone(shanghai_tz)
+            data.append([
+                start_time.strftime('%m-%d %H:%M'),
+                task.is_changeover,
+                task.product_code,
+                task.process_i,
+                task.process_name,
+                task.product_num
+            ])
 
-    elements.append(table)
-    elements.append(PageBreak())
+        # 创建表格并设置样式
+        table = Table(data, colWidths=[doc.width / len(data[0])] * len(data[0]), repeatRows=1)
+        table.setStyle(TableStyle([
+            ('BACKGROUND', (0, 0), (-1, 0), '#d0e0f0'),
+            ('TEXTCOLOR', (0, 0), (-1, 0), '#000000'),
+            ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+            ('FONTNAME', (0, 0), (-1, -1), 'SourceHanSansCN'),
+            ('BOTTOMPADDING', (0, 0), (-1, 0), 10),
+            ('BACKGROUND', (0, 1), (-1, -1), '#f5f5f5'),
+            ('GRID', (0, 0), (-1, -1), 1, '#d0d0d0'),
+        ]))
+
+        # 添加设备名称作为标题
+        device_header = Paragraph(f"设备: {device_name}", normal_style)
+        elements.append(device_header)
+        elements.append(table)
+        elements.append(Spacer(1, 20))  # 在标题和表格之间添加20个点的垂直间距
+        elements.append(PageBreak())  # 每个设备的表格后添加分页
 
     # 构建文档
-    doc.build(elements, onFirstPage=add_qr_code, onLaterPages=add_qr_code)
+    doc.build(elements)
 
+    # 设置响应内容类型为PDF
     buffer.seek(0)
     response = HttpResponse(buffer, content_type='application/pdf')
     response['Content-Disposition'] = 'attachment; filename="production_task_list.pdf"'
+
     return response
 
 
@@ -1374,6 +1400,7 @@ def get_all_data(request):
 
     return JsonResponse({'error': 'Invalid request method'}, status=405)
 
+
 class ProcessListView(ListView):
     model = Process
     template_name = 'process_list.html'
@@ -1383,9 +1410,76 @@ class ProcessListView(ListView):
 
     def get_queryset(self):
         queryset = super().get_queryset()
-        # 将 process_i 转换为字符串，并按首位数字进行排序
-        queryset = queryset.annotate(
-            sort_key=Cast('process_i', output_field=CharField())
-        ).order_by('sort_key')
+        # 首先按商品编码进行排序
+        queryset = queryset.order_by('product_code')
+        # 然后按工序编号进行排序（如果商品编码相同）
+        queryset = queryset.order_by('process_i')
+
+        # 获取搜索查询参数
+        search_query = self.request.GET.get('search', None)
+
+        if search_query:
+            # 如果提供了搜索查询，则过滤工序列表
+            queryset = queryset.filter(
+                Q(process_name__icontains=search_query) |
+                Q(product_code__icontains=search_query)
+            )
+
         return queryset
 
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['search_query'] = self.request.GET.get('search', '')
+        return context
+
+
+class AddProcessView(View):
+    def post(self, request):
+        form = ProcessForm(request.POST)
+        if form.is_valid():
+            process = form.save(commit=False)
+            # 这里可以添加额外的逻辑，例如设置用户等
+            process.save()
+            return JsonResponse({'success': True})
+        else:
+            return JsonResponse({'success': False, 'error': form.errors})
+
+@login_required(login_url="/login/")
+def get_process(request, process_id):
+    process = get_object_or_404(Process, id=process_id)
+
+    data = {
+        'process_name': process.process_name,
+        'process_capacity': process.process_capacity,
+        'process_duration': process.process_duration,
+        'product_code': process.product_code,
+        'device_name': process.device_name,
+        'is_outside': process.is_outside,
+        'is_last_process': process.is_last_process,
+    }
+    return JsonResponse(data)
+
+@login_required(login_url="/login/")
+def update_process(request, process_id):
+    if request.method == 'POST':
+        process = get_object_or_404(Process, id=process_id)
+        process.process_name = request.POST.get('process_name')
+        process.process_capacity = request.POST.get('process_capacity')
+        process.process_duration = request.POST.get('process_duration')
+        process.product_code = request.POST.get('product_code')
+        process.device_name = request.POST.get('device_name')
+        process.is_outside = request.POST.get('is_outside') == 'True'
+        process.is_last_process = request.POST.get('is_last_process') == 'True'
+        process.save()
+        return HttpResponse(status=200)
+    return HttpResponse(status=400)
+
+
+def delete_process(request, process_id):
+    if request.method == 'POST':
+        process = get_object_or_404(Process, pk=process_id)
+        process.delete()
+        return JsonResponse({'success': True})
+    else:
+        # 如果不是POST请求，返回错误信息
+        return JsonResponse({'success': False, 'error': 'Invalid request'}, status=405)

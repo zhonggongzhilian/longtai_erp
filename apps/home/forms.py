@@ -4,7 +4,7 @@ from django import forms
 from django.contrib.auth.forms import UserChangeForm
 from django.contrib.auth.forms import UserCreationForm
 
-from .models import CustomUser
+from .models import CustomUser, Process
 from .models import Task
 
 
@@ -124,3 +124,12 @@ class TaskForm(forms.ModelForm):
         self.fields['process_i'].widget.attrs.update({'class': 'form-control'})
         self.fields['process_name'].widget.attrs.update({'class': 'form-control'})
         self.fields['device_name'].widget.attrs.update({'class': 'form-control'})
+
+class ProcessForm(forms.ModelForm):
+    class Meta:
+        model = Process
+        fields = ['process_i','process_name', 'process_capacity', 'process_duration', 'product_code', 'device_name', 'is_outside', 'is_last_process']
+        widgets = {
+            'is_outside': forms.RadioSelect(),
+            'is_last_process': forms.RadioSelect(),
+        }
