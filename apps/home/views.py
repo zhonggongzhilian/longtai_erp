@@ -1258,8 +1258,6 @@ def generate_pdf(request):
     # 使用 Source Han Sans CN 字体
     styles = getSampleStyleSheet()
     normal_style = ParagraphStyle(name='Normal', fontName='SourceHanSansCN', fontSize=13)
-    header = Paragraph(f"用户名: {user.username}  角色: {user.role}", normal_style)
-    elements.append(header)
 
     # 按设备名称对任务进行分组
     tasks_by_device = {}
@@ -1272,10 +1270,11 @@ def generate_pdf(request):
     # 为每个设备创建一个表格
     for device_name, device_tasks in tasks_by_device.items():
         # 表格数据
-        data = [['开始时间', '是否换型', '产品', '工序号', '工序名', '数量']]
+        data = [['设备','开始时间', '是否换型', '产品', '工序号', '工序名', '数量']]
         for task in device_tasks:
             start_time = task.task_start_time.astimezone(shanghai_tz)
             data.append([
+                task.device_name,
                 start_time.strftime('%m-%d %H:%M'),
                 task.is_changeover,
                 task.product_code,
@@ -1297,8 +1296,6 @@ def generate_pdf(request):
         ]))
 
         # 添加设备名称作为标题
-        device_header = Paragraph(f"设备: {device_name}", normal_style)
-        elements.append(device_header)
         elements.append(table)
         elements.append(Spacer(1, 20))  # 在标题和表格之间添加20个点的垂直间距
         elements.append(PageBreak())  # 每个设备的表格后添加分页
