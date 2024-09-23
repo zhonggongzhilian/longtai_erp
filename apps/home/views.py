@@ -272,38 +272,34 @@ def index(request):
         order_end_date__lte=two_weeks_later
     )
 
-    # 计算剩余天数，并排序
-    order_details = []
-    for order in orders:
-        end_date = datetime.strptime(order.order_end_date, '%Y-%m-%d').date()
-        remaining_days = (end_date - current_date).days
-        order_details.append({
-            'order_code': order.order_code,
-            'end_date': order.order_end_date,
-            'remaining_days': remaining_days,
-        })
-
-    # 按剩余天数从低到高排序
-    order_details.sort(key=lambda x: x['remaining_days'])
-
     # 获取所有订单
     orders = Order.objects.all()
 
-    # 存储订单和对应的预计交付日期
-    order_delivery_dates = []
+    # 存储订单详情
+    order_details_combined = []
 
     for order in orders:
+        end_date = datetime.strptime(order.order_end_date, '%Y-%m-%d').date()
+        remaining_days = (end_date - current_date).days
+
         # 查找该订单的所有 task，按 task_end_time 排序并获取最后一个 task
         tasks = Task.objects.filter(order_code=order.order_code).order_by('-task_end_time')
 
         if tasks.exists():
             estimated_delivery_date = tasks.first().task_end_time
-            # 只在有预计交付日期时添加到结果列表中
-            order_delivery_dates.append({
-                'order_code': order.order_code,
-                'order_end_date': order.order_end_date,
-                'estimated_delivery_date': estimated_delivery_date,
-            })
+        else:
+            estimated_delivery_date = None
+
+        # 将订单详情添加到列表中
+        order_details_combined.append({
+            'order_code': order.order_code,
+            'end_date': order.order_end_date,
+            'remaining_days': remaining_days,
+            'estimated_delivery_date': estimated_delivery_date,
+        })
+
+    # 按剩余天数从低到高排序
+    order_details_combined.sort(key=lambda x: x['remaining_days'])
 
     # 统计每个毛坯编码的总数量
     raw_quantities = Raw.objects.values('raw_code', 'raw_name').annotate(total_quantity=Sum('raw_num'))
@@ -364,9 +360,8 @@ def index(request):
 
         'device_details': device_details,
 
-        'order_details': order_details,
 
-        'order_delivery_dates': order_delivery_dates,
+        'order_details_combined': order_details_combined,
 
         'remaining_quantities': remaining_quantities,
     }
