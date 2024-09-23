@@ -1270,7 +1270,7 @@ def generate_pdf(request):
     # 为每个设备创建一个表格
     for device_name, device_tasks in tasks_by_device.items():
         # 表格数据
-        data = [['设备','开始时间', '是否换型', '产品', '工序号', '工序名', '数量']]
+        data = [['设备','开始时间', '是否换型', '商品', '工序号', '工序名', '数量']]
         for task in device_tasks:
             start_time = task.task_start_time.astimezone(shanghai_tz)
             data.append([
