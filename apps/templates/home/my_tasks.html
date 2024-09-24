@@ -43,6 +43,11 @@
                                 添加紧急任务
                             </button>
                             {% endif %}
+                            {% if user.role == 'operator' %}
+                            <button class="btn btn-success" id="finalOperateBtn" disabled>
+                                一键报工
+                            </button>
+                            {% endif %}
                             {% if user.role == 'inspector' %}
                             <button class="btn btn-info" id="finalInspectionBtn" disabled>
                                 终检工序
@@ -56,13 +61,13 @@
                 <table class="table align-items-center table-flush">
                     <thead class="thead-light">
                         <tr>
-                            {% if request.user.role == 'inspector' %}
                             <th scope="col"><input type="checkbox" id="selectAll"></th>
-                            {% endif %}
                             <th scope="col">执行时间</th>
                             <th scope="col">完成时间</th>
                             <th scope="col">换型</th>
+                            {% if request.user.role == 'admin' %}
                             <th scope="col">订单编号</th>
+                            {% endif %}
                             <th scope="col">商品编号</th>
                             <th scope="col">商品名称</th>
                             <th scope="col">工序号</th>
@@ -83,15 +88,15 @@
                         {% for task in tasks %}
                         <tr class="task-row {% if task.completed and task.inspected %}completed-and-inspected-task{% elif task.completed %}completed-task{% elif task.inspected %}inspected-task{% endif %}"
                             data-id="{{ task.id }}">
-                            {% if request.user.role == 'inspector' %}
                             <td><input type="checkbox" class="select-task" value="{{ task.id }}"></td>
-
-                            {% endif %}
                             <td>{{ task.task_start_time }}</td>
                             <td>{{ task.task_end_time }}</td>
                             <td>{{ task.is_changeover }}</td>
+                            {% if request.user.role == 'admin' %}
                             <td>{{ task.order_code }}</td>
+                            {% endif %}
                             <td>{{ task.product_code }}</td>
+
                             <td>{{ task.product_name }}</td>
                             <td>{{ task.process_i }}</td>
                             <td>{{ task.process_name }}</td>
@@ -207,11 +212,143 @@
     }
 </style>
 
-<script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
-<script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 
 <script>
     $(document).ready(function () {
+        // 一键报工按钮逻辑
+        const finalOperateBtn = document.getElementById('finalOperateBtn');
+        const selectAllCheckbox = document.getElementById('selectAll');
+        const checkboxes = document.querySelectorAll('.select-task');
+
+        if (finalOperateBtn) {
+            // 全选功能
+            selectAllCheckbox.addEventListener('change', function () {
+                checkboxes.forEach(checkbox => {
+                    checkbox.checked = selectAllCheckbox.checked;
+                });
+                toggleFinalOperateBtn();
+            });
+
+            // 单选功能
+            checkboxes.forEach(checkbox => {
+                checkbox.addEventListener('change', toggleFinalOperateBtn);
+            });
+
+            // 一键报工按钮状态
+            function toggleFinalOperateBtn() {
+                const anyChecked = Array.from(checkboxes).some(checkbox => checkbox.checked);
+                finalOperateBtn.disabled = !anyChecked;
+            }
+
+            // 初始化按钮状态
+            toggleFinalOperateBtn();
+
+            // 一键报工按钮点击事件
+            finalOperateBtn.addEventListener('click', function () {
+                const selectedTasks = Array.from(checkboxes)
+                    .filter(checkbox => checkbox.checked)
+                    .map(checkbox => checkbox.value);
+
+                $.ajax({
+                    url: "{% url 'my_tasks_operator_one_btn_complete_tasks' %}",
+                    type: 'POST',
+                    data: {
+                        tasks: selectedTasks,
+                        csrfmiddlewaretoken: '{{ csrf_token }}'
+                    },
+                    success: function(response) {
+                        if (response.success) {
+                            alert('任务更新成功');
+                            window.location.reload();
+                        } else {
+                            alert('错误: ' + response.error);
+                        }
+                    },
+                    error: function(xhr, status, error) {
+                        alert('发生错误: ' + error);
+                    }
+                });
+            });
+        }
+
+        // 终检工序按钮逻辑
+        const finalInspectionBtn = document.getElementById('finalInspectionBtn');
+        if (finalInspectionBtn) {
+            // 全选功能（如果适用）
+            selectAllCheckbox.addEventListener('change', function () {
+                checkboxes.forEach(checkbox => {
+                    checkbox.checked = selectAllCheckbox.checked;
+                });
+                toggleFinalInspectionBtn();
+            });
+
+            // 单选功能
+            checkboxes.forEach(checkbox => {
+                checkbox.addEventListener('change', toggleFinalInspectionBtn);
+            });
+
+            // 终检工序按钮状态
+            function toggleFinalInspectionBtn() {
+                const anyChecked = Array.from(checkboxes).some(checkbox => checkbox.checked);
+                finalInspectionBtn.disabled = !anyChecked;
+            }
+
+            // 初始化按钮状态
+            toggleFinalInspectionBtn();
+
+            // 终检工序按钮点击事件
+            finalInspectionBtn.addEventListener('click', function () {
+                $('#finalInspectionModal').modal('show');
+            });
+
+            // 处理模态框中的操作
+            document.getElementById('scrapBtn').addEventListener('click', function () {
+                performFinalInspection('scrap');
+            });
+
+            document.getElementById('completeBtn').addEventListener('click', function () {
+                performFinalInspection('complete');
+            });
+
+            function performFinalInspection(action) {
+                const selectedTasks = Array.from(checkboxes)
+                    .filter(checkbox => checkbox.checked)
+                    .map(checkbox => checkbox.value);
+
+                let url = '';
+
+                if (action === 'scrap') {
+                    url = "{% url 'my_tasks_inspector_scrap_tasks' %}";
+                } else if (action === 'complete') {
+                    url = "{% url 'my_tasks_inspector_complete_tasks' %}";
+                }
+
+                $.ajax({
+                    url: url,
+                    type: 'POST',
+                    data: {
+                        tasks: selectedTasks,
+                        csrfmiddlewaretoken: '{{ csrf_token }}'
+                    },
+                    success: function(response) {
+                        if (response.success) {
+                            alert('任务更新成功');
+                            window.location.reload();
+                        } else {
+                            alert('错误: ' + response.error);
+                        }
+                    },
+                    error: function(xhr, status, error) {
+                        alert('发生错误: ' + error);
+                    }
+                });
+
+                $('#finalInspectionModal').modal('hide');
+            }
+        }
+
+        // 添加紧急任务表单提交
         $('#addUrgentTaskForm').on('submit', function (e) {
             e.preventDefault();
             const formData = $(this).serialize();
@@ -224,7 +361,6 @@
                     if (response.success) {
                         alert('任务添加成功');
                         $('#addUrgentTaskModal').modal('hide');
-                        // Optionally, you can add the new task to the table here or refresh the page
                         window.location.reload();
                     } else {
                         alert('任务添加失败');
@@ -235,92 +371,11 @@
                 }
             });
         });
-    });
 
-
-</script>
-<script>
-    document.getElementById('generatePdfBtn').addEventListener('click', function() {
-        window.location.href = "{% url 'generate_pdf' %}";
-    });
-</script>
-
-<script>
-    document.addEventListener('DOMContentLoaded', function () {
-    const selectAllCheckbox = document.getElementById('selectAll');
-    const checkboxes = document.querySelectorAll('.select-task');
-    const finalInspectionBtn = document.getElementById('finalInspectionBtn');
-
-    // 全选功能
-    selectAllCheckbox.addEventListener('change', function () {
-        checkboxes.forEach(checkbox => {
-            checkbox.checked = selectAllCheckbox.checked;
+        // 生成PDF按钮点击事件
+        $('#generatePdfBtn').on('click', function() {
+            window.location.href = "{% url 'generate_pdf' %}";
         });
-        toggleFinalInspectionBtn();
     });
-
-    // 单选功能
-    checkboxes.forEach(checkbox => {
-        checkbox.addEventListener('change', toggleFinalInspectionBtn);
-    });
-
-    // 终检工序按钮状态
-    function toggleFinalInspectionBtn() {
-        const anyChecked = Array.from(checkboxes).some(checkbox => checkbox.checked);
-        finalInspectionBtn.disabled = !anyChecked;
-    }
-
-    // 终检工序按钮点击事件
-    finalInspectionBtn.addEventListener('click', function () {
-        $('#finalInspectionModal').modal('show');
-    });
-
-    // 处理 modal 中的操作
-    document.getElementById('scrapBtn').addEventListener('click', function () {
-        performFinalInspection('scrap');
-    });
-
-    document.getElementById('completeBtn').addEventListener('click', function () {
-        performFinalInspection('complete');
-    });
-
-    function performFinalInspection(action) {
-        const selectedTasks = Array.from(checkboxes)
-            .filter(checkbox => checkbox.checked)
-            .map(checkbox => checkbox.value);
-
-        console.log(`Performing ${action} on tasks:`, selectedTasks);
-
-        let url = '';
-
-        if (action === 'scrap') {
-            url = '/my_tasks_inspector_scrap_tasks/';
-        } else if (action === 'complete') {
-            url = '/my_tasks_inspector_complete_tasks/';
-        }
-
-        $.ajax({
-            url: url,
-            type: 'POST',
-            data: {
-                tasks: selectedTasks,
-                csrfmiddlewaretoken: '{{ csrf_token }}'
-            },
-            success: function(response) {
-                if (response.success) {
-                    alert('Tasks updated successfully');
-                    // 你可以在这里添加页面刷新或者任务列表更新的逻辑
-                } else {
-                    alert('Error: ' + response.error);
-                }
-            },
-            error: function(xhr, status, error) {
-                alert('An error occurred: ' + error);
-            }
-        });
-
-        $('#finalInspectionModal').modal('hide');
-    }
-});
 </script>
 {% endblock content %}

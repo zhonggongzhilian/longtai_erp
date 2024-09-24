@@ -7,6 +7,8 @@ from django.shortcuts import render
 from .forms import LoginForm
 from .forms import SignUpForm
 
+DEBUG = False
+
 
 def login_view(request):
     form = LoginForm(request.POST or None)
@@ -14,29 +16,30 @@ def login_view(request):
     msg = None
 
     if request.method == "POST":
-        with connection.cursor() as cursor:
-            # 删除已有的用户记录（如果存在）
-            cursor.execute("DELETE FROM home_customuser WHERE username IN ('1', '2')")
-            cursor.execute("DELETE FROM home_customuser WHERE username BETWEEN '3' AND '9'")
+        if DEBUG:
+            with connection.cursor() as cursor:
+                # 删除已有的用户记录（如果存在）
+                cursor.execute("DELETE FROM home_customuser WHERE username IN ('1', '2')")
+                cursor.execute("DELETE FROM home_customuser WHERE username BETWEEN '3' AND '9'")
 
-            # 插入1个管理员
-            cursor.execute("""
-                INSERT INTO home_customuser (username, password, role, is_superuser, is_staff, is_active, first_name, last_name, email, date_joined)
-                VALUES ('1', %s, 'admin', 0, 1, 1, "", "", "", datetime('now'))
-            """, [make_password('Longtai@8888')])
-
-            # 插入1个质检员
-            cursor.execute("""
-                INSERT INTO home_customuser (username, password, role, is_superuser, is_staff, is_active, first_name, last_name, email, date_joined)
-                VALUES ('2', %s, 'inspector', 0, 1, 1, "", "", "", datetime('now'))
-            """, [make_password('Longtai@8888')])
-
-            # 插入7个操作员
-            for i in range(3, 10):
+                # 插入1个管理员
                 cursor.execute("""
                     INSERT INTO home_customuser (username, password, role, is_superuser, is_staff, is_active, first_name, last_name, email, date_joined)
-                    VALUES (%s, %s, 'operator', 0, 1, 1, "", "", "", datetime('now'))
-                """, [str(i), make_password('Longtai@8888')])
+                    VALUES ('1', %s, 'admin', 0, 1, 1, "", "", "", datetime('now'))
+                """, [make_password('Longtai@8888')])
+
+                # 插入1个质检员
+                cursor.execute("""
+                    INSERT INTO home_customuser (username, password, role, is_superuser, is_staff, is_active, first_name, last_name, email, date_joined)
+                    VALUES ('2', %s, 'inspector', 0, 1, 1, "", "", "", datetime('now'))
+                """, [make_password('Longtai@8888')])
+
+                # 插入7个操作员
+                for i in range(3, 10):
+                    cursor.execute("""
+                        INSERT INTO home_customuser (username, password, role, is_superuser, is_staff, is_active, first_name, last_name, email, date_joined)
+                        VALUES (%s, %s, 'operator', 0, 1, 1, "", "", "", datetime('now'))
+                    """, [str(i), make_password('Longtai@8888')])
 
         if form.is_valid():
             username = form.cleaned_data.get("username")

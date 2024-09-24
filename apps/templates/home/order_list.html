@@ -49,6 +49,7 @@
                             <th>订单结束日期</th>
                             <th>商品编码</th>
                             <th>商品类别</th>
+                            <th>总量</th>
                             <th>待处理数量</th>
                             <th>已完成数量</th>
                             <th>是否完成</th>
@@ -62,6 +63,7 @@
                             <td>{{ product.order_end_date }}</td>
                             <td>{{ product.product_code }}</td>
                             <td>{{ product.product_kind }}</td>
+                            <td>{{ product.product_num_total }}</td>
                             <td>{{ product.product_num_todo }}</td>
                             <td>{{ product.product_num_done }}</td>
                             <td>{% if product.is_done %}是{% else %}否{% endif %}</td>

@@ -63,8 +63,8 @@ urlpatterns = [
          name='my_tasks_inspector_complete_task'),
     path('my_tasks_inspector_complete_tasks/', views.my_tasks_inspector_complete_tasks,
          name='my_tasks_inspector_complete_tasks'),
-    path('my_tasks_inspector_scrap_tasks/', views.my_tasks_inspector_scrap_tasks,
-         name='my_tasks_inspector_scrap_tasks'),
+    path('my_tasks_inspector_scrap_tasks/', views.my_tasks_inspector_scrap_tasks, name='my_tasks_inspector_scrap_tasks'),
+    path('my_tasks_operator_one_btn_complete_tasks/', views.my_tasks_operator_one_btn_complete_tasks, name='my_tasks_operator_one_btn_complete_tasks'),
 
     path('tasks/add-urgent/', views.add_urgent_task, name='add_urgent_task'),
     path('generate_pdf/', views.generate_pdf, name='generate_pdf'),

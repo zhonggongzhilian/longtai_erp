@@ -7,7 +7,6 @@ import logging
 import os
 from datetime import datetime, time, timedelta
 from io import BytesIO
-import time as tt
 
 import pytz
 import qrcode
@@ -17,10 +16,8 @@ from django.core.exceptions import ValidationError
 from django.core.files.storage import FileSystemStorage
 from django.core.paginator import Paginator
 from django.core.serializers import serialize
-from django.db.models import CharField, When
-from django.db.models import Q,Case
+from django.db.models import Q
 from django.db.models import Sum
-from django.db.models.functions import Cast, Coalesce
 from django.http import HttpResponse
 from django.http import HttpResponseRedirect
 from django.http import JsonResponse
@@ -205,12 +202,14 @@ def index(request):
             # 获取产品的重量
             try:
                 product = Product.objects.get(product_code=order_product.product_code)
-                product_weight = product.weight
+                raw_code = product.raw_code
+                raw = Raw.objects.get(raw_code=raw_code)
+                raw_weight = raw.raw_weight
             except Product.DoesNotExist:
-                product_weight = 0  # 如果产品未找到，则重量为 0
+                raw_weight = 0  # 如果产品未找到，则重量为 0
 
             # 计算该产品的总重量并累加
-            order_weight += round(float(product_weight) * int(order_product.product_num_todo), 2)
+            order_weight += round(float(raw_weight) * int(order_product.product_num_todo), 2)
 
         # 累加到该月的总重量
         monthly_weights[month_str] += round(order_weight, 2)
@@ -495,6 +494,7 @@ def order_list(request):
             'product_kind': order_product.product_kind,
             'product_num_todo': order_product.product_num_todo,
             'product_num_done': order_product.product_num_done,
+            'product_num_total': order_product.product_num_todo + order_product.product_num_done,
             'is_done': order_product.is_done
         })
 
@@ -751,12 +751,12 @@ def raw_list(request):
         raws = Raw.objects.filter(
             Q(raw_code__icontains=search_query) |
             Q(raw_name__icontains=search_query)
-        ).values('raw_code', 'raw_name').annotate(
+        ).values('raw_code', 'raw_name', 'raw_weight').annotate(
             raw_num=Sum('raw_num')
         ).order_by('raw_name')
     else:
         # 如果没有搜索关键词，则获取所有毛坯，并按名称合并
-        raws = Raw.objects.values('raw_code', 'raw_name').annotate(
+        raws = Raw.objects.values('raw_code', 'raw_name', 'raw_weight').annotate(
             raw_num=Sum('raw_num')
         ).order_by('raw_name')
 
@@ -1193,6 +1193,48 @@ def my_tasks_inspector_complete_tasks(request):
 
 @csrf_exempt
 @login_required(login_url="/login/")
+def my_tasks_operator_one_btn_complete_tasks(request):
+    if request.method == 'POST':
+        task_ids = request.POST.getlist('tasks[]')
+
+        for task_id in task_ids:
+            task = Task.objects.get(id=task_id)
+            order_code = task.order_code
+            order = get_object_or_404(Order, order_code=order_code)
+
+            product_code = task.product_code
+            order_product = OrderProduct.objects.filter(product_code=product_code, order=order).last()
+            task.product_num_completed = int(task.product_num)
+            task.completed = 1
+
+            task.save()
+
+            if is_max_process(order_product):
+                order_product.product_num_done += task.product_num
+                order_product.product_num_todo -= task.product_num
+                if order_product.product_num_todo <= 0:
+                    order_product.is_done = 1
+                order_product.save()
+
+                # Update Order
+                order = order_product.order
+                if not OrderProduct.objects.filter(order=order, is_done=0).exists():
+                    order.is_done = 1
+                order.save()
+
+                # Update Weight
+                product = Product.objects.get(code=order_product.product_code)
+                weight = Weight.objects.get(product=product)
+                weight.weight += product.weight * task.product_num
+                weight.save()
+
+        return JsonResponse({'success': True,
+                             'product_num': task.product_num, })
+    return JsonResponse({'success': False})
+
+
+@csrf_exempt
+@login_required(login_url="/login/")
 def my_tasks_inspector_scrap_tasks(request):
     if request.method == 'POST':
         task_ids = request.POST.getlist('tasks[]')
@@ -1425,6 +1467,8 @@ class ProcessListView(ListView):
                 Q(product_code__icontains=search_query)
             )
 
+        queryset = queryset.order_by('product_code', 'process_i')
+
         return queryset
 
     def get_context_data(self, **kwargs):
@@ -1444,6 +1488,7 @@ class AddProcessView(View):
         else:
             return JsonResponse({'success': False, 'error': form.errors})
 
+
 @login_required(login_url="/login/")
 def get_process(request, process_id):
     process = get_object_or_404(Process, id=process_id)
@@ -1458,6 +1503,7 @@ def get_process(request, process_id):
         'is_last_process': process.is_last_process,
     }
     return JsonResponse(data)
+
 
 @login_required(login_url="/login/")
 def update_process(request, process_id):
