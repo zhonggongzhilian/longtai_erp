@@ -378,83 +378,7 @@
                 </div>
             </div>
         </div>
-        <div class="col-xl-4">
-            <div class="card">
-                <div class="card-header border-0">
-                    <div class="row align-items-center">
-                        <div class="col">
-                            <h3 class="mb-0">即将交付的订单</h3>
-                        </div>
-                    </div>
-                </div>
-                <div class="table-responsive">
-                    <!-- Projects table -->
-                    <table class="table align-items-center table-flush">
-                        <thead class="thead-light">
-                        <tr>
-                            <th scope="col">订单编号</th>
-                            <th scope="col">交付日期</th>
-                            <th scope="col">剩余天数</th>
-                        </tr>
-                        </thead>
-                        <tbody>
-                        {% for order in order_details %}
-                        <tr>
-                            <th scope="row">
-                                {{ order.order_code }}
-                            </th>
-                            <td>
-                                {{ order.end_date }}
-                            </td>
-                            <td>
-                                {{ order.remaining_days }} 天
-                            </td>
-                        </tr>
-                        {% endfor %}
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-        </div>
-        <div class="col-xl-8">
-            <div class="card">
-                <div class="card-header border-0">
-                    <div class="row align-items-center">
-                        <div class="col">
-                            <h3 class="mb-0">订单预计交付日期（请在全量排产完成后查看）</h3>
-                        </div>
-                    </div>
-                </div>
-                <div class="table-responsive">
-                    <!-- Projects table -->
-                    <table class="table align-items-center table-flush">
-                        <thead class="thead-light">
-                        <tr>
-                            <th scope="col">订单编号</th>
-                            <th scope="col">交付日期</th>
-                            <th scope="col">预计交付日期</th>
-                        </tr>
-                        </thead>
-                        <tbody>
-                        {% for order in order_delivery_dates %}
-                        <tr>
-                            <th scope="row">
-                                {{ order.order_code }}
-                            </th>
-                            <td>
-                                {{ order.order_end_date }}
-                            </td>
-                            <td>
-                                {{ order.estimated_delivery_date|date:"Y-m-d H:i" }}
-                            </td>
-                        </tr>
-                        {% endfor %}
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-        </div>
-        <div class="col-xl-4">
+            <div class="col-xl-4">
     <div class="card">
         <div class="card-header border-0">
             <div class="row align-items-center">
@@ -492,6 +416,53 @@
         </div>
     </div>
 </div>
+        <div class="col-xl-12">
+            <div class="card">
+                <div class="card-header border-0">
+                    <div class="row align-items-center">
+                        <div class="col">
+                            <h3 class="mb-0">订单详情</h3>
+                        </div>
+                    </div>
+                </div>
+                <div class="table-responsive">
+                    <!-- Projects table -->
+                    <table class="table align-items-center table-flush">
+                        <thead class="thead-light">
+                        <tr>
+                            <th scope="col">订单编号</th>
+                            <th scope="col">交付日期</th>
+                            <th scope="col">剩余天数</th>
+                            <th scope="col">预计交付日期</th>
+                        </tr>
+                        </thead>
+                        <tbody>
+                        {% for order in order_details_combined %}
+                        <tr>
+                            <th scope="row">
+                                {{ order.order_code }}
+                            </th>
+                            <td>
+                                {{ order.end_date }}
+                            </td>
+                            <td>
+                                {{ order.remaining_days }} 天
+                            </td>
+                            <td>
+                                {% if order.estimated_delivery_date %}
+                                    {{ order.estimated_delivery_date|date:"Y-m-d H:i" }}
+                                {% else %}
+                                    无预计交付日期
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
     </div>
 </div>
 
