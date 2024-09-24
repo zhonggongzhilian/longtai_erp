@@ -71,7 +71,6 @@ urlpatterns = [
     path('create-order/', views.create_order, name='create_order'),
 
     path('schedule-by-date/', views.schedule_by_date, name='schedule_by_date'),
-    path('get_all_data/', views.get_all_data, name='get_all_data'),
 
     path('processes/', ProcessListView.as_view(), name='process-list'),
     path('processes/add/', AddProcessView.as_view(), name='add_process'),

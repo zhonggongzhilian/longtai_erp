@@ -15,7 +15,6 @@ from django.contrib.auth.decorators import login_required
 from django.core.exceptions import ValidationError
 from django.core.files.storage import FileSystemStorage
 from django.core.paginator import Paginator
-from django.core.serializers import serialize
 from django.db.models import Q
 from django.db.models import Sum
 from django.http import HttpResponse
@@ -36,7 +35,7 @@ from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.lib.units import inch
 from reportlab.pdfbase import pdfmetrics
 from reportlab.pdfbase.ttfonts import TTFont
-from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer, PageBreak
+from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Spacer, PageBreak
 
 from .forms import CustomUserChangeForm, ProcessForm
 from .models import CustomUser
@@ -358,7 +357,6 @@ def index(request):
         'weights': weights,
 
         'device_details': device_details,
-
 
         'order_details_combined': order_details_combined,
 
@@ -1307,7 +1305,7 @@ def generate_pdf(request):
     # 为每个设备创建一个表格
     for device_name, device_tasks in tasks_by_device.items():
         # 表格数据
-        data = [['设备','开始时间', '是否换型', '商品', '工序号', '工序名', '数量']]
+        data = [['设备', '开始时间', '是否换型', '商品', '工序号', '工序名', '数量']]
         for task in device_tasks:
             start_time = task.task_start_time.astimezone(shanghai_tz)
             data.append([
@@ -1401,38 +1399,6 @@ def schedule_by_date(request):
             'success': False,
             'message': 'Invalid date format, please use YYYY-MM-DD'
         }, status=400)
-
-
-def get_all_data(request):
-    if request.method == 'GET':
-        # 获取所有模型的数据
-        users = serialize('json', CustomUser.objects.all())
-        raws = serialize('json', Raw.objects.all())
-        products = serialize('json', Product.objects.all())
-        devices = serialize('json', Device.objects.all())
-        orders = serialize('json', Order.objects.all())
-        order_products = serialize('json', OrderProduct.objects.all())
-        processes = serialize('json', Process.objects.all())
-        tasks = serialize('json', Task.objects.all())
-        weights = serialize('json', Weight.objects.all())
-
-        # 将所有数据组合成一个字典
-        data = {
-            'users': users,
-            'raws': raws,
-            'products': products,
-            'devices': devices,
-            'orders': orders,
-            'order_products': order_products,
-            'processes': processes,
-            'tasks': tasks,
-            'weights': weights,
-        }
-
-        # 返回 JSON 响应
-        return JsonResponse(data, safe=False)
-
-    return JsonResponse({'error': 'Invalid request method'}, status=405)
 
 
 class ProcessListView(ListView):

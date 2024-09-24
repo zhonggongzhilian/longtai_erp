@@ -401,7 +401,7 @@
                 {% for raw in remaining_quantities %}
                 <tr>
                     <th scope="row">
-                        {{ raw.raw_code }}
+                        <a href="{% url 'raw_list' %}?search={{ raw.raw_code }}">{{ raw.raw_code }}</a>
                     </th>
                     <td>
                         {{ raw.raw_name }}
@@ -440,7 +440,7 @@
                         {% for order in order_details_combined %}
                         <tr>
                             <th scope="row">
-                                {{ order.order_code }}
+                                <a href="{% url 'order_list' %}?search={{ order.order_code }}">{{ order.order_code }}</a>
                             </th>
                             <td>
                                 {{ order.end_date }}
