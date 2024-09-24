@@ -50,6 +50,7 @@ urlpatterns = [
     # My tasks
     path('filter_by_date/', views.filter_by_date, name='filter_by_date'),
     path('my-tasks/', views.my_tasks, name='my_tasks'),
+    path('my_tasks_done/', views.my_tasks_done, name='my_tasks_done'),
     path('tasks/filter_by_date/', views.filter_by_date, name='filter_by_date'),
     path('my_tasks_operator_detail/<int:task_id>/', views.my_tasks_operator_detail, name='my_tasks_operator_detail'),
     path('my_tasks_operator_complete_task/', views.my_tasks_operator_complete_task,

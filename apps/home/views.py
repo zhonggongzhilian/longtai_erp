@@ -683,12 +683,15 @@ def product_list(request):
     # 处理产品列表，添加原料代码
     product_list = []
     for product in page_obj:
+        raw = Raw.objects.get(raw_code=product.raw_code)
+        raw_weight = raw.raw_weight
         product_list.append({
             'product_code': product.product_code,
             'product_name': product.product_name,
             'product_kind': product.product_kind,
             'raw_code': product.raw_code,
-            'weight': product.weight
+            'weight': product.weight,
+            'raw_weight': raw_weight
         })
 
     context = {
@@ -838,7 +841,7 @@ def delete_result(request, result_id):
 
 @login_required(login_url="/login/")
 def process_schedule_fast(request):
-    from .job_scheduler_1 import schedule_production
+    from .job_scheduler import schedule_production
     if request.method == 'POST':
         Task.objects.all().delete()  # 清空 OrderProcessingResult 表
         schedule_production(fast=True)  # 重新计算排产结果
@@ -848,7 +851,7 @@ def process_schedule_fast(request):
 
 @login_required(login_url="/login/")
 def process_schedule(request):
-    from .job_scheduler_1 import schedule_production
+    from .job_scheduler import schedule_production
     if request.method == 'POST':
         Task.objects.all().delete()  # 清空 OrderProcessingResult 表
         schedule_production()  # 重新计算排产结果
@@ -958,19 +961,22 @@ def my_tasks(request):
     # 获取用户关联的设备列表
     if user.role == 'admin':
         devices = Device.objects.all()
-        tasks = Task.objects.all().order_by('task_start_time')
+        tasks = Task.objects.filter(
+            Q(completed=False) | Q(inspected=False)
+        ).order_by('task_start_time')
     elif user.role == 'inspector':
         devices = Device.objects.filter(inspector=user)
         related_device_names = devices.values_list('device_name', flat=True)
         tasks = Task.objects.filter(
             device_name__in=related_device_names,
-            completed=1,
+            inspected=False,
         ).order_by('task_start_time')
     else:
         devices = Device.objects.filter(operator=user)
         related_device_names = devices.values_list('device_name', flat=True)
         tasks = Task.objects.filter(
-            device_name__in=related_device_names
+            device_name__in=related_device_names,
+            completed=False,
         ).order_by('task_start_time')
 
     # 筛选任务
@@ -997,6 +1003,69 @@ def my_tasks(request):
     img = qr.make_image(fill='black', back_color='white')
 
     img_path = 'apps/static/assets/img/qrcode/my_tasks_qr.png'
+    os.makedirs(os.path.dirname(img_path), exist_ok=True)
+    img.save(img_path)
+
+    context = {
+        'tasks': tasks,
+        'devices': devices,
+        'selected_device': selected_device,
+        'user': user,
+        'qr_code_url': img_path,
+    }
+    return render(request, 'home/my_tasks.html', context)
+
+
+@login_required(login_url="/login/")
+def my_tasks_done(request):
+    user = request.user
+
+    # 获取用户关联的设备列表
+    if user.role == 'admin':
+        devices = Device.objects.all()
+        tasks = Task.objects.filter(
+            completed=True,
+            inspected=True
+        ).order_by('task_start_time')
+    elif user.role == 'inspector':
+        devices = Device.objects.filter(inspector=user)
+        related_device_names = devices.values_list('device_name', flat=True)
+        tasks = Task.objects.filter(
+            device_name__in=related_device_names,
+            inspected=True,
+        ).order_by('task_start_time')
+    else:
+        devices = Device.objects.filter(operator=user)
+        related_device_names = devices.values_list('device_name', flat=True)
+        tasks = Task.objects.filter(
+            device_name__in=related_device_names,
+            completed=True,
+        ).order_by('task_start_time')
+
+    # 筛选任务
+    selected_device = request.GET.get('device')
+    if selected_device:
+        tasks = tasks.filter(device_name=selected_device)
+
+    for task in tasks:
+        order_product = OrderProduct.objects.filter(product_code=task.product_code).first()
+        task.customer_name = order_product.order.order_custom_name if order_product else '未知客户'
+        product = Product.objects.filter(product_code=task.product_code).first()
+        task.product_name = product.product_name if product else '⚠️ 未知产品'
+
+    # 生成二维码
+    current_url = request.build_absolute_uri()
+    qr = qrcode.QRCode(
+        version=1,
+        error_correction=qrcode.constants.ERROR_CORRECT_L,
+        box_size=10,
+        border=4,
+    )
+    qr.add_data(current_url)
+    qr.make(fit=True)
+    img = qr.make_image(fill='black', back_color='white')
+
+    img_path = 'apps/static/assets/img/qrcode/my_tasks_done_qr.png'
     os.makedirs(os.path.dirname(img_path), exist_ok=True)
     img.save(img_path)
 
