@@ -748,6 +748,7 @@ def delete_product(request, product_id):
 @login_required(login_url="/login/")
 def raw_list(request):
     search_query = request.GET.get('search', '')  # 获取用户输入的搜索关键词
+    per_page = request.GET.get('per_page', 50)  # 获取用户自定义的每页数量，默认为50
 
     # 如果存在搜索关键词，过滤毛坯列表
     if search_query:
@@ -763,9 +764,16 @@ def raw_list(request):
             raw_num=Sum('raw_num')
         ).order_by('raw_name')
 
+    # 分页处理
+    paginator = Paginator(raws, per_page)
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+
     # 传递数据给模板
     context = {
-        'raws': raws,
+        'raws': page_obj,  # 使用分页后的对象
+        'page_obj': page_obj,  # 传递分页对象给模板
+        'per_page': per_page,  # 传递每页数量给模板
     }
     return render(request, 'home/raw_list.html', context)
 
@@ -809,7 +817,6 @@ def result_list(request):
         result.product_name = product.product_name if product else '⚠️ 未知产品'
 
         # 获取 OrderProduct 对象
-        order = Order.objects.filter()
         order_product = OrderProduct.objects.filter(product_code=result.product_code).first()
         if order_product:
             # 添加 customer_name 和 product_kind
@@ -823,7 +830,13 @@ def result_list(request):
             result.customer_name = '⚠️ 未知客户 1 '
             result.product_kind = '⚠️ 未知类别 1 '
 
-    return render(request, 'home/result_list.html', {'results': results})
+    # 分页处理
+    per_page = request.GET.get('per_page', 50)  # 获取用户自定义的每页数量，默认为50
+    paginator = Paginator(results, per_page)
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+
+    return render(request, 'home/result_list.html', {'results': page_obj, 'page_obj': page_obj, 'per_page': per_page})
 
 
 @login_required(login_url="/login/")
@@ -997,6 +1010,12 @@ def my_tasks(request):
         product = Product.objects.filter(product_code=task.product_code).first()
         task.product_name = product.product_name if product else '⚠️ 未知产品'
 
+    # 分页处理
+    per_page = request.GET.get('per_page', 50)  # 获取用户自定义的每页数量，默认为50
+    paginator = Paginator(tasks, per_page)
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+
     # 生成二维码
     current_url = request.build_absolute_uri()
     qr = qrcode.QRCode(
@@ -1014,11 +1033,13 @@ def my_tasks(request):
     img.save(img_path)
 
     context = {
-        'tasks': tasks,
+        'tasks': page_obj,
         'devices': devices,
         'selected_device': selected_device,
         'user': user,
         'qr_code_url': img_path,
+        'page_obj': page_obj,
+        'per_page': per_page,
     }
     return render(request, 'home/my_tasks.html', context)
 
