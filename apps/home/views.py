@@ -456,6 +456,8 @@ def upload(request):
     return JsonResponse({'status': 'error', 'message': 'Invalid request method'})
 
 
+from collections import defaultdict
+
 @login_required(login_url="/login/")
 def order_list(request):
     search_query = request.GET.get('search', '')  # 获取用户输入的搜索关键词
@@ -466,29 +468,74 @@ def order_list(request):
             Q(order__order_code__icontains=search_query) |
             Q(product_code__icontains=search_query) |
             Q(product_kind__icontains=search_query)
-        )
+        ).order_by('order__order_start_date')
     else:
         # 如果没有搜索关键词，则获取所有订单产品
-        order_products = OrderProduct.objects.select_related('order').all()
+        order_products = OrderProduct.objects.select_related('order').all().order_by('order__order_start_date')
 
     per_page = request.GET.get('per_page', 50)  # 获取用户自定义的每页数量
     paginator = Paginator(order_products, per_page)
     page_number = request.GET.get('page')
     page_obj = paginator.get_page(page_number)
 
-    # 处理产品列表，添加原料代码
+    # 获取当前页面的所有 product_code
+    product_codes = [op.product_code for op in page_obj]
+
+    # 仅获取当前页面需要的 Products
+    products = Product.objects.filter(product_code__in=product_codes)
+    product_dict = {product.product_code: product for product in products}
+
+    # 获取这些 Products 所涉及到的所有 raw_code
+    raw_codes = [product.raw_code for product in products if product.raw_code]
+    raws = Raw.objects.filter(raw_code__in=raw_codes)
+    raw_dict = {raw.raw_code: raw for raw in raws}
+
+    # 使用 defaultdict 来跟踪每个 raw_code 的累计使用量
+    raw_usage = defaultdict(int)  # key: raw_code, value: total product_num_todo used so far
+
+    # 处理产品列表，添加原料代码和剩余原料数量
     orders_content = []
     for order_product in page_obj:
+        product_code = order_product.product_code
+        product_num_todo = order_product.product_num_todo
+
+        # 获取对应的 Product 对象
+        product = product_dict.get(product_code)
+        if product:
+            raw_code = product.raw_code
+        else:
+            raw_code = None
+
+        # 获取对应的 Raw 对象并计算剩余原料数量
+        if raw_code:
+            raw = raw_dict.get(raw_code)
+            if raw:
+                initial_raw_num = raw.raw_num  # 初始的原料数量
+
+                # 累计使用量：之前的使用量加上当前的 product_num_todo
+                used_raw_num = raw_usage[raw_code] + product_num_todo
+
+                # 计算剩余原料数量
+                remain_raw_num = initial_raw_num - used_raw_num
+
+                # 更新累计使用量
+                raw_usage[raw_code] = used_raw_num
+            else:
+                remain_raw_num = 0
+        else:
+            remain_raw_num = 0
+
         orders_content.append({
             'order_code': order_product.order.order_code,
             'order_start_date': order_product.order.order_start_date,
             'order_end_date': order_product.order.order_end_date,
             'product_code': order_product.product_code,
             'product_kind': order_product.product_kind,
-            'product_num_todo': order_product.product_num_todo,
+            'product_num_todo': product_num_todo,
             'product_num_done': order_product.product_num_done,
-            'product_num_total': order_product.product_num_todo + order_product.product_num_done,
-            'is_done': order_product.is_done
+            'product_num_total': product_num_todo + order_product.product_num_done,
+            'is_done': order_product.is_done,
+            'remain_raw_num': remain_raw_num  # 添加剩余原料数量
         })
 
     context = {
@@ -498,7 +545,6 @@ def order_list(request):
         'search_query': search_query
     }
     return render(request, 'home/order_list.html', context)
-
 
 @login_required(login_url="/login/")
 def get_order(request, order_id):

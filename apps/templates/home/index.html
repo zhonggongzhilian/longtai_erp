@@ -443,8 +443,8 @@
                         {% for order in order_details_combined %}
                         <tr>
                             <th scope="row">
-                                <a href="{% url 'order_list' %}?search={{ order.order_code }}">{{ order.order_code
-                                    }}</a>
+                                <a href="{% url 'order_list' %}?search={{ order.order_code }}">
+                                    {{ order.order_code }}</a>
                             </th>
                             <td>
                                 {{ order.end_date }}
