@@ -683,8 +683,15 @@ def product_list(request):
     # 处理产品列表，添加原料代码
     product_list = []
     for product in page_obj:
-        raw = Raw.objects.get(raw_code=product.raw_code)
-        raw_weight = raw.raw_weight
+        if product.raw_code:
+            raws = Raw.objects.filter(raw_code=product.raw_code)
+            if raws.exists():
+                raw = raws.first()
+                raw_weight = raw.raw_weight
+            else:
+                raw_weight = None  # 或者设置一个默认值
+        else:
+            raw_weight = None  # 或者设置一个默认值
         product_list.append({
             'product_code': product.product_code,
             'product_name': product.product_name,

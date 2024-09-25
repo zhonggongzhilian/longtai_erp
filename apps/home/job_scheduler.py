@@ -210,8 +210,8 @@ def schedule_production(start_date_str='2024-01-10', fast=False):
 
         for device in devices:
             dv_start = datetime.now()
-            # 如果当前时间在设备的使用时间范围内，则跳过
-            if device.start_time <= current_time <= device.end_time:
+            # 检查设备是否故障，如果故障则跳过
+            if device.is_fault:
                 continue
 
             device_current_time = max(device.start_time, current_time)
