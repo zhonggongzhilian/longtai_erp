@@ -398,7 +398,7 @@
                 </tr>
                 </thead>
                 <tbody>
-                {% for raw in remaining_quantities %}
+                {% for raw in remaining_quantities|slice:":29" %}
                 <tr>
                     <th scope="row">
                         {{ raw.raw_code }}
