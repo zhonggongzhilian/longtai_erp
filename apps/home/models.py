@@ -42,6 +42,7 @@ class Raw(models.Model):
     raw_name = models.CharField(max_length=255, blank=True, null=True)
     raw_date_add = models.CharField(max_length=255, blank=True, null=True)
     raw_num = models.IntegerField(default=0)
+    raw_weight = models.IntegerField(default=0)
 
     def __str__(self):
         return f"{self.raw_code} - {self.raw_date_add}"
@@ -126,14 +127,40 @@ class OrderProduct(models.Model):
 
     @classmethod
     def from_dataframe_row(cls, row, order):
-        product = cls(
+        # 创建 OrderProduct 实例
+        order_product = cls(
             order=order,
             product_code=row['商品编码'],
             product_num_todo=row['数量'],
             product_kind=row['商品类别']
         )
-        product.save()  # 保存产品
-        return product
+        order_product.save()  # 保存 OrderProduct 实例
+
+        # 获取 '毛坯重量' 值
+        raw_weight = row.get('销售单价', None)
+        if raw_weight is not None:
+            try:
+                # 查找对应的 Product 实例
+                product = Product.objects.get(product_code=row['商品编码'])
+                raw_code = product.raw_code  # 获取对应的 raw_code
+                if raw_code:
+                    try:
+                        # 查找对应的 Raw 实例
+                        raw = Raw.objects.get(raw_code=raw_code)
+                        # 更新 raw_weight 字段
+                        raw.raw_weight = raw_weight
+                        raw.save()
+                    except Raw.DoesNotExist:
+                        # 如果 Raw 实例不存在，可以选择创建一个新的 Raw 实例或记录日志
+                        raw = Raw(raw_code=raw_code, raw_weight=raw_weight, raw_name='')
+                        raw.save()
+                else:
+                    # 如果 product 的 raw_code 为空，记录日志或采取其他操作
+                    pass
+            except Product.DoesNotExist:
+                # 如果 Product 实例不存在，可以选择创建一个新的 Product 实例或记录日志
+                pass
+        return order_product
 
 
 class Process(models.Model):

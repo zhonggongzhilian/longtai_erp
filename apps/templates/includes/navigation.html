@@ -36,47 +36,50 @@
                 <!-- Navigation items in list-group -->
                 <div class="list-group">
                     <a href="/"
-                       class="list-group-item list-group-item-action {% if request.resolver_match.url_name == '/' %} active {% endif %}">
+                       class="list-group-item list-group-item-action">
                         <i class="ni ni-tv-2 text-primary"></i> 数据看板
                     </a>
 
-                    {% if request.user.role == 'operator' or request.user.role == 'inspector'%}
                     <a href="{% url 'my_tasks' %}"
-                       class="list-group-item list-group-item-action {% if request.resolver_match.url_name == 'my_tasks' %} active {% endif %}">
+                       class="list-group-item list-group-item-action">
                         <i class="ni ni-single-02 text-pink"></i> 我的生产
                     </a>
-                    {% endif %}
+                    <a href="{% url 'my_tasks_done' %}"
+                       class="list-group-item list-group-item-action">
+                        <i class="ni ni-single-02 text-pink"></i> 已完成生产
+                    </a>
 
                     {% if request.user.role == 'admin' %}
                     <a href="{% url 'result_list' %}"
-                       class="list-group-item list-group-item-action {% if request.resolver_match.url_name == 'result_list' %} active {% endif %}">
+                       class="list-group-item list-group-item-action">
                         <i class="ni ni-calendar-grid-58 text-orange"></i> 排产计划
                     </a>
                     <a href="{% url 'order_list' %}"
-                       class="list-group-item list-group-item-action {% if request.resolver_match.url_name == 'order_list' %} active {% endif %}">
+                       class="list-group-item list-group-item-action">
                         <i class="ni ni-bullet-list-67 text-orange"></i> 订单信息
                     </a>
                     <a href="{% url 'product_list' %}"
-                       class="list-group-item list-group-item-action {% if request.resolver_match.url_name == 'product_list' %} active {% endif %}">
+                       class="list-group-item list-group-item-action">
                         <i class="ni ni-world-2 text-yellow"></i> 商品信息
                     </a>
                     <a href="{% url 'raw_list' %}"
-                       class="list-group-item list-group-item-action {% if request.resolver_match.url_name == 'raw_list' %} active {% endif %}">
+                       class="list-group-item list-group-item-action">
                         <i class="ni ni-basket text-green"></i> 毛坯信息
                     </a>
-                    <a href="{% url 'process-list' %}" class="list-group-item list-group-item-action {% if request.resolver_match.url_name == 'raw_list' %} active {% endif %}">
+                    <a href="{% url 'process-list' %}" class="list-group-item list-group-item-action">
                         <i class="fas fa-concierge-bell text-blue"></i> 工序信息
                     </a>
                     <a href="{% url 'device_list' %}"
-                       class="list-group-item list-group-item-action {% if request.resolver_match.url_name == 'device_list' %} active {% endif %}">
+                       class="list-group-item list-group-item-action">
                         <i class="ni ni-time-alarm text-red"></i> 设备信息
                     </a>
+
+                    {% endif %}
                     <div class="list-group-item list-group-item-secondary"></div>
                     <a href="{% url 'logout' %}"
                        class="list-group-item list-group-item-action {% if request.resolver_match.url_name == 'logout' %} active {% endif %}">
                         <i class="ni ni-user-run text-red"></i> 登出
                     </a>
-                    {% endif %}
                 </div>
             </div>
         </div>

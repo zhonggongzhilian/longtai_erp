@@ -50,6 +50,7 @@ urlpatterns = [
     # My tasks
     path('filter_by_date/', views.filter_by_date, name='filter_by_date'),
     path('my-tasks/', views.my_tasks, name='my_tasks'),
+    path('my_tasks_done/', views.my_tasks_done, name='my_tasks_done'),
     path('tasks/filter_by_date/', views.filter_by_date, name='filter_by_date'),
     path('my_tasks_operator_detail/<int:task_id>/', views.my_tasks_operator_detail, name='my_tasks_operator_detail'),
     path('my_tasks_operator_complete_task/', views.my_tasks_operator_complete_task,
@@ -63,15 +64,14 @@ urlpatterns = [
          name='my_tasks_inspector_complete_task'),
     path('my_tasks_inspector_complete_tasks/', views.my_tasks_inspector_complete_tasks,
          name='my_tasks_inspector_complete_tasks'),
-    path('my_tasks_inspector_scrap_tasks/', views.my_tasks_inspector_scrap_tasks,
-         name='my_tasks_inspector_scrap_tasks'),
+    path('my_tasks_inspector_scrap_tasks/', views.my_tasks_inspector_scrap_tasks, name='my_tasks_inspector_scrap_tasks'),
+    path('my_tasks_operator_one_btn_complete_tasks/', views.my_tasks_operator_one_btn_complete_tasks, name='my_tasks_operator_one_btn_complete_tasks'),
 
     path('tasks/add-urgent/', views.add_urgent_task, name='add_urgent_task'),
     path('generate_pdf/', views.generate_pdf, name='generate_pdf'),
     path('create-order/', views.create_order, name='create_order'),
 
     path('schedule-by-date/', views.schedule_by_date, name='schedule_by_date'),
-    path('get_all_data/', views.get_all_data, name='get_all_data'),
 
     path('processes/', ProcessListView.as_view(), name='process-list'),
     path('processes/add/', AddProcessView.as_view(), name='add_process'),

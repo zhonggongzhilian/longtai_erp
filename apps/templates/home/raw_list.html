@@ -44,6 +44,7 @@
                             <th scope="col">毛坯编码</th>
                             <th scope="col">毛坯名称</th>
                             <th scope="col">毛坯数量</th>
+                            <th scope="col">毛坯重量(KG)</th>
                         </tr>
                         </thead>
                         <tbody>
@@ -52,6 +53,7 @@
                             <td>{{ raw.raw_code }}</td>
                             <td>{{ raw.raw_name }}</td>
                             <td>{{ raw.raw_num }}</td>
+                            <td>{{ raw.raw_weight }}</td>
                         </tr>
                         {% endfor %}
                         </tbody>
@@ -65,7 +67,7 @@
                             <li class="page-item">
                                 <a class="page-link" href="?page=1&per_page={{ per_page }}" tabindex="-1">
                                     <i class="fas fa-angle-double-left"></i>
-                                    <span class="sr-only">第一页</span>
+                                    <span class="sr-only">First</span>
                                 </a>
                             </li>
                             <li class="page-item">
@@ -73,19 +75,35 @@
                                    href="?page={{ page_obj.previous_page_number }}&per_page={{ per_page }}"
                                    tabindex="-1">
                                     <i class="fas fa-angle-left"></i>
-                                    <span class="sr-only">上一页</span>
+                                    <span class="sr-only">Previous</span>
+                                </a>
+                            </li>
+                            {% else %}
+                            <li class="page-item disabled">
+                                <a class="page-link" href="#" tabindex="-1">
+                                    <i class="fas fa-angle-double-left"></i>
+                                    <span class="sr-only">First</span>
+                                </a>
+                            </li>
+                            <li class="page-item disabled">
+                                <a class="page-link" href="#" tabindex="-1">
+                                    <i class="fas fa-angle-left"></i>
+                                    <span class="sr-only">Previous</span>
                                 </a>
                             </li>
                             {% endif %}
 
-                            {% for num in paginator.page_range %}
-                            {% if page_obj.number|add:'-2' <= num <= page_obj.number|add:'2' %}
-                            {% if num == page_obj.number %}
-                            <li class="page-item active"><span class="page-link">{{ num }}</span></li>
+                            {% for num in page_obj.paginator.page_range %}
+                            {% if num > page_obj.number|add:-3 and num < page_obj.number|add:3 %}
+                            {% ifequal page_obj.number num %}
+                            <li class="page-item active">
+                                <a class="page-link" href="?page={{ num }}&per_page={{ per_page }}">{{ num }}</a>
+                            </li>
                             {% else %}
-                            <li class="page-item"><a class="page-link" href="?page={{ num }}&per_page={{ per_page }}">
-                                {{num}} </a></li>
-                            {% endif %}
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ num }}&per_page={{ per_page }}">{{ num }}</a>
+                            </li>
+                            {% endifequal %}
                             {% endif %}
                             {% endfor %}
 
@@ -94,13 +112,27 @@
                                 <a class="page-link"
                                    href="?page={{ page_obj.next_page_number }}&per_page={{ per_page }}">
                                     <i class="fas fa-angle-right"></i>
-                                    <span class="sr-only">下一页</span>
+                                    <span class="sr-only">Next</span>
                                 </a>
                             </li>
                             <li class="page-item">
-                                <a class="page-link" href="?page={{ paginator.num_pages }}&per_page={{ per_page }}">
+                                <a class="page-link"
+                                   href="?page={{ page_obj.paginator.num_pages }}&per_page={{ per_page }}">
                                     <i class="fas fa-angle-double-right"></i>
-                                    <span class="sr-only">最后一页</span>
+                                    <span class="sr-only">Last</span>
+                                </a>
+                            </li>
+                            {% else %}
+                            <li class="page-item disabled">
+                                <a class="page-link" href="#">
+                                    <i class="fas fa-angle-right"></i>
+                                    <span class="sr-only">Next</span>
+                                </a>
+                            </li>
+                            <li class="page-item disabled">
+                                <a class="page-link" href="#">
+                                    <i class="fas fa-angle-double-right"></i>
+                                    <span class="sr-only">Last</span>
                                 </a>
                             </li>
                             {% endif %}

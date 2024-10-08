@@ -19,7 +19,6 @@
                         </a>
                     </li>
 
-                    {% if request.user.role == 'operator' or request.user.role == 'inspector' or request.user.role == 'admin' %}
                     <li class="nav-item">
                         <a class="nav-link"
                            href="{% url 'my_tasks' %}">
@@ -27,7 +26,13 @@
                             <span class="nav-link-text">我的生产</span>
                         </a>
                     </li>
-                    {% endif %}
+                    <li class="nav-item">
+                        <a class="nav-link"
+                           href="{% url 'my_tasks_done' %}">
+                            <i class="ni ni-single-02 text-green"></i>
+                            <span class="nav-link-text">已完成生产</span>
+                        </a>
+                    </li>
 
                     {% if request.user.role == 'admin' %}
                     <li class="nav-item">
