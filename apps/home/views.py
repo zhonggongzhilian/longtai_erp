@@ -501,10 +501,9 @@ def order_list(request):
 
         # 获取对应的 Product 对象
         product = product_dict.get(product_code)
-        if product:
-            raw_code = product.raw_code
-        else:
-            raw_code = None
+        product_name = product.product_name if product else "未知商品"  # 获取商品名称或默认为"未知商品"
+
+        raw_code = product.raw_code if product else None
 
         # 获取对应的 Raw 对象并计算剩余原料数量
         if raw_code:
@@ -530,6 +529,7 @@ def order_list(request):
             'order_start_date': order_product.order.order_start_date,
             'order_end_date': order_product.order.order_end_date,
             'product_code': order_product.product_code,
+            'product_name': product_name,  # 添加商品名称
             'product_kind': order_product.product_kind,
             'product_num_todo': product_num_todo,
             'product_num_done': order_product.product_num_done,
