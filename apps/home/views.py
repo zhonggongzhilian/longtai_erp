@@ -7,11 +7,13 @@ import logging
 import os
 from datetime import datetime, time, timedelta
 from io import BytesIO
-
+from itertools import groupby
+import pandas as pd
 import pytz
 import qrcode
 from django import template
 from django.contrib.auth.decorators import login_required
+from django.contrib.auth.hashers import make_password
 from django.core.exceptions import ValidationError
 from django.core.files.storage import FileSystemStorage
 from django.core.paginator import Paginator
@@ -28,7 +30,7 @@ from django.utils import timezone
 from django.utils.dateparse import parse_date
 from django.views import View
 from django.views.decorators.csrf import csrf_exempt
-from django.views.decorators.http import require_POST
+from django.views.decorators.http import require_POST, require_http_methods
 from django.views.generic import ListView
 from reportlab.lib.pagesizes import A4
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
@@ -128,7 +130,6 @@ def user_list_create(request):
             return JsonResponse({'error': 'An error occurred while creating the user.'}, status=500)
     else:
         return JsonResponse({'error': 'Invalid request method.'}, status=405)
-
 
 @login_required(login_url="/login/")
 def index(request):
@@ -263,8 +264,8 @@ def index(request):
 
         device_details.append({
             'device_name': device.device_name,
-            'operator': device.operator.username if device.operator else 'N/A',
-            'inspector': device.inspector.username if device.inspector else 'N/A',
+            'operator': device.operators.first().username if device.operators.exists() else 'N/A',
+            'inspector': device.inspectors.first().username if device.inspectors.exists() else 'N/A',
             'load_percentage': load_percentage
         })
 
@@ -1075,13 +1076,11 @@ def add_urgent_task(request):
 
 
 # My tasks
-
-
 @login_required(login_url="/login/")
 def my_tasks(request):
     user = request.user
 
-    # 获取用户关联的设备列表
+    # 获取任务数据
     if user.role == 'admin':
         devices = Device.objects.all()
         tasks = Task.objects.filter(
@@ -1102,24 +1101,41 @@ def my_tasks(request):
             completed=False,
         ).order_by('task_start_time')
 
-    # 筛选任务
+    # 筛选设备
     selected_device = request.GET.get('device')
     if selected_device:
         tasks = tasks.filter(device_name=selected_device)
 
-    for task in tasks:
-        order_product = OrderProduct.objects.filter(product_code=task.product_code).first()
-        task.customer_name = order_product.order.order_custom_name if order_product else '未知客户'
-        product = Product.objects.filter(product_code=task.product_code).first()
-        task.product_name = product.product_name if product else '⚠️ 未知产品'
+    # 任务合并处理：按执行时间顺序合并相邻的相同商品编号的任务
+    merged_tasks = []
+    current_task = None
 
-    # 分页处理
-    per_page = request.GET.get('per_page', 50)  # 获取用户自定义的每页数量，默认为50
-    paginator = Paginator(tasks, per_page)
+    for task in tasks:
+        if current_task and task.product_code == current_task.product_code and (
+                task.task_start_time - current_task.task_end_time) <= timedelta(minutes=5):
+            # 合并相邻的相同商品编号的任务
+            current_task.grouped_tasks.append(task)
+            current_task.task_end_time = task.task_end_time  # 更新结束时间为最新任务的结束时间
+            current_task.product_num += task.product_num  # 更新生产数量
+        else:
+            # 完成当前合并任务，添加到列表
+            if current_task:
+                merged_tasks.append(current_task)
+            # 初始化新的合并任务
+            current_task = task
+            current_task.grouped_tasks = [task]
+
+    # 添加最后一个合并任务
+    if current_task:
+        merged_tasks.append(current_task)
+
+    # 分页
+    per_page = request.GET.get('per_page', 50)
+    paginator = Paginator(merged_tasks, per_page)
     page_number = request.GET.get('page')
     page_obj = paginator.get_page(page_number)
 
-    # 生成二维码
+    # 生成二维码（保持原样）
     current_url = request.build_absolute_uri()
     qr = qrcode.QRCode(
         version=1,
@@ -1130,7 +1146,6 @@ def my_tasks(request):
     qr.add_data(current_url)
     qr.make(fit=True)
     img = qr.make_image(fill='black', back_color='white')
-
     img_path = 'apps/static/assets/img/qrcode/my_tasks_qr.png'
     os.makedirs(os.path.dirname(img_path), exist_ok=True)
     img.save(img_path)
@@ -1145,7 +1160,6 @@ def my_tasks(request):
         'per_page': per_page,
     }
     return render(request, 'home/my_tasks.html', context)
-
 
 @login_required(login_url="/login/")
 def my_tasks_done(request):
