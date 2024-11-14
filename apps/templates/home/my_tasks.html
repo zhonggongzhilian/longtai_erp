@@ -35,93 +35,140 @@
                             </form>
                         </div>
                         <div class="col-auto">
-                            <button class="btn btn-primary" id="generatePdfBtn">
-                                生产作业清单
-                            </button>
+                            <button class="btn btn-primary" id="generatePdfBtn">生产作业清单</button>
                             {% if user.role == 'admin' %}
-                            <button class="btn btn-danger" data-toggle="modal" data-target="#addUrgentTaskModal">
-                                添加紧急任务
-                            </button>
+                            <button class="btn btn-danger" data-toggle="modal" data-target="#addUrgentTaskModal">添加紧急任务</button>
                             {% endif %}
                             {% if user.role == 'operator' %}
-                            <button class="btn btn-success" id="finalOperateBtn" disabled>
-                                一键报工
-                            </button>
+                            <button class="btn btn-success" id="finalOperateBtn" disabled>一键报工</button>
                             {% endif %}
                             {% if user.role == 'inspector' %}
-                            <button class="btn btn-info" id="finalInspectionBtn" disabled>
-                                终检工序
-                            </button>
+                            <button class="btn btn-info" id="finalInspectionBtn" disabled>终检工序</button>
                             {% endif %}
                         </div>
                     </div>
                 </div>
 
-            <div class="table-responsive">
-                <table class="table align-items-center table-flush">
-                    <thead class="thead-light">
-                        <tr>
-                            <th scope="col"><input type="checkbox" id="selectAll"></th>
-                            <th scope="col">执行时间</th>
-                            <th scope="col">完成时间</th>
-                            <th scope="col">换型</th>
-                            {% if request.user.role == 'admin' %}
-                            <th scope="col">订单编号</th>
-                            {% endif %}
-                            <th scope="col">商品编号</th>
-                            <th scope="col">商品名称</th>
-                            <th scope="col">工序号</th>
-                            <th scope="col">工序名称</th>
-                            <th scope="col">设备</th>
-                            <th scope="col">生产数量</th>
-                            {% if request.user.role == 'operator' %}
-                            <th scope="col">已完成</th>
-                            <th scope="col">生产操作</th>
-                            {% endif %}
-                            {% if request.user.role == 'inspector' %}
-                            <th scope="col">已检查</th>
-                            <th scope="col">质检操作</th>
-                            {% endif %}
-                        </tr>
-                    </thead>
-                    <tbody id="resultTableBody">
-                        {% for task in tasks %}
-                        <tr class="task-row {% if task.completed and task.inspected %}completed-and-inspected-task{% elif task.completed %}completed-task{% elif task.inspected %}inspected-task{% endif %}"
-                            data-id="{{ task.id }}">
-                            <td><input type="checkbox" class="select-task" value="{{ task.id }}"></td>
-                            <td>{{ task.task_start_time }}</td>
-                            <td>{{ task.task_end_time }}</td>
-                            <td>{{ task.is_changeover }}</td>
-                            {% if request.user.role == 'admin' %}
-                            <td>{{ task.order_code }}</td>
-                            {% endif %}
-                            <td>{{ task.product_code }}</td>
+                <div class="table-responsive">
+                    <table class="table align-items-center table-flush">
+                        <thead class="thead-light">
+                            <tr>
+                                <th scope="col"><input type="checkbox" id="selectAll"></th>
+                                <th scope="col">执行时间</th>
+                                <th scope="col">完成时间</th>
+                                <th scope="col">换型</th>
+                                {% if request.user.role == 'admin' %}
+                                <th scope="col">订单编号</th>
+                                {% endif %}
+                                <th scope="col">商品编号</th>
+                                <th scope="col">商品名称</th>
+                                <th scope="col">工序号</th>
+                                <th scope="col">工序名称</th>
+                                <th scope="col">设备</th>
+                                <th scope="col">生产数量</th>
+                                {% if request.user.role == 'operator' %}
+                                <th scope="col">已完成</th>
+                                <th scope="col">生产操作</th>
+                                {% endif %}
+                                {% if request.user.role == 'inspector' %}
+                                <th scope="col">已检查</th>
+                                <th scope="col">质检操作</th>
+                                {% endif %}
+                                <th scope="col">详情</th>
+                            </tr>
+                        </thead>
+                        <tbody id="resultTableBody">
+                            {% for task in tasks %}
+                            <tr class="task-row {% if task.completed and task.inspected %}completed-and-inspected-task{% elif task.completed %}completed-task{% elif task.inspected %}inspected-task{% endif %}" data-id="{{ task.id }}">
+                                <td><input type="checkbox" class="select-task" value="{{ task.id }}"></td>
+                                <td>{{ task.task_start_time }}</td>
+                                <td>{{ task.task_end_time }}</td>
+                                <td>{{ task.is_changeover }}</td>
+                                {% if request.user.role == 'admin' %}
+                                <td>{{ task.order_code }}</td>
+                                {% endif %}
+                                <td>{{ task.product_code }}</td>
+                                <td>{{ task.product_name }}</td>
+                                <td>{{ task.process_i }}</td>
+                                <td>{{ task.process_name }}</td>
+                                <td>{{ task.device_name }}</td>
+                                <td>{{ task.product_num }}</td>
+                                {% if request.user.role == 'operator' %}
+                                <td>{{ task.product_num_completed }}</td>
+                                <td>
+                                    <a href="{% url 'my_tasks_operator_detail' task.id %}" class="btn btn-success btn-sm">报工</a>
+                                </td>
+                                {% elif request.user.role == 'inspector' %}
+                                <td>{{ task.product_num_inspected }}</td>
+                                <td>
+                                    <a href="{% url 'my_tasks_inspector_detail' task.id %}" class="btn btn-info btn-sm">检查</a>
+                                </td>
+                                {% endif %}
+                                <td>
+                                    <button class="btn btn-secondary toggle-details-btn" data-target="#task-{{ task.id }}">
+                                        查看详情
+                                    </button>
+                                </td>
+                            </tr>
+                            <!-- 展开显示合并前的任务列表 -->
+                            <tr id="task-{{ task.id }}" class="task-details" style="display: none;">
+                                <td colspan="100%">
+                                    <div class="card">
+                                        <div class="card-body">
+                                            <table class="table">
+                                                <thead>
+                                                    <tr>
+                                                        <th>执行时间</th>
+                                                        <th>完成时间</th>
+                                                        <th>换型</th>
+                                                        <th>订单编号</th>
+                                                        <th>商品编号</th>
+                                                        <th>商品名称</th>
+                                                        <th>工序号</th>
+                                                        <th>工序名称</th>
+                                                        <th>设备</th>
+                                                        <th>生产数量</th>
+                                                        {% if request.user.role == 'operator' %}
+                                                        <th>已完成</th>
+                                                        {% endif %}
+                                                        {% if request.user.role == 'inspector' %}
+                                                        <th>已检查</th>
+                                                        {% endif %}
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    {% for sub_task in task.grouped_tasks %}
+                                                    <tr>
+                                                        <td>{{ sub_task.task_start_time }}</td>
+                                                        <td>{{ sub_task.task_end_time }}</td>
+                                                        <td>{{ sub_task.is_changeover }}</td>
+                                                        <td>{{ sub_task.order_code }}</td>
+                                                        <td>{{ sub_task.product_code }}</td>
+                                                        <td>{{ sub_task.product_name }}</td>
+                                                        <td>{{ sub_task.process_i }}</td>
+                                                        <td>{{ sub_task.process_name }}</td>
+                                                        <td>{{ sub_task.device_name }}</td>
+                                                        <td>{{ sub_task.product_num }}</td>
+                                                        {% if request.user.role == 'operator' %}
+                                                        <td>{{ sub_task.product_num_completed }}</td>
+                                                        {% endif %}
+                                                        {% if request.user.role == 'inspector' %}
+                                                        <td>{{ sub_task.product_num_inspected }}</td>
+                                                        {% endif %}
+                                                    </tr>
+                                                    {% endfor %}
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
 
-                            <td>{{ task.product_name }}</td>
-                            <td>{{ task.process_i }}</td>
-                            <td>{{ task.process_name }}</td>
-                            <td>{{ task.device_name }}</td>
-                            <td>{{ task.product_num }}</td>
-                            {% if request.user.role == 'operator' %}
-                            <td>{{ task.product_num_completed }}</td>
-                            <td>
-                                <a href="{% url 'my_tasks_operator_detail' task.id %}" class="btn btn-success btn-sm">
-                                    报工
-                                </a>
-                            </td>
-                            {% elif request.user.role == 'inspector' %}
-                            <td>{{ task.product_num_inspected }}</td>
-                            <td>
-                                <a href="{% url 'my_tasks_inspector_detail' task.id %}" class="btn btn-info btn-sm">
-                                    检查
-                                </a>
-                            </td>
-                            {% endif %}
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
-            </div>
+                <!-- 分页控件 -->
                 <div class="card-footer py-4">
                     <nav aria-label="...">
                         <ul class="pagination justify-content-end mb-0">
@@ -202,7 +249,6 @@
                     </nav>
                 </div>
             </div>
-
         </div>
     </div>
 </div>
@@ -226,9 +272,7 @@
     </div>
 </div>
 
-
-<div class="modal fade" id="addUrgentTaskModal" tabindex="-1" role="dialog" aria-labelledby="addUrgentTaskModalLabel"
-     aria-hidden="true">
+<div class="modal fade" id="addUrgentTaskModal" tabindex="-1" role="dialog" aria-labelledby="addUrgentTaskModalLabel" aria-hidden="true">
     <div class="modal-dialog" role="document">
         <div class="modal-content">
             <div class="modal-header">
@@ -241,13 +285,11 @@
                 <div class="modal-body">
                     <div class="form-group">
                         <label for="executionTime">执行时间</label>
-                        <input type="datetime-local" class="form-control" id="executionTime" name="task_start_time"
-                               required>
+                        <input type="datetime-local" class="form-control" id="executionTime" name="task_start_time" required>
                     </div>
                     <div class="form-group">
                         <label for="completionTime">完成时间</label>
-                        <input type="datetime-local" class="form-control" id="completionTime" name="task_end_time"
-                               required>
+                        <input type="datetime-local" class="form-control" id="completionTime" name="task_end_time" required>
                     </div>
                     <div class="form-group">
                         <label for="order">订单</label>
@@ -295,13 +337,20 @@
 
 <script>
     $(document).ready(function () {
+        // 使用 slideToggle 展开/收起详情，并切换按钮文本
+        $('.toggle-details-btn').click(function () {
+            var target = $(this).data('target');
+            $(target).slideToggle();
+            var text = $(this).text() === '查看详情' ? '收起详情' : '查看详情';
+            $(this).text(text);
+        });
+
         // 一键报工按钮逻辑
         const finalOperateBtn = document.getElementById('finalOperateBtn');
         const selectAllCheckbox = document.getElementById('selectAll');
         const checkboxes = document.querySelectorAll('.select-task');
 
         if (finalOperateBtn) {
-            // 全选功能
             selectAllCheckbox.addEventListener('change', function () {
                 checkboxes.forEach(checkbox => {
                     checkbox.checked = selectAllCheckbox.checked;
@@ -309,21 +358,17 @@
                 toggleFinalOperateBtn();
             });
 
-            // 单选功能
             checkboxes.forEach(checkbox => {
                 checkbox.addEventListener('change', toggleFinalOperateBtn);
             });
 
-            // 一键报工按钮状态
             function toggleFinalOperateBtn() {
                 const anyChecked = Array.from(checkboxes).some(checkbox => checkbox.checked);
                 finalOperateBtn.disabled = !anyChecked;
             }
 
-            // 初始化按钮状态
             toggleFinalOperateBtn();
 
-            // 一键报工按钮点击事件
             finalOperateBtn.addEventListener('click', function () {
                 const selectedTasks = Array.from(checkboxes)
                     .filter(checkbox => checkbox.checked)
@@ -351,10 +396,8 @@
             });
         }
 
-        // 终检工序按钮逻辑
         const finalInspectionBtn = document.getElementById('finalInspectionBtn');
         if (finalInspectionBtn) {
-            // 全选功能（如果适用）
             selectAllCheckbox.addEventListener('change', function () {
                 checkboxes.forEach(checkbox => {
                     checkbox.checked = selectAllCheckbox.checked;
@@ -362,26 +405,21 @@
                 toggleFinalInspectionBtn();
             });
 
-            // 单选功能
             checkboxes.forEach(checkbox => {
                 checkbox.addEventListener('change', toggleFinalInspectionBtn);
             });
 
-            // 终检工序按钮状态
             function toggleFinalInspectionBtn() {
                 const anyChecked = Array.from(checkboxes).some(checkbox => checkbox.checked);
                 finalInspectionBtn.disabled = !anyChecked;
             }
 
-            // 初始化按钮状态
             toggleFinalInspectionBtn();
 
-            // 终检工序按钮点击事件
             finalInspectionBtn.addEventListener('click', function () {
                 $('#finalInspectionModal').modal('show');
             });
 
-            // 处理模态框中的操作
             document.getElementById('scrapBtn').addEventListener('click', function () {
                 performFinalInspection('scrap');
             });
@@ -427,7 +465,6 @@
             }
         }
 
-        // 添加紧急任务表单提交
         $('#addUrgentTaskForm').on('submit', function (e) {
             e.preventDefault();
             const formData = $(this).serialize();
@@ -451,7 +488,6 @@
             });
         });
 
-        // 生成PDF按钮点击事件
         $('#generatePdfBtn').on('click', function() {
             window.location.href = "{% url 'generate_pdf' %}";
         });

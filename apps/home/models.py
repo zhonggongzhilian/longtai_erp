@@ -68,14 +68,13 @@ class Device(models.Model):
     device_name = models.CharField(max_length=255, unique=True)
     changeover_time = models.CharField(max_length=255, default="10")
     raw = models.CharField(max_length=255, blank=True, null=True)
-    operator = models.ForeignKey(CustomUser, related_name='operator_devices', null=True, blank=True,
-                                 on_delete=models.SET_NULL)
-    inspector = models.ForeignKey(CustomUser, related_name='inspector_devices', null=True, blank=True,
-                                  on_delete=models.SET_NULL)
+    operators = models.ManyToManyField(CustomUser, related_name='operator_devices', blank=True)
+    inspectors = models.ManyToManyField(CustomUser, related_name='inspector_devices', blank=True)
 
     start_time = models.DateTimeField(default=timezone.make_aware(datetime(1970, 1, 1)))
     end_time = models.DateTimeField(default=timezone.make_aware(datetime(1970, 1, 1)))
     is_fault = models.BooleanField(default=False)
+    efficiency = models.FloatField(default=1.0)  # 生产效率值，默认为1
 
     def __str__(self):
         return self.device_name

@@ -2,16 +2,18 @@
 """
 Copyright (c) 2019 - present AppSeed.us
 """
-
+import csv
 import logging
 import os
 from datetime import datetime, time, timedelta
 from io import BytesIO
-
+from itertools import groupby
+import pandas as pd
 import pytz
 import qrcode
 from django import template
 from django.contrib.auth.decorators import login_required
+from django.contrib.auth.hashers import make_password
 from django.core.exceptions import ValidationError
 from django.core.files.storage import FileSystemStorage
 from django.core.paginator import Paginator
@@ -28,7 +30,7 @@ from django.utils import timezone
 from django.utils.dateparse import parse_date
 from django.views import View
 from django.views.decorators.csrf import csrf_exempt
-from django.views.decorators.http import require_POST
+from django.views.decorators.http import require_POST, require_http_methods
 from django.views.generic import ListView
 from reportlab.lib.pagesizes import A4
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
@@ -129,7 +131,6 @@ def user_list_create(request):
     else:
         return JsonResponse({'error': 'Invalid request method.'}, status=405)
 
-
 @login_required(login_url="/login/")
 def index(request):
     from collections import Counter
@@ -198,14 +199,24 @@ def index(request):
         # 计算该订单的总重量
         order_weight = 0
         for order_product in order_products:
-            # 获取产品的重量
+            # 初始化 raw_weight 为 0
+            raw_weight = 0
+
             try:
                 product = Product.objects.get(product_code=order_product.product_code)
+            except Product.DoesNotExist:
+                # 如果产品未找到，则重量为 0 并继续下一个产品的处理
+                logger.error(f"Product with code {order_product.product_code} does not exist.")
+                continue
+
+            try:
                 raw_code = product.raw_code
                 raw = Raw.objects.get(raw_code=raw_code)
                 raw_weight = raw.raw_weight
-            except Product.DoesNotExist:
-                raw_weight = 0  # 如果产品未找到，则重量为 0
+            except Raw.DoesNotExist:
+                # 如果原材料未找到，则重量为 0
+                logger.error(f"Raw with code {raw_code} does not exist.")
+                # 可以在这里选择是否继续处理其他产品或中断循环
 
             # 计算该产品的总重量并累加
             order_weight += round(float(raw_weight) * int(order_product.product_num_todo), 2)
@@ -253,8 +264,8 @@ def index(request):
 
         device_details.append({
             'device_name': device.device_name,
-            'operator': device.operator.username if device.operator else 'N/A',
-            'inspector': device.inspector.username if device.inspector else 'N/A',
+            'operator': device.operators.first().username if device.operators.exists() else 'N/A',
+            'inspector': device.inspectors.first().username if device.inspectors.exists() else 'N/A',
             'load_percentage': load_percentage
         })
 
@@ -340,6 +351,48 @@ def index(request):
     # 按剩余数量从低到高排序
     remaining_quantities.sort(key=lambda x: x['remaining_quantity'])
 
+    # 统计每个毛坯编码的总数量
+    raw_quantities = Raw.objects.values('raw_code', 'raw_name').annotate(total_quantity=Sum('raw_num'))
+
+    # 统计所有 process_i 为 1 的任务中对应毛坯的消耗数量
+    task_consumptions = Task.objects.filter(process_i=1).values('product_code').annotate(
+        total_consumption=Sum('product_num')
+    )
+
+    # 创建一个字典来存储每个 raw_code 的消耗数量
+    consumption_dict = defaultdict(int)
+
+    for task in task_consumptions:
+        # 获取对应的产品
+        product_code = task['product_code']
+        product = Product.objects.filter(product_code=product_code).first()
+        if product and product.raw_code:
+            # 将产品的消耗数量加到对应的 raw_code 上
+            raw_code = product.raw_code
+            consumption_dict[raw_code] += task['total_consumption']
+
+    # 创建一个字典来存储每个 raw_code 的订单总需求数量
+    order需求_dict = defaultdict(int)
+
+    # 遍历所有订单产品，累加每个毛坯的需求数量
+    for order_product in OrderProduct.objects.all():
+        product = Product.objects.filter(product_code=order_product.product_code).first()
+        if product and product.raw_code:
+            raw_code = product.raw_code
+            order需求_dict[raw_code] += order_product.product_num_todo
+
+    # 计算缺货毛坯数量
+    shortage_raw_quantity = 0
+    for raw in raw_quantities:
+        raw_code = raw['raw_code']
+        total_quantity = raw['total_quantity']
+        consumed_quantity = consumption_dict.get(raw_code, 0)
+        ordered_quantity = order需求_dict.get(raw_code, 0)
+        total_demand = consumed_quantity + ordered_quantity
+        shortage = total_demand - total_quantity
+        if shortage > 0:
+            shortage_raw_quantity += shortage
+
     context = {
         'segment': 'index',
         'orders_count': orders_count,
@@ -360,7 +413,9 @@ def index(request):
 
         'order_details_combined': order_details_combined,
 
-        'remaining_quantities': remaining_quantities,
+        'remaining_quantities': remaining_quantities[:29],
+
+        'shortage_raw_quantity': shortage_raw_quantity,  # 添加缺货毛坯数量
     }
 
     html_template = loader.get_template('home/index.html')
@@ -501,10 +556,9 @@ def order_list(request):
 
         # 获取对应的 Product 对象
         product = product_dict.get(product_code)
-        if product:
-            raw_code = product.raw_code
-        else:
-            raw_code = None
+        product_name = product.product_name if product else "未知商品"  # 获取商品名称或默认为"未知商品"
+
+        raw_code = product.raw_code if product else None
 
         # 获取对应的 Raw 对象并计算剩余原料数量
         if raw_code:
@@ -530,6 +584,7 @@ def order_list(request):
             'order_start_date': order_product.order.order_start_date,
             'order_end_date': order_product.order.order_end_date,
             'product_code': order_product.product_code,
+            'product_name': product_name,  # 添加商品名称
             'product_kind': order_product.product_kind,
             'product_num_todo': product_num_todo,
             'product_num_done': order_product.product_num_done,
@@ -650,7 +705,6 @@ def delete_order(request, order_id):
     return HttpResponse(status=400)
 
 
-@login_required(login_url="/login/")
 def device_list(request):
     search_query = request.GET.get('search', '')  # 获取用户输入的搜索关键词
 
@@ -665,7 +719,6 @@ def device_list(request):
 
     return render(request, 'home/device_list.html', {'devices': devices})
 
-
 @login_required(login_url="/login/")
 def get_device(request, device_id):
     device = get_object_or_404(Device, id=device_id)
@@ -676,27 +729,32 @@ def get_device(request, device_id):
         'device_name': device.device_name,
         'exchange_time': device.changeover_time,
         'status': device.is_fault,
-        'operator': device.operator.id if device.operator else None,
-        'inspector': device.inspector.id if device.inspector else None,
+        'efficiency': device.efficiency,
         'operators': [{'id': op.id, 'name': op.username} for op in operators],
         'inspectors': [{'id': ins.id, 'name': ins.username} for ins in inspectors],
+        'selected_operators': [op.id for op in device.operators.all()],
+        'selected_inspectors': [ins.id for ins in device.inspectors.all()],
     }
     return JsonResponse(data)
-
 
 @login_required(login_url="/login/")
 def update_device(request, device_id):
     if request.method == 'POST':
         device = get_object_or_404(Device, id=device_id)
         device.device_name = request.POST.get('device_name')
-        device.exchange_time = request.POST.get('exchange_time')
+        device.changeover_time = request.POST.get('exchange_time')
         device.is_fault = request.POST.get('status') == '1'
-        device.operator_id = request.POST.get('operator')
-        device.inspector_id = request.POST.get('inspector')
+        device.efficiency = request.POST.get('efficiency')
+
+        operator_ids = request.POST.getlist('operators')
+        inspector_ids = request.POST.getlist('inspectors')
+
+        device.operators.set(operator_ids)
+        device.inspectors.set(inspector_ids)
+
         device.save()
         return HttpResponse(status=200)
     return HttpResponse(status=400)
-
 
 @login_required(login_url="/login/")
 def delete_device(request, device_id):
@@ -1018,13 +1076,11 @@ def add_urgent_task(request):
 
 
 # My tasks
-
-
 @login_required(login_url="/login/")
 def my_tasks(request):
     user = request.user
 
-    # 获取用户关联的设备列表
+    # 获取任务数据
     if user.role == 'admin':
         devices = Device.objects.all()
         tasks = Task.objects.filter(
@@ -1045,24 +1101,41 @@ def my_tasks(request):
             completed=False,
         ).order_by('task_start_time')
 
-    # 筛选任务
+    # 筛选设备
     selected_device = request.GET.get('device')
     if selected_device:
         tasks = tasks.filter(device_name=selected_device)
 
-    for task in tasks:
-        order_product = OrderProduct.objects.filter(product_code=task.product_code).first()
-        task.customer_name = order_product.order.order_custom_name if order_product else '未知客户'
-        product = Product.objects.filter(product_code=task.product_code).first()
-        task.product_name = product.product_name if product else '⚠️ 未知产品'
+    # 任务合并处理：按执行时间顺序合并相邻的相同商品编号的任务
+    merged_tasks = []
+    current_task = None
 
-    # 分页处理
-    per_page = request.GET.get('per_page', 50)  # 获取用户自定义的每页数量，默认为50
-    paginator = Paginator(tasks, per_page)
+    for task in tasks:
+        if current_task and task.product_code == current_task.product_code and (
+                task.task_start_time - current_task.task_end_time) <= timedelta(minutes=5):
+            # 合并相邻的相同商品编号的任务
+            current_task.grouped_tasks.append(task)
+            current_task.task_end_time = task.task_end_time  # 更新结束时间为最新任务的结束时间
+            current_task.product_num += task.product_num  # 更新生产数量
+        else:
+            # 完成当前合并任务，添加到列表
+            if current_task:
+                merged_tasks.append(current_task)
+            # 初始化新的合并任务
+            current_task = task
+            current_task.grouped_tasks = [task]
+
+    # 添加最后一个合并任务
+    if current_task:
+        merged_tasks.append(current_task)
+
+    # 分页
+    per_page = request.GET.get('per_page', 50)
+    paginator = Paginator(merged_tasks, per_page)
     page_number = request.GET.get('page')
     page_obj = paginator.get_page(page_number)
 
-    # 生成二维码
+    # 生成二维码（保持原样）
     current_url = request.build_absolute_uri()
     qr = qrcode.QRCode(
         version=1,
@@ -1073,7 +1146,6 @@ def my_tasks(request):
     qr.add_data(current_url)
     qr.make(fit=True)
     img = qr.make_image(fill='black', back_color='white')
-
     img_path = 'apps/static/assets/img/qrcode/my_tasks_qr.png'
     os.makedirs(os.path.dirname(img_path), exist_ok=True)
     img.save(img_path)
@@ -1088,7 +1160,6 @@ def my_tasks(request):
         'per_page': per_page,
     }
     return render(request, 'home/my_tasks.html', context)
-
 
 @login_required(login_url="/login/")
 def my_tasks_done(request):
